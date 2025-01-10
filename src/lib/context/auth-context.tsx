@@ -43,13 +43,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // First clear the local session
-      await supabase.auth.clearSession();
-      // Then sign out
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Sign out error:', error);
-        // If we get a session_not_found error, we can ignore it since we've already cleared the session
+        // If we get a session_not_found error, we can ignore it
         if (error.message !== 'Session not found') {
           throw error;
         }
