@@ -11,22 +11,27 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
   try {
     let query = supabase
       .from('user_roles')
-      .select('user_id, profiles!inner(id, full_name)');
+      .select(`
+        user_id,
+        profiles:user_id(id, full_name)
+      `);
 
     // If user is a manager, only get their sales reps
     if (userRole === 'manager') {
       query = query.eq('manager_id', userId).eq('role', 'sales_rep');
     } else if (userRole === 'director') {
       // For directors, get all sales reps under their managers
-      query = query
-        .eq('role', 'sales_rep')
-        .in('manager_id', (
-          supabase
-            .from('user_roles')
-            .select('user_id')
-            .eq('manager_id', userId)
-            .eq('role', 'manager')
-        ));
+      const { data: managerIds } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('manager_id', userId)
+        .eq('role', 'manager');
+
+      if (managerIds && managerIds.length > 0) {
+        query = query
+          .eq('role', 'sales_rep')
+          .in('manager_id', managerIds.map(m => m.user_id));
+      }
     }
 
     const { data: salesRepsData, error: salesRepsError } = await query;
@@ -64,8 +69,8 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
       });
 
       return {
-        id: rep.profiles.id,
-        name: rep.profiles.full_name || 'Unknown',
+        id: rep.profiles?.id || rep.user_id,
+        name: rep.profiles?.full_name || 'Unknown',
         month1: repScores.month1,
         month2: repScores.month2,
         month3: repScores.month3,
