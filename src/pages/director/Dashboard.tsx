@@ -1,8 +1,9 @@
-import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
+import { Users, TrendingUp, Target, Trophy, UserPlus } from 'lucide-react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 
 const assessments = {
@@ -90,12 +91,22 @@ const DirectorDashboard = () => {
 
   const topRampingRep = getTopRampingRep();
 
+  const handleAddSalesRep = () => {
+    console.log('Add Sales Representative clicked');
+  };
+
   return (
     <CustomAppLayout>
       <div className="space-y-6 p-6">
-        <div>
-          <h1 className="text-3xl font-bold">Director Dashboard</h1>
-          <p className="text-muted-foreground">Sales Team Assessment Scores</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Director Dashboard</h1>
+            <p className="text-muted-foreground">Sales Team Assessment Scores</p>
+          </div>
+          <Button onClick={handleAddSalesRep} className="flex items-center gap-2">
+            <UserPlus className="h-4 w-4" />
+            Add Sales Representative
+          </Button>
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
@@ -127,6 +138,53 @@ const DirectorDashboard = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Sales Representatives Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Sales Representatives</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Overall Score</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Assessment</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {salesReps.map((rep) => {
+                    const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
+                    const validScores = allScores.filter(score => score > 0);
+                    const avgScore = validScores.length > 0 
+                      ? (validScores.reduce((sum, score) => sum + score, 0) / validScores.length).toFixed(1)
+                      : '0.0';
+                    
+                    return (
+                      <TableRow key={rep.id}>
+                        <TableCell className="font-medium">{rep.name}</TableCell>
+                        <TableCell>{avgScore}/5</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            Number(avgScore) >= 4 ? 'bg-green-100 text-green-800' :
+                            Number(avgScore) >= 3 ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {Number(avgScore) >= 4 ? 'Excellent' :
+                             Number(avgScore) >= 3 ? 'Good' :
+                             'Needs Improvement'}
+                          </span>
+                        </TableCell>
+                        <TableCell>{validScores.length > 0 ? 'Last week' : 'No assessments'}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
           {/* Month 1 */}
           <Card>
             <CardHeader>
