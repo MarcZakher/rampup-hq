@@ -1,4 +1,4 @@
-import { Bell, User, LogOut } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/context/auth-context';
 import { useNavigate } from 'react-router-dom';
@@ -26,8 +26,9 @@ export function TopNav() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (user) {
-        console.log('Fetching profile for user:', user.id);
+      if (!user?.id) return;
+
+      try {
         const { data, error } = await supabase
           .from('profiles')
           .select('full_name, email')
@@ -39,16 +40,20 @@ export function TopNav() {
           return;
         }
 
-        console.log('Fetched profile:', data);
-        setUserProfile({
-          full_name: data.full_name,
-          email: data.email
-        });
+        if (data) {
+          console.log('Profile data fetched:', data);
+          setUserProfile({
+            full_name: data.full_name,
+            email: data.email
+          });
+        }
+      } catch (error) {
+        console.error('Error in fetchUserProfile:', error);
       }
     };
 
     fetchUserProfile();
-  }, [user]);
+  }, [user?.id]);
 
   const handleSignOut = async () => {
     try {
@@ -67,7 +72,7 @@ export function TopNav() {
     }
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | null) => {
     if (!name) return 'U';
     return name
       .split(' ')
@@ -91,7 +96,7 @@ export function TopNav() {
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                 <Avatar>
                   <AvatarFallback>
-                    {userProfile.full_name ? getInitials(userProfile.full_name) : 'U'}
+                    {getInitials(userProfile.full_name)}
                   </AvatarFallback>
                 </Avatar>
               </Button>
