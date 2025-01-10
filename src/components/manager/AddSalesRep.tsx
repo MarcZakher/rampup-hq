@@ -5,6 +5,7 @@ import { UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/context/auth-context';
+import { AuthError } from '@supabase/supabase-js';
 
 interface AddSalesRepProps {
   onSalesRepAdded: (newRep: any) => void;
@@ -14,6 +15,21 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
+
+  const generateUniqueEmail = (name: string) => {
+    const timestamp = Date.now();
+    const sanitizedName = name.toLowerCase().replace(/\s+/g, '.');
+    return `${sanitizedName}.${timestamp}@example.com`;
+  };
+
+  const getErrorMessage = (error: AuthError) => {
+    switch (error.message) {
+      case 'User already registered':
+        return 'A user with this email already exists. Please try again.';
+      default:
+        return error.message;
+    }
+  };
 
   const addSalesRep = async () => {
     if (!newRepName.trim() || !user) {
@@ -25,40 +41,59 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
       return;
     }
 
-    const { data: newUser, error: createError } = await supabase.auth.signUp({
-      email: `${newRepName.toLowerCase().replace(/\s+/g, '.')}@example.com`,
-      password: 'tempPassword123',
-      options: {
-        data: {
-          role: 'sales_rep',
-          manager_id: user.id
+    try {
+      const uniqueEmail = generateUniqueEmail(newRepName);
+      
+      const { data: newUser, error: createError } = await supabase.auth.signUp({
+        email: uniqueEmail,
+        password: 'tempPassword123',
+        options: {
+          data: {
+            role: 'sales_rep',
+            manager_id: user.id
+          }
         }
-      }
-    });
+      });
 
-    if (createError || !newUser.user) {
+      if (createError) {
+        toast({
+          title: "Error",
+          description: getErrorMessage(createError),
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!newUser.user) {
+        toast({
+          title: "Error",
+          description: "Failed to create sales representative account",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const newRep = {
+        id: newUser.user.id,
+        name: newRepName,
+        month1: new Array(5).fill(0),
+        month2: new Array(6).fill(0),
+        month3: new Array(6).fill(0)
+      };
+
+      onSalesRepAdded(newRep);
+      setNewRepName('');
+      toast({
+        title: "Success",
+        description: "Sales representative added successfully"
+      });
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to create sales representative account",
+        description: error.message || "Failed to create sales representative",
         variant: "destructive"
       });
-      return;
     }
-
-    const newRep = {
-      id: parseInt(newUser.user.id),
-      name: newRepName,
-      month1: new Array(5).fill(0),
-      month2: new Array(6).fill(0),
-      month3: new Array(6).fill(0)
-    };
-
-    onSalesRepAdded(newRep);
-    setNewRepName('');
-    toast({
-      title: "Success",
-      description: "Sales representative added successfully"
-    });
   };
 
   return (
