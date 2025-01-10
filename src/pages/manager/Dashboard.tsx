@@ -44,24 +44,25 @@ const ManagerDashboard = () => {
       const savedReps = localStorage.getItem('manager_dashboard_sales_reps');
       const savedAssessments = savedReps ? JSON.parse(savedReps) : {};
 
-      // Get user data from auth.users
-      const { data: userData, error: userError } = await supabase.auth.admin.users({
-        userIds: userRoles.map(role => role.user_id)
-      });
+      // Get user data from auth.users through the public API
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userRoles.map(role => role.user_id));
 
-      if (userError) {
-        console.error('Error fetching user data:', userError);
+      if (profilesError) {
+        console.error('Error fetching user profiles:', profilesError);
         return;
       }
 
       // Map the data to our SalesRep type
       const mappedReps = userRoles.map(role => {
-        const userInfo = userData?.users?.find(u => u.id === role.user_id);
+        const userInfo = profiles?.find(p => p.id === role.user_id);
         const savedData = savedAssessments[role.user_id] || {};
         
         return {
           id: role.user_id,
-          name: userInfo?.user_metadata?.name || userInfo?.email || 'Unknown',
+          name: userInfo?.full_name || userInfo?.email || 'Unknown',
           month1: savedData.month1 || new Array(5).fill(0),
           month2: savedData.month2 || new Array(6).fill(0),
           month3: savedData.month3 || new Array(6).fill(0),
