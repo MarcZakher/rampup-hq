@@ -1,27 +1,39 @@
 import { RepPerformance } from '../types/analytics';
 import { getSalesReps, calculateAverage } from '../utils/analytics';
+import { useAuth } from '@/lib/context/auth-context';
+import { useQuery } from '@tanstack/react-query';
 
-export const getRepPerformance = (): RepPerformance[] => {
-  const salesReps = getSalesReps();
+export const useRepPerformance = () => {
+  const { user } = useAuth();
 
-  return salesReps.map(rep => {
-    const month1Avg = calculateAverage(rep.month1);
-    const month2Avg = calculateAverage(rep.month2);
-    const month3Avg = calculateAverage(rep.month3);
-    const scores = [month1Avg, month2Avg, month3Avg].filter(score => score > 0);
-    const overallScore = calculateAverage(scores);
-    
-    const improvement = scores.length >= 2 ? 
-      scores[scores.length - 1] - scores[scores.length - 2] : 0;
+  return useQuery({
+    queryKey: ['repPerformance', user?.id],
+    queryFn: async (): Promise<RepPerformance[]> => {
+      if (!user?.id) return [];
+      
+      const salesReps = await getSalesReps(user.id);
 
-    const consistency = scores.length > 0 ? 
-      1 - (Math.max(...scores) - Math.min(...scores)) / 5 : 0;
+      return salesReps.map(rep => {
+        const month1Avg = calculateAverage(rep.month1);
+        const month2Avg = calculateAverage(rep.month2);
+        const month3Avg = calculateAverage(rep.month3);
+        const scores = [month1Avg, month2Avg, month3Avg].filter(score => score > 0);
+        const overallScore = calculateAverage(scores);
+        
+        const improvement = scores.length >= 2 ? 
+          scores[scores.length - 1] - scores[scores.length - 2] : 0;
 
-    return {
-      name: rep.name,
-      overallScore: Number(overallScore.toFixed(1)),
-      improvement: Number(improvement.toFixed(1)),
-      consistency: Number(consistency.toFixed(2))
-    };
+        const consistency = scores.length > 0 ? 
+          1 - (Math.max(...scores) - Math.min(...scores)) / 5 : 0;
+
+        return {
+          name: rep.name,
+          overallScore: Number(overallScore.toFixed(1)),
+          improvement: Number(improvement.toFixed(1)),
+          consistency: Number(consistency.toFixed(2))
+        };
+      });
+    },
+    enabled: !!user?.id
   });
 };
