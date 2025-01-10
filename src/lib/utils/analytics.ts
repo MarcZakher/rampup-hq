@@ -9,16 +9,10 @@ export const calculateAverage = (scores: number[]): number => {
 
 export const getSalesReps = async (userId: string, userRole?: string): Promise<SalesRep[]> => {
   try {
-    // First get the user roles and profiles in a single query
+    // First get the sales reps' user roles
     const { data: salesRepsData, error: salesRepsError } = await supabase
       .from('user_roles')
-      .select(`
-        user_id,
-        manager_id,
-        profiles!user_roles_user_id_fkey (
-          full_name
-        )
-      `)
+      .select('user_id, manager_id')
       .eq('role', 'sales_rep');
 
     if (salesRepsError) {
@@ -44,18 +38,30 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
       }
     }
 
+    // Get profiles for the filtered sales reps
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', filteredReps.map(rep => rep.user_id));
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      return [];
+    }
+
     // Get assessment scores for these sales reps
     const { data: scores, error: scoresError } = await supabase
       .from('assessment_scores')
       .select('*')
-      .in('sales_rep_id', filteredReps?.map(rep => rep.user_id) || []);
+      .in('sales_rep_id', filteredReps.map(rep => rep.user_id));
 
     if (scoresError) {
       console.error('Error fetching scores:', scoresError);
       return [];
     }
 
-    return (filteredReps || []).map(rep => {
+    return filteredReps.map(rep => {
+      const profile = profiles?.find(p => p.id === rep.user_id);
       const repScores = {
         month1: new Array(5).fill(0),
         month2: new Array(6).fill(0),
@@ -73,7 +79,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
 
       return {
         id: rep.user_id,
-        name: rep.profiles?.full_name || 'Unknown',
+        name: profile?.full_name || 'Unknown',
         month1: repScores.month1,
         month2: repScores.month2,
         month3: repScores.month3,
