@@ -85,8 +85,7 @@ const ManagerDashboard = () => {
         name: newRepName,
         month1: new Array(assessments.month1.length).fill(0),
         month2: new Array(assessments.month2.length).fill(0),
-        month3: new Array(assessments.month3.length).fill(0),
-        created_at: new Date().toISOString()
+        month3: new Array(assessments.month3.length).fill(0)
       };
 
       const { data, error } = await supabase
