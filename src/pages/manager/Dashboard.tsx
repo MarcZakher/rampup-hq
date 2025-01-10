@@ -18,17 +18,15 @@ const ManagerDashboard = () => {
     if (isNaN(score) || score < 0 || score > 5 || !user) return;
 
     try {
-      // Update in Supabase - Convert repId to string as it's a UUID in the database
+      // Update in Supabase
       const { error } = await supabase
         .from('assessment_scores')
         .upsert({
-          sales_rep_id: repId.toString(), // Convert to string as it's a UUID
-          manager_id: user.id, // user.id is already a string UUID
+          sales_rep_id: repId.toString(),
+          manager_id: user.id,
           month,
           assessment_index: index,
           score
-        }, {
-          onConflict: 'sales_rep_id,manager_id,month,assessment_index'
         });
 
       if (error) throw error;
