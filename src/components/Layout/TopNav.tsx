@@ -29,9 +29,11 @@ export function TopNav() {
 
         if (error) {
           console.error('Error fetching user profile:', error);
+          setUserName(user.email || 'User');
           return;
         }
 
+        // Use full_name if available, otherwise fall back to email
         setUserName(data.full_name || data.email || 'User');
       }
     };
