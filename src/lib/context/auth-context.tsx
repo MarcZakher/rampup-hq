@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
@@ -16,6 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check active sessions and sets the user
@@ -30,27 +32,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       
       if (event === 'SIGNED_IN') {
-        // Fetch user role and redirect accordingly
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session?.user?.id)
-          .single();
+        try {
+          // Fetch user role and redirect accordingly
+          const { data: roleData, error } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session?.user?.id)
+            .single();
 
-        if (roleData) {
-          switch (roleData.role) {
-            case 'sales_rep':
-              navigate('/sales-rep/dashboard');
-              break;
-            case 'manager':
-              navigate('/manager/dashboard');
-              break;
-            case 'director':
-              navigate('/director/dashboard');
-              break;
-            default:
-              navigate('/');
+          if (error) {
+            console.error('Error fetching user role:', error);
+            toast({
+              title: "Error",
+              description: "Error fetching user role. Please try again.",
+              variant: "destructive",
+            });
+            return;
           }
+
+          if (roleData) {
+            switch (roleData.role) {
+              case 'sales_rep':
+                navigate('/sales-rep/dashboard');
+                break;
+              case 'manager':
+                navigate('/manager/dashboard');
+                break;
+              case 'director':
+                navigate('/director/dashboard');
+                break;
+              default:
+                navigate('/');
+            }
+          }
+        } catch (error) {
+          console.error('Error during sign in:', error);
+          toast({
+            title: "Error",
+            description: "An error occurred during sign in. Please try again.",
+            variant: "destructive",
+          });
         }
       } else if (event === 'SIGNED_OUT') {
         navigate('/login');
@@ -58,19 +79,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      throw error;
+    }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      throw error;
+    }
   };
 
   return (

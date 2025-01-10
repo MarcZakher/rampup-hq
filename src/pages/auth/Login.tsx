@@ -78,18 +78,18 @@ export default function Login() {
       return;
     }
 
-    if (isSignUp && !role) {
-      toast({
-        title: "Error",
-        description: "Please select a role",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       setLoading(true);
       if (isSignUp) {
+        if (!role) {
+          toast({
+            title: "Error",
+            description: "Please select a role",
+            variant: "destructive",
+          });
+          return;
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -106,10 +106,6 @@ export default function Login() {
         });
       } else {
         await signIn(email, password);
-        toast({
-          title: "Success",
-          description: "You have successfully logged in",
-        });
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -201,4 +197,3 @@ export default function Login() {
       </Card>
     </div>
   );
-}
