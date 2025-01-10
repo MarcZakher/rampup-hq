@@ -5,7 +5,17 @@ import { Progress } from "@/components/ui/progress";
 import { PlayCircle, CheckCircle2, BookOpen, ExternalLink } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const trainingModules = {
+interface TrainingModule {
+  id: number;
+  title: string;
+  description: string;
+  progress: number;
+  status: "completed" | "in-progress" | "not-started";
+  duration: string;
+  platform?: string;
+}
+
+const trainingModules: Record<string, TrainingModule[]> = {
   month1: [
     {
       id: 1,
@@ -82,99 +92,166 @@ const trainingModules = {
   ],
   month2: [
     {
-      id: 3,
-      title: "New Business Meeting Excellence",
-      description: "Master the art of conducting effective new business meetings",
+      id: 1,
+      title: "GTM Bootcamp in Dublin",
+      description: "The ability to position MongoDB, understand our products, and sales process & motions.",
       progress: 0,
       status: "not-started",
-      duration: "3 hours"
+      duration: "1 week",
+      platform: "Bootcamp"
+    },
+    {
+      id: 2,
+      title: "Partner Introduction and Assessment",
+      description: "Workshop with your partner contact to review your book of business through the partner lens. Identify 3 key accounts to utilise the partner team for warm intros.",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "Azure/GCP/AWS/SI Partner AE"
+    },
+    {
+      id: 3,
+      title: "Create and Launch Spokes",
+      description: "Be able to book 4-5 discovery meetings per week",
+      progress: 0,
+      status: "not-started",
+      duration: "Ongoing",
+      platform: "4-4-2"
     },
     {
       id: 4,
-      title: "Competitive Analysis",
-      description: "Learn about competitor products and positioning strategies",
+      title: "First Meeting Excellence Workshop",
+      description: "Be able to build a deck for a High Value Target Discovery meeting & Be ready to effectively run a NBM",
       progress: 0,
       status: "not-started",
-      duration: "2.5 hours"
+      duration: "1 week",
+      platform: "RD led"
+    },
+    {
+      id: 5,
+      title: "Drive PS in Early Discovery",
+      description: "Meet with your Engagement Manager, understand how to pitch PS early in discovery and be ready to deliver a PS pitch for your Month 3 assessment",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "Meet EM + recorded session"
+    },
+    {
+      id: 6,
+      title: "Shadow Deal Reviews",
+      description: "Start attending deal reviews - goal is to present one by Month 3 to your team.",
+      progress: 0,
+      status: "not-started",
+      duration: "Weekly",
+      platform: "Reach out to AEs/RDs"
+    },
+    {
+      id: 7,
+      title: "SA Buddy Session",
+      description: "Weekly sessions with your assigned SA buddy",
+      progress: 0,
+      status: "not-started",
+      duration: "Weekly",
+      platform: "SA Program"
+    },
+    {
+      id: 8,
+      title: "Personas Understanding Workshop",
+      description: "Understand the different personas in an account, their interests, and how to engage",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "Personas Understanding"
+    },
+    {
+      id: 9,
+      title: "Industry Solution Enablement",
+      description: "Watch the recordings based on your verticals on the IST calls recording bank, and organize a debrief meeting with your RD to echo-back your learnings",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "IST recording bank"
     }
   ],
   month3: [
     {
-      id: 5,
+      id: 1,
       title: "Advanced Solution Design",
       description: "Deep dive into complex solution architectures",
       progress: 0,
       status: "not-started",
-      duration: "5 hours"
+      duration: "5 hours",
+      platform: "Technical Training"
     }
   ],
   month4: [
     {
-      id: 6,
+      id: 1,
       title: "Enterprise Sales Mastery",
       description: "Advanced techniques for enterprise-level sales",
       progress: 0,
       status: "not-started",
-      duration: "4 hours"
+      duration: "4 hours",
+      platform: "Sales Training"
     }
   ]
 };
 
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case "completed":
+      return <CheckCircle2 className="h-6 w-6 text-assessment-green" />;
+    case "in-progress":
+      return <PlayCircle className="h-6 w-6 text-blue-500" />;
+    default:
+      return <BookOpen className="h-6 w-6 text-gray-400" />;
+  }
+};
+
+const renderModules = (modules: typeof trainingModules.month1) => (
+  <div className="grid gap-6">
+    {modules.map((module) => (
+      <Card key={module.id} className="hover:shadow-lg transition-shadow">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-xl font-semibold">
+            <div className="flex items-center gap-3">
+              {getStatusIcon(module.status)}
+              {module.title}
+            </div>
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">{module.duration}</span>
+            {module.platform && (
+              <Button variant="outline" size="sm" className="gap-2">
+                <ExternalLink className="h-4 w-4" />
+                {module.platform}
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-600 mb-4">{module.description}</p>
+          <div className="space-y-4">
+            <Progress value={module.progress} className="h-2" />
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-500">
+                {module.progress}% Complete
+              </span>
+              <Button
+                variant={module.status === "completed" ? "secondary" : "default"}
+                disabled={module.status === "completed"}
+              >
+                {module.status === "completed" ? "Completed" : "Start Module"}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+);
+
 export default function TrainingJourney() {
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle2 className="h-6 w-6 text-assessment-green" />;
-      case "in-progress":
-        return <PlayCircle className="h-6 w-6 text-blue-500" />;
-      default:
-        return <BookOpen className="h-6 w-6 text-gray-400" />;
-    }
-  };
-
-  const renderModules = (modules: typeof trainingModules.month1) => (
-    <div className="grid gap-6">
-      {modules.map((module) => (
-        <Card key={module.id} className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-xl font-semibold">
-              <div className="flex items-center gap-3">
-                {getStatusIcon(module.status)}
-                {module.title}
-              </div>
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">{module.duration}</span>
-              {module.platform && (
-                <Button variant="outline" size="sm" className="gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  {module.platform}
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-4">{module.description}</p>
-            <div className="space-y-4">
-              <Progress value={module.progress} className="h-2" />
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">
-                  {module.progress}% Complete
-                </span>
-                <Button
-                  variant={module.status === "completed" ? "secondary" : "default"}
-                  disabled={module.status === "completed"}
-                >
-                  {module.status === "completed" ? "Completed" : "Start Module"}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8">
