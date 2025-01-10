@@ -1,9 +1,8 @@
 import { MonthlyScore } from '../types/analytics';
 import { getSalesReps, calculateAverage } from '../utils/analytics';
-import { useAuth } from '@/lib/context/auth-context';
 
-export const getMonthlyScores = async (userId: string, userRole?: string): Promise<MonthlyScore[]> => {
-  const salesReps = await getSalesReps(userId, userRole);
+export const getMonthlyScores = (): MonthlyScore[] => {
+  const salesReps = getSalesReps();
 
   if (salesReps.length === 0) {
     return Array(3).fill({

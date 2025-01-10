@@ -1,10 +1,10 @@
 import { RepPerformance } from '../types/analytics';
 import { getSalesReps, calculateAverage } from '../utils/analytics';
 
-export const getRepPerformance = async (userId: string, userRole?: string): Promise<RepPerformance[]> => {
-  const salesReps = await getSalesReps(userId, userRole);
+export const getRepPerformance = (): RepPerformance[] => {
+  const salesReps = getSalesReps();
 
-  const repPerformances = salesReps.map(rep => {
+  return salesReps.map(rep => {
     const month1Avg = calculateAverage(rep.month1);
     const month2Avg = calculateAverage(rep.month2);
     const month3Avg = calculateAverage(rep.month3);
@@ -24,7 +24,4 @@ export const getRepPerformance = async (userId: string, userRole?: string): Prom
       consistency: Number(consistency.toFixed(2))
     };
   });
-
-  // Sort by overall score in descending order
-  return repPerformances.sort((a, b) => b.overallScore - a.overallScore);
 };

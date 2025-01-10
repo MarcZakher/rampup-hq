@@ -1,3 +1,0 @@
-project_id = "cyqiqcpvbsgayzdglssx"
-[functions.delete-sales-rep]
-verify_jwt = true

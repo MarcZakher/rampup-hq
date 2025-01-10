@@ -2,8 +2,8 @@ import { AssessmentStats } from '../types/analytics';
 import { getSalesReps } from '../utils/analytics';
 import { ASSESSMENTS } from '../constants/assessments';
 
-export const getAssessmentData = async (userId: string, userRole?: string): Promise<AssessmentStats[]> => {
-  const salesReps = await getSalesReps(userId, userRole);
+export const getAssessmentData = (): AssessmentStats[] => {
+  const salesReps = getSalesReps();
 
   const getAssessmentStats = (monthKey: 'month1' | 'month2' | 'month3', index: number) => {
     const scores = salesReps.map(rep => rep[monthKey][index]).filter(score => score > 0);
