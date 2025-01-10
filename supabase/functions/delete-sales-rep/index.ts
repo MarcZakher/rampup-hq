@@ -9,7 +9,7 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -41,12 +41,12 @@ serve(async (req) => {
     if (authError) throw authError
     if (!user) throw new Error('Not authenticated')
 
-    // Check if requester is a manager
+    // Check if requester is a manager using maybeSingle() instead of single()
     const { data: userRole, error: roleError } = await supabaseClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (roleError) throw roleError
     if (!userRole || userRole.role !== 'manager') {
