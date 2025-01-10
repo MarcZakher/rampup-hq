@@ -75,33 +75,16 @@ export const useSalesReps = () => {
 
   const removeSalesRep = async (id: number) => {
     try {
-      // First delete the user role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', id);
+      // First delete the user from auth.users using our Edge Function
+      const { error: deleteError } = await supabase.functions.invoke('delete-sales-rep', {
+        body: { user_id: id }
+      });
 
-      if (roleError) {
-        console.error('Error deleting user role:', roleError);
+      if (deleteError) {
+        console.error('Error deleting user:', deleteError);
         toast({
           title: "Error",
-          description: "Failed to remove sales representative role",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Then delete the profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', id);
-
-      if (profileError) {
-        console.error('Error deleting profile:', profileError);
-        toast({
-          title: "Error",
-          description: "Failed to remove sales representative profile",
+          description: "Failed to remove sales representative",
           variant: "destructive"
         });
         return;
