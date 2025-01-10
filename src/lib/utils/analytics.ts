@@ -9,21 +9,30 @@ export const calculateAverage = (scores: number[]): number => {
 
 export const getSalesReps = async (userId: string, userRole?: string): Promise<SalesRep[]> => {
   try {
-    let query = supabase
+    // First get the user roles and their associated profiles
+    const { data: salesRepsData, error: salesRepsError } = await supabase
       .from('user_roles')
       .select(`
         user_id,
-        profiles (
-          id,
-          full_name
+        user:user_id (
+          profile:profiles (
+            id,
+            full_name
+          )
         )
-      `);
+      `)
+      .eq('role', 'sales_rep');
 
-    // If user is a manager, only get their sales reps
+    if (salesRepsError) {
+      console.error('Error fetching sales reps:', salesRepsError);
+      return [];
+    }
+
+    // Filter based on user role
+    let filteredReps = salesRepsData;
     if (userRole === 'manager') {
-      query = query.eq('manager_id', userId).eq('role', 'sales_rep');
+      filteredReps = salesRepsData.filter(rep => rep.manager_id === userId);
     } else if (userRole === 'director') {
-      // For directors, get all sales reps under their managers
       const { data: managerIds } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -31,31 +40,24 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
         .eq('role', 'manager');
 
       if (managerIds && managerIds.length > 0) {
-        query = query
-          .eq('role', 'sales_rep')
-          .in('manager_id', managerIds.map(m => m.user_id));
+        filteredReps = salesRepsData.filter(rep => 
+          managerIds.some(m => m.user_id === rep.manager_id)
+        );
       }
-    }
-
-    const { data: salesRepsData, error: salesRepsError } = await query;
-
-    if (salesRepsError) {
-      console.error('Error fetching sales reps:', salesRepsError);
-      return [];
     }
 
     // Get assessment scores for these sales reps
     const { data: scores, error: scoresError } = await supabase
       .from('assessment_scores')
       .select('*')
-      .in('sales_rep_id', salesRepsData?.map(rep => rep.user_id) || []);
+      .in('sales_rep_id', filteredReps?.map(rep => rep.user_id) || []);
 
     if (scoresError) {
       console.error('Error fetching scores:', scoresError);
       return [];
     }
 
-    return (salesRepsData || []).map(rep => {
+    return (filteredReps || []).map(rep => {
       const repScores = {
         month1: new Array(5).fill(0),
         month2: new Array(6).fill(0),
@@ -73,7 +75,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
 
       return {
         id: rep.user_id,
-        name: rep.profiles?.full_name || 'Unknown',
+        name: rep.user?.profile?.full_name || 'Unknown',
         month1: repScores.month1,
         month2: repScores.month2,
         month3: repScores.month3,
