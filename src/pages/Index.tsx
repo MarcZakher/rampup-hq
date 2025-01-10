@@ -7,7 +7,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-3xl w-full px-6">
+      <div className="max-w-4xl w-full px-6">
         <div className="text-center space-y-6 mb-12">
           <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">
             RampUP
@@ -17,52 +17,52 @@ export default function Index() {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
           <Button 
             onClick={() => navigate("/director/dashboard")}
-            className="h-auto py-6 px-4 flex flex-col items-center gap-3 hover:scale-105 transition-transform"
+            className="min-h-[160px] w-full py-6 px-4 flex flex-col items-center gap-3 hover:scale-105 transition-transform"
             variant="default"
           >
-            <BarChart3 className="h-6 w-6" />
-            <div className="space-y-1">
-              <div className="font-semibold">Director View</div>
-              <div className="text-xs text-primary-foreground/80">Strategic oversight & planning</div>
+            <BarChart3 className="h-8 w-8" />
+            <div className="space-y-2">
+              <div className="font-semibold text-base">Director View</div>
+              <div className="text-xs text-primary-foreground/80 leading-relaxed">Strategic oversight & planning</div>
             </div>
           </Button>
           
           <Button 
             onClick={() => navigate("/manager/dashboard")}
-            className="h-auto py-6 px-4 flex flex-col items-center gap-3 hover:scale-105 transition-transform"
+            className="min-h-[160px] w-full py-6 px-4 flex flex-col items-center gap-3 hover:scale-105 transition-transform"
             variant="default"
           >
-            <Users2 className="h-6 w-6" />
-            <div className="space-y-1">
-              <div className="font-semibold">Manager View</div>
-              <div className="text-xs text-primary-foreground/80">Team management & tracking</div>
+            <Users2 className="h-8 w-8" />
+            <div className="space-y-2">
+              <div className="font-semibold text-base">Manager View</div>
+              <div className="text-xs text-primary-foreground/80 leading-relaxed">Team management & tracking</div>
             </div>
           </Button>
 
           <Button 
             onClick={() => navigate("/sales-rep/dashboard")}
-            className="h-auto py-6 px-4 flex flex-col items-center gap-3 hover:scale-105 transition-transform"
+            className="min-h-[160px] w-full py-6 px-4 flex flex-col items-center gap-3 hover:scale-105 transition-transform"
             variant="default"
           >
-            <User className="h-6 w-6" />
-            <div className="space-y-1">
-              <div className="font-semibold">Sales Rep View</div>
-              <div className="text-xs text-primary-foreground/80">Personal progress & tasks</div>
+            <User className="h-8 w-8" />
+            <div className="space-y-2">
+              <div className="font-semibold text-base">Sales Rep View</div>
+              <div className="text-xs text-primary-foreground/80 leading-relaxed">Personal progress & tasks</div>
             </div>
           </Button>
           
           <Button 
             onClick={() => navigate("/admin/dashboard")}
-            className="h-auto py-6 px-4 flex flex-col items-center gap-3 hover:scale-105 transition-transform"
+            className="min-h-[160px] w-full py-6 px-4 flex flex-col items-center gap-3 hover:scale-105 transition-transform"
             variant="secondary"
           >
-            <UserCog className="h-6 w-6" />
-            <div className="space-y-1">
-              <div className="font-semibold">Admin View</div>
-              <div className="text-xs text-secondary-foreground/80">System configuration & control</div>
+            <UserCog className="h-8 w-8" />
+            <div className="space-y-2">
+              <div className="font-semibold text-base">Admin View</div>
+              <div className="text-xs text-secondary-foreground/80 leading-relaxed">System configuration & control</div>
             </div>
           </Button>
         </div>
