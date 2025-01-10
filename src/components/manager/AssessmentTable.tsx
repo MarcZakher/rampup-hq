@@ -29,6 +29,19 @@ export const AssessmentTable = ({
     return 'bg-[#FFC7CE]';
   };
 
+  const handleScoreChange = (repId: number, month: string, index: number, value: string) => {
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue < 0 || numValue > 5) {
+      toast({
+        title: "Invalid Score",
+        description: "Score must be between 0 and 5",
+        variant: "destructive"
+      });
+      return;
+    }
+    onScoreUpdate(repId, month, index, value);
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -53,8 +66,8 @@ export const AssessmentTable = ({
                   min="0"
                   max="5"
                   step="0.5"
-                  value={score || ''}
-                  onChange={(e) => onScoreUpdate(rep.id, month, scoreIndex, e.target.value)}
+                  value={score}
+                  onChange={(e) => handleScoreChange(rep.id, month, scoreIndex, e.target.value)}
                   className="w-16 text-center"
                 />
               </TableCell>

@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/context/auth-context';
 
 const ManagerDashboard = () => {
-  const { salesReps, addSalesRep, removeSalesRep } = useSalesReps();
+  const { salesReps, addSalesRep, removeSalesRep, loadSalesReps } = useSalesReps();
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -26,7 +26,7 @@ const ManagerDashboard = () => {
         .eq('manager_id', user.id)
         .eq('month', month)
         .eq('assessment_index', index)
-        .maybeSingle();  // Changed from .single() to .maybeSingle()
+        .maybeSingle();
 
       if (queryError) {
         console.error('Error checking existing score:', queryError);
@@ -56,6 +56,9 @@ const ManagerDashboard = () => {
       }
 
       if (error) throw error;
+
+      // Reload sales reps data to reflect the changes
+      await loadSalesReps();
 
       toast({
         title: "Success",
