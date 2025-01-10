@@ -3,41 +3,66 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PlayCircle, CheckCircle2, BookOpen } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const trainingModules = [
-  {
-    id: 1,
-    title: "Discovery Meeting Fundamentals",
-    description: "Learn the key components of successful discovery meetings",
-    progress: 100,
-    status: "completed",
-    duration: "2 hours"
-  },
-  {
-    id: 2,
-    title: "Solution Architecture Program",
-    description: "Understanding technical architecture and solution design",
-    progress: 60,
-    status: "in-progress",
-    duration: "4 hours"
-  },
-  {
-    id: 3,
-    title: "New Business Meeting Excellence",
-    description: "Master the art of conducting effective new business meetings",
-    progress: 0,
-    status: "not-started",
-    duration: "3 hours"
-  },
-  {
-    id: 4,
-    title: "Competitive Analysis",
-    description: "Learn about competitor products and positioning strategies",
-    progress: 0,
-    status: "not-started",
-    duration: "2.5 hours"
-  }
-];
+const trainingModules = {
+  month1: [
+    {
+      id: 1,
+      title: "Discovery Meeting Fundamentals",
+      description: "Learn the key components of successful discovery meetings",
+      progress: 100,
+      status: "completed",
+      duration: "2 hours"
+    },
+    {
+      id: 2,
+      title: "Solution Architecture Program",
+      description: "Understanding technical architecture and solution design",
+      progress: 60,
+      status: "in-progress",
+      duration: "4 hours"
+    }
+  ],
+  month2: [
+    {
+      id: 3,
+      title: "New Business Meeting Excellence",
+      description: "Master the art of conducting effective new business meetings",
+      progress: 0,
+      status: "not-started",
+      duration: "3 hours"
+    },
+    {
+      id: 4,
+      title: "Competitive Analysis",
+      description: "Learn about competitor products and positioning strategies",
+      progress: 0,
+      status: "not-started",
+      duration: "2.5 hours"
+    }
+  ],
+  month3: [
+    {
+      id: 5,
+      title: "Advanced Solution Design",
+      description: "Deep dive into complex solution architectures",
+      progress: 0,
+      status: "not-started",
+      duration: "5 hours"
+    }
+  ],
+  month4: [
+    {
+      id: 6,
+      title: "Enterprise Sales Mastery",
+      description: "Advanced techniques for enterprise-level sales",
+      progress: 0,
+      status: "not-started",
+      duration: "4 hours"
+    }
+  ]
+};
 
 export default function TrainingJourney() {
   const getStatusIcon = (status: string) => {
@@ -51,6 +76,41 @@ export default function TrainingJourney() {
     }
   };
 
+  const renderModules = (modules: typeof trainingModules.month1) => (
+    <div className="grid gap-6">
+      {modules.map((module) => (
+        <Card key={module.id} className="hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-xl font-semibold">
+              <div className="flex items-center gap-3">
+                {getStatusIcon(module.status)}
+                {module.title}
+              </div>
+            </CardTitle>
+            <span className="text-sm text-gray-500">{module.duration}</span>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">{module.description}</p>
+            <div className="space-y-4">
+              <Progress value={module.progress} className="h-2" />
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">
+                  {module.progress}% Complete
+                </span>
+                <Button
+                  variant={module.status === "completed" ? "secondary" : "default"}
+                  disabled={module.status === "completed"}
+                >
+                  {module.status === "completed" ? "Completed" : "Start Module"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8">
@@ -59,38 +119,26 @@ export default function TrainingJourney() {
           <p className="text-gray-600">Track your progress through the sales training program</p>
         </div>
 
-        <div className="grid gap-6">
-          {trainingModules.map((module) => (
-            <Card key={module.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-xl font-semibold">
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(module.status)}
-                    {module.title}
-                  </div>
-                </CardTitle>
-                <span className="text-sm text-gray-500">{module.duration}</span>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-4">{module.description}</p>
-                <div className="space-y-4">
-                  <Progress value={module.progress} className="h-2" />
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">
-                      {module.progress}% Complete
-                    </span>
-                    <Button
-                      variant={module.status === "completed" ? "secondary" : "default"}
-                      disabled={module.status === "completed"}
-                    >
-                      {module.status === "completed" ? "Completed" : "Start Module"}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Tabs defaultValue="month1" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="month1">Month 1</TabsTrigger>
+            <TabsTrigger value="month2">Month 2</TabsTrigger>
+            <TabsTrigger value="month3">Month 3</TabsTrigger>
+            <TabsTrigger value="month4">Month 4</TabsTrigger>
+          </TabsList>
+          <TabsContent value="month1">
+            {renderModules(trainingModules.month1)}
+          </TabsContent>
+          <TabsContent value="month2">
+            {renderModules(trainingModules.month2)}
+          </TabsContent>
+          <TabsContent value="month3">
+            {renderModules(trainingModules.month3)}
+          </TabsContent>
+          <TabsContent value="month4">
+            {renderModules(trainingModules.month4)}
+          </TabsContent>
+        </Tabs>
       </div>
     </CustomAppLayout>
   );
