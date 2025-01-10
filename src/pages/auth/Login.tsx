@@ -51,29 +51,31 @@ export default function Login() {
   };
 
   const handleRedirect = async (userId: string) => {
-    const { data: roleData, error: roleError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
+    try {
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .single();
 
-    if (roleError) {
-      console.error('Error fetching user role:', roleError);
-      return;
-    }
+      if (roleError) throw roleError;
 
-    switch (roleData?.role) {
-      case 'sales_rep':
-        navigate('/sales-rep/dashboard');
-        break;
-      case 'manager':
-        navigate('/manager/dashboard');
-        break;
-      case 'director':
-        navigate('/director/dashboard');
-        break;
-      default:
-        navigate('/');
+      switch (roleData?.role) {
+        case 'sales_rep':
+          navigate('/sales-rep/dashboard');
+          break;
+        case 'manager':
+          navigate('/manager/dashboard');
+          break;
+        case 'director':
+          navigate('/director/dashboard');
+          break;
+        default:
+          navigate('/');
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+      navigate('/');
     }
   };
 
@@ -126,18 +128,19 @@ export default function Login() {
           description: "Please check your email to verify your account",
         });
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data: { user }, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        
         if (error) throw error;
         
-        if (data.user) {
-          await handleRedirect(data.user.id);
+        if (user) {
           toast({
             title: "Success",
             description: "You have successfully logged in",
           });
+          await handleRedirect(user.id);
         }
       }
     } catch (error: any) {
