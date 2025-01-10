@@ -57,7 +57,7 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
           data: {
             role: 'sales_rep',
             manager_id: user.id,
-            name: newRepName // Add the name to user metadata
+            name: newRepName
           }
         }
       });
@@ -95,15 +95,14 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
         return;
       }
 
-      const newRep = {
+      onSalesRepAdded({
         id: newUser.user.id,
         name: newRepName,
         month1: new Array(5).fill(0),
         month2: new Array(6).fill(0),
         month3: new Array(6).fill(0)
-      };
+      });
 
-      onSalesRepAdded(newRep);
       setNewRepName('');
       toast({
         title: "Success",

@@ -18,7 +18,6 @@ const ManagerDashboard = () => {
     if (!user) return;
 
     try {
-      // Get all sales reps managed by this manager
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -40,11 +39,9 @@ const ManagerDashboard = () => {
         return;
       }
 
-      // Get stored assessment data
       const savedReps = localStorage.getItem('manager_dashboard_sales_reps');
       const savedAssessments = savedReps ? JSON.parse(savedReps) : {};
 
-      // Get profiles data which contains the full name
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -55,7 +52,6 @@ const ManagerDashboard = () => {
         return;
       }
 
-      // Map the data to our SalesRep type
       const mappedReps = profiles?.map(profile => {
         const savedData = savedAssessments[profile.id] || {};
         
@@ -84,8 +80,7 @@ const ManagerDashboard = () => {
   }, [user]);
 
   const handleSalesRepAdded = async (newRep: any) => {
-    // Refresh the entire list to ensure we have all sales reps
-    await loadSalesReps();
+    setSalesReps(prevReps => [...prevReps, newRep]);
   };
 
   const removeSalesRep = async (id: number) => {
