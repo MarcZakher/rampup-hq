@@ -13,7 +13,7 @@ const ManagerDashboard = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const updateScore = async (repId: number, month: string, index: number, value: string) => {
+  const updateScore = async (repId: string, month: string, index: number, value: string) => {
     const score = parseFloat(value);
     if (isNaN(score) || score < 0 || score > 5 || !user) return;
 
@@ -22,7 +22,7 @@ const ManagerDashboard = () => {
       const { data: existingScore, error: queryError } = await supabase
         .from('assessment_scores')
         .select()
-        .eq('sales_rep_id', repId.toString())
+        .eq('sales_rep_id', repId)
         .eq('manager_id', user.id)
         .eq('month', month)
         .eq('assessment_index', index)
@@ -46,7 +46,7 @@ const ManagerDashboard = () => {
         const { error: insertError } = await supabase
           .from('assessment_scores')
           .insert({
-            sales_rep_id: repId.toString(),
+            sales_rep_id: repId,
             manager_id: user.id,
             month,
             assessment_index: index,

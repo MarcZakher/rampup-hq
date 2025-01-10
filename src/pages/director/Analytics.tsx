@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area
-} from 'recharts';
+import { useAuth } from '@/lib/context/auth-context';
 import {
   getMonthlyScores,
   getAssessmentData,
@@ -15,8 +12,28 @@ import {
 } from '@/lib/mockAnalyticsData';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Users, TrendingUp, Target, Trophy, AlertTriangle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area
+} from 'recharts';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+// Define colors for charts
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const AnalyticsPage = () => {
   const [monthlyScores, setMonthlyScores] = useState([]);
@@ -25,21 +42,54 @@ const AnalyticsPage = () => {
   const [scoreDistribution, setScoreDistribution] = useState([]);
   const [teamProgress, setTeamProgress] = useState({ meetingTarget: 0, completionRate: 0, averageImprovement: 0 });
   const [areasOfFocus, setAreasOfFocus] = useState({ repsNeedingAttention: [], commonChallenges: [] });
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
-    const updateData = () => {
-      setMonthlyScores(getMonthlyScores());
-      setAssessmentData(getAssessmentData());
-      setRepPerformance(getRepPerformance());
-      setScoreDistribution(getScoreDistribution());
-      setTeamProgress(getTeamProgress());
-      setAreasOfFocus(getAreasOfFocus());
+    const loadAnalytics = async () => {
+      if (!user) return;
+
+      try {
+        const { data: userRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        const [
+          monthlyScoresData,
+          assessmentDataResult,
+          repPerformanceData,
+          scoreDistributionData,
+          teamProgressData,
+          areasOfFocusData
+        ] = await Promise.all([
+          getMonthlyScores(user.id, userRole?.role),
+          getAssessmentData(user.id, userRole?.role),
+          getRepPerformance(user.id, userRole?.role),
+          getScoreDistribution(user.id, userRole?.role),
+          getTeamProgress(user.id, userRole?.role),
+          getAreasOfFocus(user.id, userRole?.role)
+        ]);
+
+        setMonthlyScores(monthlyScoresData);
+        setAssessmentData(assessmentDataResult);
+        setRepPerformance(repPerformanceData);
+        setScoreDistribution(scoreDistributionData);
+        setTeamProgress(teamProgressData);
+        setAreasOfFocus(areasOfFocusData);
+      } catch (error) {
+        console.error('Error loading analytics:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load analytics data",
+          variant: "destructive"
+        });
+      }
     };
 
-    updateData();
-    window.addEventListener('storage', updateData);
-    return () => window.removeEventListener('storage', updateData);
-  }, []);
+    loadAnalytics();
+  }, [user]);
 
   return (
     <CustomAppLayout>
