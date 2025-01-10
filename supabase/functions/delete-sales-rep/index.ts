@@ -43,21 +43,20 @@ serve(async (req) => {
 
     console.log('Authenticated user:', user.id)
 
-    // Check if requester is a manager
-    const { data: userRoles, error: roleError } = await supabaseClient
+    // Check if requester is a manager by checking user_roles table
+    const { data: managerRole, error: roleError } = await supabaseClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
+      .eq('role', 'manager')
+      .maybeSingle()
 
     if (roleError) {
       console.error('Error checking manager role:', roleError)
       throw roleError
     }
 
-    const isManager = userRoles.some(role => role.role === 'manager')
-    console.log('Is user a manager:', isManager)
-
-    if (!isManager) {
+    if (!managerRole) {
       throw new Error('Unauthorized - only managers can delete sales representatives')
     }
 
