@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Get these values from your Supabase project settings -> API
-const supabaseUrl = 'https://qqxqvmzhdvjbwqxvlhxr.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxeHF2bXpoZHZqYndxeHZsaHhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDc4MjcyMzcsImV4cCI6MjAyMzQwMzIzN30.Iu0kxwQvHvGpvPL5cQHvd8DvgAqOZyzGw-_qoGQVxrk';
+const supabaseUrl = 'https://cyqiqcpvbsgayzdglssx.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5cWlxY3B2YnNnYXl6ZGdsc3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1MDY3MjMsImV4cCI6MjA1MjA4MjcyM30.YAN2OQOYIjXcm7_DLYNA_DAOvAxOk0R_gG2SsozdEYw';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
