@@ -13,7 +13,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
       .from('user_roles')
       .select(`
         user_id,
-        profiles (
+        profiles!user_roles_user_id_fkey (
           id,
           full_name
         )
@@ -73,7 +73,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
 
       return {
         id: rep.user_id,
-        name: rep.profiles?.[0]?.full_name || 'Unknown',
+        name: rep.profiles?.full_name || 'Unknown',
         month1: repScores.month1,
         month2: repScores.month2,
         month3: repScores.month3,

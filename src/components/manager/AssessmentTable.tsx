@@ -9,8 +9,8 @@ interface AssessmentTableProps {
   month: string;
   assessments: Assessment[];
   salesReps: SalesRep[];
-  onScoreUpdate: (repId: number, month: string, index: number, value: string) => void;
-  onRemoveSalesRep: (id: number) => void;
+  onScoreUpdate: (repId: string, month: string, index: number, value: string) => void;
+  onRemoveSalesRep: (id: string) => void;
 }
 
 export const AssessmentTable = ({
@@ -29,7 +29,7 @@ export const AssessmentTable = ({
     return 'bg-[#FFC7CE]';
   };
 
-  const handleScoreChange = (repId: number, month: string, index: number, value: string) => {
+  const handleScoreChange = (repId: string, month: string, index: number, value: string) => {
     const numValue = parseFloat(value);
     if (isNaN(numValue) || numValue < 0 || numValue > 5) {
       toast({

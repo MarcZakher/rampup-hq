@@ -42,7 +42,7 @@ export const useSalesReps = () => {
     setSalesReps(prevReps => [...prevReps, newRep]);
   };
 
-  const removeSalesRep = async (id: number) => {
+  const removeSalesRep = async (id: string) => {
     try {
       // First delete the user from auth.users using our Edge Function
       const { error: deleteError } = await supabase.functions.invoke('delete-sales-rep', {

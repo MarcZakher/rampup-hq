@@ -55,7 +55,7 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
       }
 
       onSalesRepAdded({
-        id: Number(data.user.id),
+        id: data.user.id, // Now correctly using string ID
         name: newRepName,
         month1: new Array(5).fill(0),
         month2: new Array(6).fill(0),
