@@ -7,12 +7,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { AuthError, AuthApiError } from '@supabase/supabase-js';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [role, setRole] = useState<string>('');
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -42,6 +50,33 @@ export default function Login() {
     return 'An error occurred. Please try again.';
   };
 
+  const handleRedirect = async (userId: string) => {
+    const { data: roleData, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    if (roleError) {
+      console.error('Error fetching user role:', roleError);
+      return;
+    }
+
+    switch (roleData?.role) {
+      case 'sales_rep':
+        navigate('/sales-rep/dashboard');
+        break;
+      case 'manager':
+        navigate('/manager/dashboard');
+        break;
+      case 'director':
+        navigate('/director/dashboard');
+        break;
+      default:
+        navigate('/');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -63,14 +98,26 @@ export default function Login() {
       return;
     }
 
+    if (isSignUp && !role) {
+      toast({
+        title: "Error",
+        description: "Please select a role",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: window.location.origin,
+            data: {
+              role: role
+            }
           },
         });
         if (error) throw error;
@@ -79,12 +126,19 @@ export default function Login() {
           description: "Please check your email to verify your account",
         });
       } else {
-        await signIn(email, password);
-        navigate('/director/dashboard');
-        toast({
-          title: "Success",
-          description: "You have successfully logged in",
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
         });
+        if (error) throw error;
+        
+        if (data.user) {
+          await handleRedirect(data.user.id);
+          toast({
+            title: "Success",
+            description: "You have successfully logged in",
+          });
+        }
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -138,6 +192,23 @@ export default function Login() {
                 minLength={6}
               />
             </div>
+            {isSignUp && (
+              <div>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                  Role
+                </label>
+                <Select onValueChange={setRole} value={role}>
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sales_rep">Sales Representative</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="director">Director</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-4">
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Processing...' : (isSignUp ? 'Sign up' : 'Sign in')}
@@ -146,7 +217,10 @@ export default function Login() {
                 type="button" 
                 variant="outline" 
                 className="w-full"
-                onClick={() => setIsSignUp(!isSignUp)}
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setRole('');
+                }}
               >
                 {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
               </Button>
