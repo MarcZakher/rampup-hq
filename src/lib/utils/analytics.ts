@@ -12,25 +12,41 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
     let salesRepsData;
 
     if (userRole === 'director') {
-      // If director, get all sales reps
-      const { data: salesReps, error: salesRepsError } = await supabase
+      // First get all sales rep roles
+      const { data: salesRepRoles, error: salesRepsError } = await supabase
         .from('user_roles')
-        .select(`
-          user_id,
-          manager_id,
-          profiles!inner (
-            full_name,
-            email
-          )
-        `)
+        .select('user_id, manager_id')
         .eq('role', 'sales_rep');
 
       if (salesRepsError) {
-        console.error('Error fetching sales reps:', salesRepsError);
+        console.error('Error fetching sales rep roles:', salesRepsError);
         return [];
       }
 
-      salesRepsData = salesReps;
+      // Then get their profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', salesRepRoles.map(rep => rep.user_id));
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return [];
+      }
+
+      // Combine the data
+      salesRepsData = salesRepRoles.map(role => {
+        const profile = profiles.find(p => p.id === role.user_id);
+        return {
+          user_id: role.user_id,
+          manager_id: role.manager_id,
+          profiles: {
+            full_name: profile?.full_name,
+            email: profile?.email
+          }
+        };
+      });
+
     } else if (userRole === 'manager') {
       // If manager, get their direct reports
       const { data: salesReps, error: salesRepsError } = await supabase
