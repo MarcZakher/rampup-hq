@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/context/auth-context';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,17 @@ export default function Login() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await handleRedirect(session.user.id);
+      }
+    };
+    checkSession();
+  }, []);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -63,8 +74,6 @@ export default function Login() {
         console.error('Role fetch error:', roleError);
         throw roleError;
       }
-
-      console.log('Role data:', roleData);
 
       if (!roleData?.role) {
         console.error('No role found for user');
@@ -129,7 +138,6 @@ export default function Login() {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
             data: {
               role: role
             }
@@ -247,4 +255,4 @@ export default function Login() {
       </Card>
     </div>
   );
-};
+}
