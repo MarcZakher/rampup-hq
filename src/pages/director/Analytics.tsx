@@ -10,6 +10,7 @@ import { useAssessmentData } from '@/lib/analytics/assessmentData';
 import { useRepPerformance } from '@/lib/analytics/repPerformance';
 import { useScoreDistribution } from '@/lib/analytics/scoreDistribution';
 import { useAreasOfFocus } from '@/lib/analytics/areasOfFocus';
+import { useTeamProgress } from '@/lib/analytics/teamProgress';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Users, TrendingUp, Target, Trophy, AlertTriangle } from 'lucide-react';
 
@@ -21,16 +22,7 @@ const AnalyticsPage = () => {
   const { data: repPerformance = [] } = useRepPerformance();
   const { data: scoreDistribution = [] } = useScoreDistribution();
   const { data: areasOfFocus = { repsNeedingAttention: [], commonChallenges: [] } } = useAreasOfFocus();
-
-  const latestMonthScore = monthlyScores[monthlyScores.length - 1]?.avgScore || '0';
-  const improvement = monthlyScores.length >= 2 ? 
-    Number(monthlyScores[monthlyScores.length - 1]?.avgScore) - Number(monthlyScores[monthlyScores.length - 2]?.avgScore) : 0;
-
-  const meetingTarget = repPerformance.filter(rep => rep.overallScore >= 3).length / (repPerformance.length || 1) * 100;
-  const completionRate = assessmentData.filter(a => a.successRate > 0).length / (assessmentData.length || 1) * 100;
-  const topPerformer = repPerformance.length > 0 ? 
-    repPerformance.reduce((prev, current) => (current.overallScore > prev.overallScore) ? current : prev) : 
-    { name: 'N/A', overallScore: 0 };
+  const { data: teamProgress = { meetingTarget: 0, completionRate: 0, averageImprovement: 0 } } = useTeamProgress();
 
   return (
     <CustomAppLayout>
@@ -65,123 +57,121 @@ const AnalyticsPage = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Overall Score Trends */}
-          <Card className="p-4">
-            <h2 className="text-lg font-semibold mb-4">Score Trends (3 Months)</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyScores}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis domain={[0, 5]} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="avgScore" stroke="#8884d8" name="Average Score" />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
+        {/* Overall Score Trends */}
+        <Card className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Score Trends (3 Months)</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={monthlyScores}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis domain={[0, 5]} />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="avgScore" stroke="#8884d8" name="Average Score" />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
 
-          {/* Score Distribution */}
-          <Card className="p-4">
-            <h2 className="text-lg font-semibold mb-4">Score Distribution</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={scoreDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {scoreDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </Card>
+        {/* Score Distribution */}
+        <Card className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Score Distribution</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={scoreDistribution}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="count"
+              >
+                {scoreDistribution.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </Card>
 
-          {/* Assessment Performance */}
-          <Card className="p-4">
-            <h2 className="text-lg font-semibold mb-4">Assessment Performance</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={assessmentData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="successRate" fill="#8884d8" name="Success Rate %" />
-                <Bar dataKey="avgScore" fill="#82ca9d" name="Average Score" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
+        {/* Assessment Performance */}
+        <Card className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Assessment Performance</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={assessmentData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="successRate" fill="#8884d8" name="Success Rate %" />
+              <Bar dataKey="avgScore" fill="#82ca9d" name="Average Score" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
 
-          {/* Individual Performance */}
-          <Card className="p-4">
-            <h2 className="text-lg font-semibold mb-4">Individual Performance</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={repPerformance} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 5]} />
-                <YAxis dataKey="name" type="category" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="overallScore" fill="#8884d8" name="Overall Score" />
-                <Bar dataKey="improvement" fill="#82ca9d" name="Improvement" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
+        {/* Individual Performance */}
+        <Card className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Individual Performance</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={repPerformance} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" domain={[0, 5]} />
+              <YAxis dataKey="name" type="category" />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="overallScore" fill="#8884d8" name="Overall Score" />
+              <Bar dataKey="improvement" fill="#82ca9d" name="Improvement" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
 
-          {/* Monthly Progress */}
-          <Card className="p-4">
-            <h2 className="text-lg font-semibold mb-4">Monthly Progress</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={monthlyScores}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Area 
-                  type="monotone" 
-                  dataKey="improving" 
-                  stackId="1"
-                  stroke="#82ca9d" 
-                  fill="#82ca9d" 
-                  name="Improving"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="declining" 
-                  stackId="1"
-                  stroke="#ff8042" 
-                  fill="#ff8042" 
-                  name="Declining"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </Card>
+        {/* Monthly Progress */}
+        <Card className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Monthly Progress</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={monthlyScores}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Area 
+                type="monotone" 
+                dataKey="improving" 
+                stackId="1"
+                stroke="#82ca9d" 
+                fill="#82ca9d" 
+                name="Improving"
+              />
+              <Area 
+                type="monotone" 
+                dataKey="declining" 
+                stackId="1"
+                stroke="#ff8042" 
+                fill="#ff8042" 
+                name="Declining"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
 
-          {/* Assessment Completion */}
-          <Card className="p-4">
-            <h2 className="text-lg font-semibold mb-4">Assessment Completion Rates</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={assessmentData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="successRate" fill="#8884d8" name="Completion Rate %" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </div>
+        {/* Assessment Completion */}
+        <Card className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Assessment Completion Rates</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={assessmentData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="successRate" fill="#8884d8" name="Completion Rate %" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
 
         {/* Areas of Focus Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
