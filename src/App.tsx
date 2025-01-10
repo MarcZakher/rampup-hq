@@ -4,7 +4,6 @@ import Index from './pages/Index';
 import DirectorDashboard from './pages/director/Dashboard';
 import ManagerDashboard from './pages/manager/Dashboard';
 import AnalyticsPage from './pages/director/Analytics';
-import SalesRepDashboard from './pages/sales-rep/Dashboard';
 
 function App() {
   return (
@@ -15,7 +14,6 @@ function App() {
         <Route path="/director/analytics" element={<AnalyticsPage />} />
         <Route path="/manager/dashboard" element={<ManagerDashboard />} />
         <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
-        <Route path="/sales-rep/dashboard" element={<SalesRepDashboard />} />
       </Routes>
     </BrowserRouter>
   );

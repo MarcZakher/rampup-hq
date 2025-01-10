@@ -1,14 +1,9 @@
-// Mock data for a single sales rep's scores
-export const getSalesReps = () => {
-  return [
-    {
-      id: 1,
-      name: "John Doe",
-      month1: [85, 90, 88, 92, 87],
-      month2: [89, 91, 86, 88, 90],
-      month3: [92, 94, 90, 93, 91]
-    }
-  ];
+import { SalesRep } from '../types/analytics';
+import { STORAGE_KEY } from '../constants/assessments';
+
+export const getSalesReps = (): SalesRep[] => {
+  const savedReps = localStorage.getItem(STORAGE_KEY);
+  return savedReps ? JSON.parse(savedReps) : [];
 };
 
 export const calculateAverage = (scores: number[]): number => {
