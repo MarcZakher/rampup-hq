@@ -18,11 +18,10 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
 
   const generateUniqueEmail = (name: string) => {
     const timestamp = Date.now();
-    // Sanitize the name: remove special characters and convert to lowercase
     const sanitizedName = name.toLowerCase()
-      .replace(/[^a-z0-9]/g, '.') // Replace special chars with dots
-      .replace(/\.+/g, '.') // Replace multiple dots with single dot
-      .replace(/^\.+|\.+$/g, ''); // Remove leading/trailing dots
+      .replace(/[^a-z0-9]/g, '.')
+      .replace(/\.+/g, '.')
+      .replace(/^\.+|\.+$/g, '');
     
     return `${sanitizedName}.${timestamp}@salesrep.example.com`;
   };
@@ -57,7 +56,8 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
         options: {
           data: {
             role: 'sales_rep',
-            manager_id: user.id
+            manager_id: user.id,
+            name: newRepName // Add the name to user metadata
           }
         }
       });
@@ -75,6 +75,21 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
         toast({
           title: "Error",
           description: "Failed to create sales representative account",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Update the profiles table with the full name
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ full_name: newRepName })
+        .eq('id', newUser.user.id);
+
+      if (profileError) {
+        toast({
+          title: "Error",
+          description: "Failed to update sales representative profile",
           variant: "destructive"
         });
         return;
