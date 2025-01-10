@@ -1,5 +1,5 @@
 import { Users, TrendingUp, Target } from 'lucide-react';
-import { AppLayout } from '@/components/Layout/AppLayout';
+import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -97,7 +97,7 @@ const DirectorDashboard = () => {
   }).length;
 
   return (
-    <AppLayout>
+    <CustomAppLayout>
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-3xl font-bold">Director Dashboard</h1>
@@ -244,7 +244,7 @@ const DirectorDashboard = () => {
           </Card>
         </div>
       </div>
-    </AppLayout>
+    </CustomAppLayout>
   );
 };
 
