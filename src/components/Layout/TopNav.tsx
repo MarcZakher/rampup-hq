@@ -1,7 +1,6 @@
 import { Bell, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/context/auth-context';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -14,7 +13,6 @@ import {
 
 export function TopNav() {
   const { signOut, user } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [userName, setUserName] = useState<string>('');
 
@@ -33,7 +31,6 @@ export function TopNav() {
           return;
         }
 
-        // Use full_name if available, otherwise fall back to email
         setUserName(data.full_name || data.email || 'User');
       }
     };
@@ -44,7 +41,6 @@ export function TopNav() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/login');
       toast({
         title: "Success",
         description: "You have been signed out",
