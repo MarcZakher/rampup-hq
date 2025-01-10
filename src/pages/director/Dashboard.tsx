@@ -1,12 +1,9 @@
 import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useEffect, useState } from 'react';
-import { ScoreTrends } from '@/components/Dashboard/ScoreTrends';
-import { AssessmentPerformance } from '@/components/Dashboard/AssessmentPerformance';
-import { PerformanceDistribution } from '@/components/Dashboard/PerformanceDistribution';
-import { TeamProgress } from '@/components/Dashboard/TeamProgress';
-import { TopPerformers } from '@/components/Dashboard/TopPerformers';
 
 const assessments = {
   month1: [
@@ -40,6 +37,14 @@ const calculateAverage = (scores: number[]) => {
   const validScores = scores.filter(score => score > 0);
   if (validScores.length === 0) return 0;
   return Number((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(1));
+};
+
+const getScoreColor = (score: number) => {
+  if (score === 0) return 'bg-white';
+  if (score >= 4) return 'bg-[#90EE90]'; // Light green
+  if (score >= 3) return 'bg-[#FFEB9C]'; // Light yellow
+  if (score >= 2) return 'bg-[#FFC7CE]'; // Light red
+  return 'bg-[#FFC7CE]'; // Light red for lower scores
 };
 
 interface SalesRep {
@@ -99,17 +104,20 @@ const DirectorDashboard = () => {
             value={totalReps}
             icon={<Users className="h-4 w-4 text-muted-foreground" />}
           />
+
           <StatCard
             title="Average Score"
             value={`${avgScore}/5`}
             icon={<Target className="h-4 w-4 text-muted-foreground" />}
           />
+
           <StatCard
             title="Performing Well"
             value={performingWell}
             description="Score above 3/5"
             icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
           />
+
           <StatCard
             title="Top Ramping Rep"
             value={topRampingRep.name}
@@ -118,12 +126,111 @@ const DirectorDashboard = () => {
           />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-12">
-          <ScoreTrends salesReps={salesReps} />
-          <TeamProgress salesReps={salesReps} />
-          <AssessmentPerformance salesReps={salesReps} assessments={assessments} />
-          <PerformanceDistribution salesReps={salesReps} />
-          <TopPerformers salesReps={salesReps} />
+        <div className="space-y-6">
+          {/* Month 1 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Month 1 Assessments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    {assessments.month1.map((assessment, index) => (
+                      <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
+                    ))}
+                    <TableHead>Average</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {salesReps.map((rep) => (
+                    <TableRow key={rep.id}>
+                      <TableCell className="font-medium">{rep.name}</TableCell>
+                      {rep.month1.map((score, index) => (
+                        <TableCell key={index} className={getScoreColor(score)}>
+                          {score || '-'}
+                        </TableCell>
+                      ))}
+                      <TableCell className={getScoreColor(calculateAverage(rep.month1))}>
+                        {calculateAverage(rep.month1)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Month 2 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Month 2 Assessments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    {assessments.month2.map((assessment, index) => (
+                      <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
+                    ))}
+                    <TableHead>Average</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {salesReps.map((rep) => (
+                    <TableRow key={rep.id}>
+                      <TableCell className="font-medium">{rep.name}</TableCell>
+                      {rep.month2.map((score, index) => (
+                        <TableCell key={index} className={getScoreColor(score)}>
+                          {score || '-'}
+                        </TableCell>
+                      ))}
+                      <TableCell className={getScoreColor(calculateAverage(rep.month2))}>
+                        {calculateAverage(rep.month2)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Month 3 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Month 3 Assessments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    {assessments.month3.map((assessment, index) => (
+                      <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
+                    ))}
+                    <TableHead>Average</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {salesReps.map((rep) => (
+                    <TableRow key={rep.id}>
+                      <TableCell className="font-medium">{rep.name}</TableCell>
+                      {rep.month3.map((score, index) => (
+                        <TableCell key={index} className={getScoreColor(score)}>
+                          {score || '-'}
+                        </TableCell>
+                      ))}
+                      <TableCell className={getScoreColor(calculateAverage(rep.month3))}>
+                        {calculateAverage(rep.month3)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </CustomAppLayout>
