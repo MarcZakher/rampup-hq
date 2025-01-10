@@ -30,6 +30,12 @@ const assessments = {
   ]
 };
 
+const calculateAverage = (scores: number[]) => {
+  const validScores = scores.filter(score => score > 0);
+  if (validScores.length === 0) return 0;
+  return Number((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(1));
+};
+
 const salesReps = [
   { 
     id: 1, 
@@ -145,6 +151,7 @@ const DirectorDashboard = () => {
                     {assessments.month1.map((assessment, index) => (
                       <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
                     ))}
+                    <TableHead>Average</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -156,6 +163,9 @@ const DirectorDashboard = () => {
                           {score || '-'}
                         </TableCell>
                       ))}
+                      <TableCell className={getScoreColor(calculateAverage(rep.month1))}>
+                        {calculateAverage(rep.month1)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -176,6 +186,7 @@ const DirectorDashboard = () => {
                     {assessments.month2.map((assessment, index) => (
                       <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
                     ))}
+                    <TableHead>Average</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -187,6 +198,9 @@ const DirectorDashboard = () => {
                           {score || '-'}
                         </TableCell>
                       ))}
+                      <TableCell className={getScoreColor(calculateAverage(rep.month2))}>
+                        {calculateAverage(rep.month2)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -207,6 +221,7 @@ const DirectorDashboard = () => {
                     {assessments.month3.map((assessment, index) => (
                       <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
                     ))}
+                    <TableHead>Average</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -218,6 +233,9 @@ const DirectorDashboard = () => {
                           {score || '-'}
                         </TableCell>
                       ))}
+                      <TableCell className={getScoreColor(calculateAverage(rep.month3))}>
+                        {calculateAverage(rep.month3)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
