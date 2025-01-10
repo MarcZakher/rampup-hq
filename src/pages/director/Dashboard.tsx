@@ -1,10 +1,10 @@
 import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
+import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useEffect, useState } from 'react';
 
-// Sample data structure based on the image
 const assessments = {
   month1: [
     { name: 'Discovery meeting roleplay pitch', shortName: 'Discovery' },
@@ -99,47 +99,31 @@ const DirectorDashboard = () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Sales Reps</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalReps}</div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Total Sales Reps"
+            value={totalReps}
+            icon={<Users className="h-4 w-4 text-muted-foreground" />}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{avgScore}/5</div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Average Score"
+            value={`${avgScore}/5`}
+            icon={<Target className="h-4 w-4 text-muted-foreground" />}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Performing Well</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{performingWell}</div>
-              <p className="text-xs text-muted-foreground">Score above 3/5</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Performing Well"
+            value={performingWell}
+            description="Score above 3/5"
+            icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Top Ramping Rep</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold truncate">{topRampingRep.name}</div>
-              <p className="text-xs text-muted-foreground">Score: {topRampingRep.score}/5</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Top Ramping Rep"
+            value={topRampingRep.name}
+            description={`Score: ${topRampingRep.score}/5`}
+            icon={<Trophy className="h-4 w-4 text-muted-foreground" />}
+          />
         </div>
 
         <div className="space-y-6">
