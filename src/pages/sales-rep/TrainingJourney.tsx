@@ -176,12 +176,57 @@ const trainingModules: Record<string, TrainingModule[]> = {
   month3: [
     {
       id: 1,
-      title: "Advanced Solution Design",
-      description: "Deep dive into complex solution architectures",
+      title: "Champion Building & Analysis",
+      description: "Champion Analysis on first Scope+ created (with RD) to develop a documented Champion Plan which will evolve through deal.",
       progress: 0,
       status: "not-started",
-      duration: "5 hours",
-      platform: "Technical Training"
+      duration: "1 week",
+      platform: "Champion Plan"
+    },
+    {
+      id: 2,
+      title: "MEDDPICC Workshop",
+      description: "Be comfortable using MEDDPICC to qualify an opportunity and drive activity to progress effectively. Build a Deal Deck off the back of first NBM.",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "RD & Enablement"
+    },
+    {
+      id: 3,
+      title: "Pipeline Generation Planning",
+      description: "Create, review with your RD, and launch 2 new Spokes each week from your Schedule. Consistency of new PG ideas at the front end of PG planning.",
+      progress: 0,
+      status: "not-started",
+      duration: "2 weeks",
+      platform: "4-4-2"
+    },
+    {
+      id: 4,
+      title: "Technical Feasibility Workshop",
+      description: "Prepare for a TFW with your Solution Architect, review with your RD, and execute your first TFW in Month 3.",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "TFW with buddy"
+    },
+    {
+      id: 5,
+      title: "Value Opportunity Planning",
+      description: "Analyse opportunities and ongoing pursuits to drive incremental activity. Achieve cadence of 4 meetings realized per week.",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "VO Plan & 4-4-2"
+    },
+    {
+      id: 6,
+      title: "Forecasting Workshop",
+      description: "Learn how to forecast, understand expectations, and use our forecasting tools effectively.",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "RD led"
     }
   ],
   month4: [
