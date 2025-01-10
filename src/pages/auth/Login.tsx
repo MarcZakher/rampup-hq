@@ -25,16 +25,20 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Redirect if already logged in
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: roleData } = await supabase
+      if (session?.user) {
+        const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', session.user.id)
           .single();
+
+        if (roleError) {
+          console.error('Error fetching user role:', roleError);
+          return;
+        }
 
         if (roleData) {
           switch (roleData.role) {
@@ -124,13 +128,45 @@ export default function Login() {
             }
           },
         });
+        
         if (error) throw error;
+        
         toast({
           title: "Success",
           description: "Please check your email to verify your account",
         });
       } else {
-        await signIn(email, password);
+        const { error } = await signIn(email, password);
+        if (error) throw error;
+        
+        // Fetch user role after successful sign in
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        if (roleError) {
+          console.error('Error fetching user role:', roleError);
+          throw roleError;
+        }
+
+        if (roleData) {
+          switch (roleData.role) {
+            case 'sales_rep':
+              navigate('/sales-rep/dashboard');
+              break;
+            case 'manager':
+              navigate('/manager/dashboard');
+              break;
+            case 'director':
+              navigate('/director/dashboard');
+              break;
+            default:
+              navigate('/');
+          }
+        }
+
         toast({
           title: "Success",
           description: "Successfully signed in",
