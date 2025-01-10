@@ -44,20 +44,20 @@ serve(async (req) => {
     console.log('Authenticated user:', user.id)
 
     // Check if requester is a manager
-    const { data: userRoles, error: roleError } = await supabaseClient
+    const { data: userRole, error: roleError } = await supabaseClient
       .from('user_roles')
-      .select('*')
+      .select('role')
       .eq('user_id', user.id)
+      .single()
 
     if (roleError) {
       console.error('Error checking manager role:', roleError)
       throw roleError
     }
 
-    console.log('User roles:', userRoles)
+    console.log('User role:', userRole)
 
-    const isManager = userRoles?.some(role => role.role === 'manager')
-    if (!isManager) {
+    if (userRole.role !== 'manager') {
       throw new Error('Unauthorized - only managers can delete sales representatives')
     }
 
@@ -70,7 +70,7 @@ serve(async (req) => {
       .eq('manager_id', user.id)
       .single()
 
-    if (salesRepError) {
+    if (salesRepError || !salesRepRole) {
       console.error('Error checking sales rep:', salesRepError)
       throw new Error('Unauthorized - you can only delete your own sales representatives')
     }
