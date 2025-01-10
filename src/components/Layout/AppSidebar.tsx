@@ -14,7 +14,7 @@ const menuItems = [
   { title: 'Dashboard', icon: Home, url: '/' },
   { title: 'Sales Reps', icon: Users, url: '/sales-reps' },
   { title: 'Assessments', icon: ClipboardList, url: '/assessments' },
-  { title: 'Analytics', icon: LineChart, url: '/analytics' },
+  { title: 'Performance Analytics', icon: LineChart, url: '/analytics' },
   { title: 'Settings', icon: Settings, url: '/settings' },
 ];
 
