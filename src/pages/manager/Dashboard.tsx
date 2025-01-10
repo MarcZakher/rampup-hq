@@ -9,8 +9,6 @@ import { AssessmentTable } from '@/components/manager/AssessmentTable';
 import { assessments } from '@/constants/assessments';
 import { SalesRep } from '@/types/manager';
 
-const STORAGE_KEY = 'manager_dashboard_sales_reps';
-
 const ManagerDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const { toast } = useToast();
@@ -20,13 +18,15 @@ const ManagerDashboard = () => {
     if (!user) return;
 
     try {
-      const { data: userRoles, error } = await supabase
+      // First, get all sales reps managed by this manager from user_roles table
+      const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, role')
+        .select('user_id, created_at')
         .eq('manager_id', user.id)
         .eq('role', 'sales_rep');
 
-      if (error) {
+      if (rolesError) {
+        console.error('Error fetching user roles:', rolesError);
         toast({
           title: "Error",
           description: "Failed to load sales representatives",
@@ -35,17 +35,40 @@ const ManagerDashboard = () => {
         return;
       }
 
-      // Get the saved assessment data for each sales rep
-      const savedReps = localStorage.getItem(STORAGE_KEY);
-      const allSavedReps = savedReps ? JSON.parse(savedReps) : [];
+      if (!userRoles?.length) {
+        setSalesReps([]);
+        return;
+      }
 
-      // Filter to only show reps managed by this manager
-      const managedReps = allSavedReps.filter((rep: SalesRep) => 
-        userRoles.some(role => role.user_id === rep.id.toString())
-      );
+      // Get user details from auth.users
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error('Error fetching auth users:', authError);
+        return;
+      }
 
-      setSalesReps(managedReps);
+      // Get stored assessment data
+      const savedReps = localStorage.getItem('manager_dashboard_sales_reps');
+      const savedAssessments = savedReps ? JSON.parse(savedReps) : {};
+
+      // Combine the data
+      const mappedReps = userRoles.map((role) => {
+        const authUser = authUsers.users.find(u => u.id === role.user_id);
+        const savedData = savedAssessments[role.user_id] || {};
+        
+        return {
+          id: role.user_id,
+          name: authUser?.user_metadata?.name || 'Unknown',
+          month1: savedData.month1 || new Array(5).fill(0),
+          month2: savedData.month2 || new Array(6).fill(0),
+          month3: savedData.month3 || new Array(6).fill(0),
+        };
+      });
+
+      setSalesReps(mappedReps);
     } catch (error: any) {
+      console.error('Error in loadSalesReps:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to load sales representatives",
@@ -58,20 +81,27 @@ const ManagerDashboard = () => {
     loadSalesReps();
   }, [user]);
 
-  const handleSalesRepAdded = (newRep: SalesRep) => {
-    // Update local storage with the new rep
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    const allSavedReps = savedReps ? JSON.parse(savedReps) : [];
-    const updatedReps = [...allSavedReps, newRep];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedReps));
+  const handleSalesRepAdded = async (newRep: SalesRep) => {
+    // Update local storage
+    const savedReps = localStorage.getItem('manager_dashboard_sales_reps') || '{}';
+    const allSavedReps = JSON.parse(savedReps);
+    allSavedReps[newRep.id] = {
+      month1: newRep.month1,
+      month2: newRep.month2,
+      month3: newRep.month3,
+    };
+    localStorage.setItem('manager_dashboard_sales_reps', JSON.stringify(allSavedReps));
 
-    // Update the state to show the new rep
-    setSalesReps(prevReps => [...prevReps, newRep]);
+    // Refresh the sales reps list
+    await loadSalesReps();
   };
 
   const removeSalesRep = async (id: number) => {
     try {
-      const { error } = await supabase.auth.admin.deleteUser(id.toString());
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', id);
 
       if (error) {
         toast({
@@ -83,10 +113,10 @@ const ManagerDashboard = () => {
       }
 
       // Remove from local storage
-      const savedReps = localStorage.getItem(STORAGE_KEY);
-      const allSavedReps = savedReps ? JSON.parse(savedReps) : [];
-      const updatedReps = allSavedReps.filter((rep: SalesRep) => rep.id !== id);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedReps));
+      const savedReps = localStorage.getItem('manager_dashboard_sales_reps') || '{}';
+      const allSavedReps = JSON.parse(savedReps);
+      delete allSavedReps[id];
+      localStorage.setItem('manager_dashboard_sales_reps', JSON.stringify(allSavedReps));
 
       // Update state
       setSalesReps(prevReps => prevReps.filter(rep => rep.id !== id));
@@ -126,13 +156,16 @@ const ManagerDashboard = () => {
       });
 
       // Update local storage
-      const savedReps = localStorage.getItem(STORAGE_KEY);
-      const allSavedReps = savedReps ? JSON.parse(savedReps) : [];
-      const updatedAllReps = allSavedReps.map((rep: SalesRep) => {
-        const updatedRep = updatedReps.find(r => r.id === rep.id);
-        return updatedRep || rep;
+      const savedReps = localStorage.getItem('manager_dashboard_sales_reps') || '{}';
+      const allSavedReps = JSON.parse(savedReps);
+      updatedReps.forEach(rep => {
+        allSavedReps[rep.id] = {
+          month1: rep.month1,
+          month2: rep.month2,
+          month3: rep.month3,
+        };
       });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedAllReps));
+      localStorage.setItem('manager_dashboard_sales_reps', JSON.stringify(allSavedReps));
 
       return updatedReps;
     });
