@@ -18,14 +18,21 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
 
   const generateUniqueEmail = (name: string) => {
     const timestamp = Date.now();
-    const sanitizedName = name.toLowerCase().replace(/\s+/g, '.');
-    return `${sanitizedName}.${timestamp}@example.com`;
+    // Sanitize the name: remove special characters and convert to lowercase
+    const sanitizedName = name.toLowerCase()
+      .replace(/[^a-z0-9]/g, '.') // Replace special chars with dots
+      .replace(/\.+/g, '.') // Replace multiple dots with single dot
+      .replace(/^\.+|\.+$/g, ''); // Remove leading/trailing dots
+    
+    return `${sanitizedName}.${timestamp}@salesrep.example.com`;
   };
 
   const getErrorMessage = (error: AuthError) => {
     switch (error.message) {
       case 'User already registered':
         return 'A user with this email already exists. Please try again.';
+      case 'Unable to validate email address: invalid format':
+        return 'Invalid email format generated. Please try a different name.';
       default:
         return error.message;
     }
