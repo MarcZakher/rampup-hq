@@ -10,3 +10,9 @@ export const getSalesReps = () => {
     }
   ];
 };
+
+export const calculateAverage = (scores: number[]): number => {
+  const validScores = scores.filter(score => score > 0);
+  if (validScores.length === 0) return 0;
+  return validScores.reduce((a, b) => a + b, 0) / validScores.length;
+};
