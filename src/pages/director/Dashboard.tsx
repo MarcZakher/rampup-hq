@@ -1,9 +1,8 @@
-import { Users, TrendingUp, Target, Trophy, UserPlus } from 'lucide-react';
+import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 
 const assessments = {
@@ -94,15 +93,9 @@ const DirectorDashboard = () => {
   return (
     <CustomAppLayout>
       <div className="space-y-6 p-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Director Dashboard</h1>
-            <p className="text-muted-foreground">Sales Team Assessment Scores</p>
-          </div>
-          <Button className="gap-2" onClick={() => console.log('Add Sales Representative clicked')}>
-            <UserPlus className="h-4 w-4" />
-            Add Sales Representative
-          </Button>
+        <div>
+          <h1 className="text-3xl font-bold">Director Dashboard</h1>
+          <p className="text-muted-foreground">Sales Team Assessment Scores</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
