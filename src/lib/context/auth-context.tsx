@@ -50,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
+          console.log('User role:', roleData);
           if (roleData) {
             switch (roleData.role) {
               case 'sales_rep':
@@ -73,8 +74,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             variant: "destructive",
           });
         }
-      } else if (event === 'SIGNED_OUT') {
-        navigate('/login');
       }
     });
 
@@ -98,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      navigate('/login');
     } catch (error: any) {
       console.error('Sign out error:', error);
       throw error;

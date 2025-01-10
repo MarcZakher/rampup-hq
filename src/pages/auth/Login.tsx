@@ -27,9 +27,34 @@ export default function Login() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
-      navigate('/');
-    }
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (roleData) {
+          switch (roleData.role) {
+            case 'sales_rep':
+              navigate('/sales-rep/dashboard');
+              break;
+            case 'manager':
+              navigate('/manager/dashboard');
+              break;
+            case 'director':
+              navigate('/director/dashboard');
+              break;
+            default:
+              navigate('/');
+          }
+        }
+      }
+    };
+
+    checkSession();
   }, [user, navigate]);
 
   const validateEmail = (email: string) => {
@@ -106,6 +131,10 @@ export default function Login() {
         });
       } else {
         await signIn(email, password);
+        toast({
+          title: "Success",
+          description: "Successfully signed in",
+        });
       }
     } catch (error: any) {
       console.error('Auth error:', error);
