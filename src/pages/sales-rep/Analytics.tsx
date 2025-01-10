@@ -30,7 +30,7 @@ export default function SalesRepAnalytics() {
       
       // Get the logged-in sales rep's data
       const salesReps = await getSalesReps(user.id);
-      const currentRep = salesReps.find(rep => rep.id === user.id);
+      const currentRep = salesReps.find(rep => rep.id.toString() === user.id);
 
       if (currentRep) {
         // Calculate completion percentages based on non-zero scores
