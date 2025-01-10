@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../supabase';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
@@ -14,6 +15,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check active sessions and sets the user
@@ -23,8 +25,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Listen for changes on auth state (signed in, signed out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -39,8 +42,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      // First clear the local session
+      await supabase.auth.clearSession();
+      // Then sign out
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Sign out error:', error);
+        // If we get a session_not_found error, we can ignore it since we've already cleared the session
+        if (error.message !== 'Session not found') {
+          throw error;
+        }
+      }
+      setUser(null);
+    } catch (error: any) {
+      console.error('Error in signOut:', error);
+      throw error;
+    }
   };
 
   return (
