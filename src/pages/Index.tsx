@@ -10,7 +10,7 @@ export default function Index() {
       <div className="max-w-3xl w-full px-6">
         <div className="text-center space-y-6 mb-12">
           <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">
-            RampUp
+            RampUP
           </h1>
           <p className="text-lg text-gray-600 max-w-xl mx-auto">
             Streamline your onboarding process and empower your team with our comprehensive management platform

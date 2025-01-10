@@ -23,7 +23,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarContent>
         <div className="p-6">
-          <h1 className="text-2xl font-bold text-primary">RampUp</h1>
+          <h1 className="text-2xl font-bold text-primary">RampUP</h1>
         </div>
         <SidebarGroup>
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
