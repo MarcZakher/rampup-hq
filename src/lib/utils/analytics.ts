@@ -12,18 +12,23 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
     let salesRepsData;
 
     if (userRole === 'director') {
-      // First get all sales rep roles
-      const { data: salesRepRoles, error: salesRepsError } = await supabase
+      // For directors, first get all users with sales_rep role
+      const { data: salesRepRoles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, manager_id')
+        .select('user_id')
         .eq('role', 'sales_rep');
 
-      if (salesRepsError) {
-        console.error('Error fetching sales rep roles:', salesRepsError);
+      if (rolesError) {
+        console.error('Error fetching sales rep roles:', rolesError);
         return [];
       }
 
-      // Then get their profiles
+      if (!salesRepRoles?.length) {
+        console.log('No sales reps found');
+        return [];
+      }
+
+      // Get profiles for all sales reps
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email')
@@ -34,16 +39,39 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
         return [];
       }
 
-      // Combine the data
-      salesRepsData = salesRepRoles.map(role => {
-        const profile = profiles.find(p => p.id === role.user_id);
-        return {
-          user_id: role.user_id,
-          manager_id: role.manager_id,
-          profiles: {
-            full_name: profile?.full_name,
-            email: profile?.email
+      // Get all assessment scores for these sales reps
+      const { data: scores, error: scoresError } = await supabase
+        .from('assessment_scores')
+        .select('*')
+        .in('sales_rep_id', salesRepRoles.map(rep => rep.user_id));
+
+      if (scoresError) {
+        console.error('Error fetching scores:', scoresError);
+        return [];
+      }
+
+      // Map the data to the expected format
+      return profiles.map(profile => {
+        const repScores = {
+          month1: new Array(5).fill(0),
+          month2: new Array(6).fill(0),
+          month3: new Array(6).fill(0),
+        };
+
+        // Fill in the scores for this rep
+        scores?.forEach(score => {
+          if (score.sales_rep_id === profile.id) {
+            const month = score.month as keyof typeof repScores;
+            if (repScores[month] && score.assessment_index < repScores[month].length) {
+              repScores[month][score.assessment_index] = Number(score.score) || 0;
+            }
           }
+        });
+
+        return {
+          id: profile.id,
+          name: profile.full_name || profile.email || 'Unknown',
+          ...repScores
         };
       });
 
