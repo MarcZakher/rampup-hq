@@ -23,6 +23,7 @@ interface AssessmentScore {
 export default function SalesRepAnalytics() {
   const [monthlyProgress, setMonthlyProgress] = useState<MonthProgress[]>([]);
   const [assessmentScores, setAssessmentScores] = useState<AssessmentScore[]>([]);
+  const [assessmentsToRetake, setAssessmentsToRetake] = useState<AssessmentScore[]>([]);
 
   useEffect(() => {
     // Get the logged-in sales rep's data
@@ -62,6 +63,10 @@ export default function SalesRepAnalytics() {
       ].filter(score => score.score > 0); // Only show completed assessments
 
       setAssessmentScores(scores);
+
+      // Filter assessments that need to be retaken (score < 3)
+      const retakeAssessments = scores.filter(score => score.score < 3);
+      setAssessmentsToRetake(retakeAssessments);
     }
   }, []);
 
@@ -109,6 +114,36 @@ export default function SalesRepAnalytics() {
               </Table>
             </CardContent>
           </Card>
+
+          {assessmentsToRetake.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Assessments to Retake</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Month</TableHead>
+                      <TableHead>Assessment</TableHead>
+                      <TableHead>Current Score</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assessmentsToRetake.map((assessment, index) => (
+                      <TableRow key={index}>
+                        <TableCell>Month {assessment.month}</TableCell>
+                        <TableCell>{assessment.name}</TableCell>
+                        <TableCell className="text-red-600">
+                          {assessment.score.toFixed(1)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </CustomAppLayout>
