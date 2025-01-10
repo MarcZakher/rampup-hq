@@ -1,6 +1,6 @@
 import { AreaOfFocus } from '../types/analytics';
-import { getSalesReps, calculateAverage } from '../utils/analytics';
-import { ASSESSMENTS } from '../constants/assessments';
+import { getSalesReps } from '../utils/analytics';
+import { assessments } from '@/constants/assessments';
 import { useAuth } from '@/lib/context/auth-context';
 import { useQuery } from '@tanstack/react-query';
 
@@ -15,9 +15,12 @@ export const useAreasOfFocus = () => {
       const salesReps = await getSalesReps(user.id);
 
       const concerningReps = salesReps.map(rep => {
-        const month1Avg = calculateAverage(rep.month1);
-        const month2Avg = calculateAverage(rep.month2);
-        const month3Avg = calculateAverage(rep.month3);
+        const month1Avg = rep.month1.reduce((sum, score) => sum + (score > 0 ? score : 0), 0) / 
+          rep.month1.filter(score => score > 0).length || 0;
+        const month2Avg = rep.month2.reduce((sum, score) => sum + (score > 0 ? score : 0), 0) / 
+          rep.month2.filter(score => score > 0).length || 0;
+        const month3Avg = rep.month3.reduce((sum, score) => sum + (score > 0 ? score : 0), 0) / 
+          rep.month3.filter(score => score > 0).length || 0;
 
         const hasConsecutiveLowScores = 
           (month1Avg < 3 && month2Avg < 3) || 
@@ -30,7 +33,7 @@ export const useAreasOfFocus = () => {
         rep.month1.forEach((score, index) => {
           if (score > 0 && score < 3) {
             lowScoreAreas.push({
-              assessment: ASSESSMENTS.month1[index],
+              assessment: assessments.month1[index].name,
               score,
               month: 'Month 1'
             });
@@ -40,7 +43,7 @@ export const useAreasOfFocus = () => {
         rep.month2.forEach((score, index) => {
           if (score > 0 && score < 3) {
             lowScoreAreas.push({
-              assessment: ASSESSMENTS.month2[index],
+              assessment: assessments.month2[index].name,
               score,
               month: 'Month 2'
             });
@@ -50,7 +53,7 @@ export const useAreasOfFocus = () => {
         rep.month3.forEach((score, index) => {
           if (score > 0 && score < 3) {
             lowScoreAreas.push({
-              assessment: ASSESSMENTS.month3[index],
+              assessment: assessments.month3[index].name,
               score,
               month: 'Month 3'
             });
@@ -67,20 +70,21 @@ export const useAreasOfFocus = () => {
         };
       }).filter(Boolean);
 
-      const assessmentPatterns = concerningReps.flatMap(rep => rep?.areas || [])
-        .reduce((acc: { [key: string]: number }, curr) => {
-          acc[curr.assessment] = (acc[curr.assessment] || 0) + 1;
-          return acc;
-        }, {});
+      const assessmentPatterns: { [key: string]: number } = {};
+      concerningReps.forEach(rep => {
+        rep?.areas.forEach(area => {
+          assessmentPatterns[area.assessment] = (assessmentPatterns[area.assessment] || 0) + 1;
+        });
+      });
 
       return {
         repsNeedingAttention: concerningReps,
         commonChallenges: Object.entries(assessmentPatterns)
-          .sort(([, a], [, b]) => b - a)
           .map(([assessment, count]) => ({
             assessment,
             count
           }))
+          .sort((a, b) => b.count - a.count)
       };
     },
     enabled: !!user?.id

@@ -1,45 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card } from "@/components/ui/card";
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
-import {
-  getMonthlyScores,
-  getAssessmentData,
-  getRepPerformance,
-  getScoreDistribution,
-  getTeamProgress,
-  getAreasOfFocus
-} from '@/lib/mockAnalyticsData';
+import { useMonthlyScores } from '@/lib/analytics/monthlyScores';
+import { useAssessmentData } from '@/lib/analytics/assessmentData';
+import { useRepPerformance } from '@/lib/analytics/repPerformance';
+import { useScoreDistribution } from '@/lib/analytics/scoreDistribution';
+import { useAreasOfFocus } from '@/lib/analytics/areasOfFocus';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Users, TrendingUp, Target, Trophy, AlertTriangle } from 'lucide-react';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 const AnalyticsPage = () => {
-  const [monthlyScores, setMonthlyScores] = useState([]);
-  const [assessmentData, setAssessmentData] = useState([]);
-  const [repPerformance, setRepPerformance] = useState([]);
-  const [scoreDistribution, setScoreDistribution] = useState([]);
-  const [teamProgress, setTeamProgress] = useState({ meetingTarget: 0, completionRate: 0, averageImprovement: 0 });
-  const [areasOfFocus, setAreasOfFocus] = useState({ repsNeedingAttention: [], commonChallenges: [] });
+  const { data: monthlyScores = [] } = useMonthlyScores();
+  const { data: assessmentData = [] } = useAssessmentData();
+  const { data: repPerformance = [] } = useRepPerformance();
+  const { data: scoreDistribution = [] } = useScoreDistribution();
+  const { data: areasOfFocus = { repsNeedingAttention: [], commonChallenges: [] } } = useAreasOfFocus();
 
-  useEffect(() => {
-    const updateData = () => {
-      setMonthlyScores(getMonthlyScores());
-      setAssessmentData(getAssessmentData());
-      setRepPerformance(getRepPerformance());
-      setScoreDistribution(getScoreDistribution());
-      setTeamProgress(getTeamProgress());
-      setAreasOfFocus(getAreasOfFocus());
-    };
+  const latestMonthScore = monthlyScores[monthlyScores.length - 1]?.avgScore || '0';
+  const improvement = monthlyScores.length >= 2 ? 
+    Number(monthlyScores[monthlyScores.length - 1]?.avgScore) - Number(monthlyScores[monthlyScores.length - 2]?.avgScore) : 0;
 
-    updateData();
-    window.addEventListener('storage', updateData);
-    return () => window.removeEventListener('storage', updateData);
-  }, []);
+  const meetingTarget = repPerformance.filter(rep => rep.overallScore >= 3).length / (repPerformance.length || 1) * 100;
+  const completionRate = assessmentData.filter(a => a.successRate > 0).length / (assessmentData.length || 1) * 100;
+  const topPerformer = repPerformance.length > 0 ? 
+    repPerformance.reduce((prev, current) => (current.overallScore > prev.overallScore) ? current : prev) : 
+    { name: 'N/A', overallScore: 0 };
 
   return (
     <CustomAppLayout>
