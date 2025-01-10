@@ -4,12 +4,14 @@ import { useAuth } from '@/lib/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -18,16 +20,29 @@ export default function Login() {
     e.preventDefault();
     try {
       setLoading(true);
-      await signIn(email, password);
-      navigate('/director/dashboard');
-      toast({
-        title: "Success",
-        description: "You have successfully logged in",
-      });
-    } catch (error) {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Please check your email to verify your account",
+        });
+      } else {
+        await signIn(email, password);
+        navigate('/director/dashboard');
+        toast({
+          title: "Success",
+          description: "You have successfully logged in",
+        });
+      }
+    } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
         title: "Error",
-        description: "Invalid email or password",
+        description: error.message || "Authentication failed",
         variant: "destructive",
       });
     } finally {
@@ -40,7 +55,9 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center text-2xl font-bold">RampUP</CardTitle>
-          <CardDescription className="text-center">Sign in to your account</CardDescription>
+          <CardDescription className="text-center">
+            {isSignUp ? "Create a new account" : "Sign in to your account"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -70,11 +87,22 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1"
                 placeholder="Enter your password"
+                minLength={6}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign in'}
-            </Button>
+            <div className="space-y-4">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Processing...' : (isSignUp ? 'Sign up' : 'Sign in')}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setIsSignUp(!isSignUp)}
+              >
+                {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
