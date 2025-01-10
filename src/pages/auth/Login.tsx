@@ -21,7 +21,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [role, setRole] = useState<string>('');
-  const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -51,29 +50,34 @@ export default function Login() {
   };
 
   const handleRedirect = async (userId: string) => {
-    const { data: roleData, error: roleError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
+    try {
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .single();
 
-    if (roleError) {
-      console.error('Error fetching user role:', roleError);
-      return;
-    }
+      if (roleError) {
+        console.error('Error fetching user role:', roleError);
+        return;
+      }
 
-    switch (roleData?.role) {
-      case 'sales_rep':
-        navigate('/sales-rep/dashboard');
-        break;
-      case 'manager':
-        navigate('/manager/dashboard');
-        break;
-      case 'director':
-        navigate('/director/dashboard');
-        break;
-      default:
-        navigate('/');
+      switch (roleData?.role) {
+        case 'sales_rep':
+          navigate('/sales-rep/dashboard');
+          break;
+        case 'manager':
+          navigate('/manager/dashboard');
+          break;
+        case 'director':
+          navigate('/director/dashboard');
+          break;
+        default:
+          navigate('/');
+      }
+    } catch (error) {
+      console.error('Error during redirect:', error);
+      navigate('/');
     }
   };
 
@@ -114,7 +118,6 @@ export default function Login() {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
             data: {
               role: role
             }
