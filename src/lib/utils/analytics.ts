@@ -10,7 +10,7 @@ export const calculateAverage = (scores: number[]): number => {
 export const getSalesReps = async (userId: string, userRole?: string): Promise<SalesRep[]> => {
   try {
     if (userRole === 'director') {
-      // For directors, get all sales reps
+      // For directors, get all sales reps roles
       const { data: salesRepRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -26,10 +26,10 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
         return [];
       }
 
-      // Get profiles in a separate query
+      // Get all sales rep profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('*')
         .in('id', salesRepRoles.map(rep => rep.user_id));
 
       if (profilesError) {
@@ -37,7 +37,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
         return [];
       }
 
-      // Get assessment scores
+      // Get all assessment scores
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
@@ -91,7 +91,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
       // Get profiles in a separate query
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('*')
         .in('id', salesReps.map(rep => rep.user_id));
 
       if (profilesError) {
