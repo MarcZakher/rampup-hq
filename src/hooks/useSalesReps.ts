@@ -13,6 +13,9 @@ export const useSalesReps = () => {
     if (!user) return;
 
     try {
+      console.log('Loading sales reps for manager:', user.id);
+      
+      // First, get all sales reps managed by this user
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -20,42 +23,43 @@ export const useSalesReps = () => {
         .eq('role', 'sales_rep');
 
       if (rolesError) {
-        console.error('Error fetching sales reps:', rolesError);
-        toast({
-          title: "Error",
-          description: "Failed to load sales representatives",
-          variant: "destructive"
-        });
-        return;
+        console.error('Error fetching sales rep roles:', rolesError);
+        throw rolesError;
       }
 
       if (!userRoles?.length) {
+        console.log('No sales reps found for manager:', user.id);
         setSalesReps([]);
         return;
       }
 
+      const salesRepIds = userRoles.map(role => role.user_id);
+      console.log('Found sales rep IDs:', salesRepIds);
+
+      // Then get the profiles for these sales reps
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name')
-        .in('id', userRoles.map(role => role.user_id));
+        .in('id', salesRepIds);
 
       if (profilesError) {
-        console.error('Error fetching user profiles:', profilesError);
-        return;
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
       }
 
-      // Fetch all assessment scores for the sales reps
+      // Finally get all assessment scores for these sales reps
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
         .eq('manager_id', user.id)
-        .in('sales_rep_id', userRoles.map(role => role.user_id));
+        .in('sales_rep_id', salesRepIds);
 
       if (scoresError) {
-        console.error('Error fetching assessment scores:', scoresError);
-        return;
+        console.error('Error fetching scores:', scoresError);
+        throw scoresError;
       }
 
+      // Map the data to our expected format
       const mappedReps = profiles?.map(profile => {
         const repScores = scores?.filter(score => score.sales_rep_id === profile.id) || [];
         
@@ -64,7 +68,7 @@ export const useSalesReps = () => {
           repScores
             .filter(score => score.month === month)
             .forEach(score => {
-              monthScores[score.assessment_index] = score.score;
+              monthScores[score.assessment_index] = Number(score.score);
             });
           return monthScores;
         };
@@ -78,7 +82,9 @@ export const useSalesReps = () => {
         };
       }) || [];
 
+      console.log('Mapped sales reps:', mappedReps);
       setSalesReps(mappedReps);
+
     } catch (error: any) {
       console.error('Error in loadSalesReps:', error);
       toast({
@@ -100,13 +106,8 @@ export const useSalesReps = () => {
       });
 
       if (deleteError) {
-        console.error('Error deleting user:', deleteError);
-        toast({
-          title: "Error",
-          description: "Failed to remove sales representative",
-          variant: "destructive"
-        });
-        return;
+        console.error('Error deleting sales rep:', deleteError);
+        throw deleteError;
       }
 
       setSalesReps(prevReps => prevReps.filter(rep => rep.id !== id));
@@ -126,7 +127,10 @@ export const useSalesReps = () => {
   };
 
   useEffect(() => {
-    loadSalesReps();
+    if (user) {
+      console.log('User changed, reloading sales reps');
+      loadSalesReps();
+    }
   }, [user]);
 
   return {
