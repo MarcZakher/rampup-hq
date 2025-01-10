@@ -1,5 +1,5 @@
 export interface SalesRep {
-  id: string;
+  id: number;
   name: string;
   month1: number[];
   month2: number[];
