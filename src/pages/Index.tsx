@@ -1,6 +1,7 @@
 import { Users, Target, Award, TrendingUp } from 'lucide-react';
 import { AppLayout } from '@/components/Layout/AppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Index = () => {
   return (
