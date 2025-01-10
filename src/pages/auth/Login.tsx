@@ -24,13 +24,17 @@ export default function Login() {
 
   const getErrorMessage = (error: AuthError) => {
     if (error instanceof AuthApiError) {
-      switch (error.message) {
-        case 'Email address "test@gmail.com" is invalid':
+      switch (error.code) {
+        case 'email_not_confirmed':
+          return 'Please check your email and click the confirmation link to verify your account before signing in.';
+        case 'invalid_credentials':
+          return 'Invalid email or password. Please check your credentials and try again.';
+        case 'user_not_found':
+          return 'No user found with these credentials.';
+        case 'email_address_invalid':
           return 'Please enter a valid email address';
-        case 'User already registered':
+        case 'user_already_registered':
           return 'An account with this email already exists';
-        case 'Invalid login credentials':
-          return 'Invalid email or password';
         default:
           return error.message;
       }
