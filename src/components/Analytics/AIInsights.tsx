@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { pipeline } from '@huggingface/transformers';
+import { pipeline, TextClassificationOutput } from '@huggingface/transformers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Brain } from 'lucide-react';
@@ -48,7 +48,10 @@ export function AIInsights() {
       const insightText = generateInsightsText(dataForAnalysis);
       
       // Analyze the sentiment/emotion of the insights
-      const emotions = await classifier(insightText);
+      const emotions = await classifier(insightText) as TextClassificationOutput[];
+      const emotionLabel = Array.isArray(emotions) && emotions.length > 0 
+        ? emotions[0].label || 'neutral'
+        : 'neutral';
       
       // Combine everything into a comprehensive analysis
       const finalInsight = `
@@ -62,7 +65,7 @@ Key Observations:
 - Top performer: ${findTopPerformer(dataForAnalysis)}
 - Most improved: ${findMostImproved(salesReps)}
 
-AI Sentiment Analysis: This report indicates a ${emotions[0].label} outlook for the team's performance.
+AI Sentiment Analysis: This report indicates a ${emotionLabel} outlook for the team's performance.
       `.trim();
 
       setInsights(finalInsight);
