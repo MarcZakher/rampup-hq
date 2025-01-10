@@ -13,9 +13,6 @@ export const useSalesReps = () => {
     if (!user) return;
 
     try {
-      console.log('Loading sales reps for manager:', user.id);
-      
-      // First, get all sales reps managed by this user
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -23,68 +20,45 @@ export const useSalesReps = () => {
         .eq('role', 'sales_rep');
 
       if (rolesError) {
-        console.error('Error fetching sales rep roles:', rolesError);
-        throw rolesError;
+        console.error('Error fetching sales reps:', rolesError);
+        toast({
+          title: "Error",
+          description: "Failed to load sales representatives",
+          variant: "destructive"
+        });
+        return;
       }
 
       if (!userRoles?.length) {
-        console.log('No sales reps found for manager:', user.id);
         setSalesReps([]);
         return;
       }
 
-      const salesRepIds = userRoles.map(role => role.user_id);
-      console.log('Found sales rep IDs:', salesRepIds);
+      const savedReps = localStorage.getItem('manager_dashboard_sales_reps');
+      const savedAssessments = savedReps ? JSON.parse(savedReps) : {};
 
-      // Then get the profiles for these sales reps
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name')
-        .in('id', salesRepIds);
+        .in('id', userRoles.map(role => role.user_id));
 
       if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        throw profilesError;
+        console.error('Error fetching user profiles:', profilesError);
+        return;
       }
 
-      // Finally get all assessment scores for these sales reps
-      const { data: scores, error: scoresError } = await supabase
-        .from('assessment_scores')
-        .select('*')
-        .eq('manager_id', user.id)
-        .in('sales_rep_id', salesRepIds);
-
-      if (scoresError) {
-        console.error('Error fetching scores:', scoresError);
-        throw scoresError;
-      }
-
-      // Map the data to our expected format
       const mappedReps = profiles?.map(profile => {
-        const repScores = scores?.filter(score => score.sales_rep_id === profile.id) || [];
-        
-        const getMonthScores = (month: string, length: number) => {
-          const monthScores = new Array(length).fill(0);
-          repScores
-            .filter(score => score.month === month)
-            .forEach(score => {
-              monthScores[score.assessment_index] = Number(score.score);
-            });
-          return monthScores;
-        };
-
+        const savedData = savedAssessments[profile.id] || {};
         return {
           id: profile.id,
           name: profile.full_name || 'Unknown',
-          month1: getMonthScores('month1', 5),
-          month2: getMonthScores('month2', 6),
-          month3: getMonthScores('month3', 6),
+          month1: savedData.month1 || new Array(5).fill(0),
+          month2: savedData.month2 || new Array(6).fill(0),
+          month3: savedData.month3 || new Array(6).fill(0),
         };
       }) || [];
 
-      console.log('Mapped sales reps:', mappedReps);
       setSalesReps(mappedReps);
-
     } catch (error: any) {
       console.error('Error in loadSalesReps:', error);
       toast({
@@ -101,15 +75,28 @@ export const useSalesReps = () => {
 
   const removeSalesRep = async (id: number) => {
     try {
+      // First delete the user from auth.users using our Edge Function
       const { error: deleteError } = await supabase.functions.invoke('delete-sales-rep', {
         body: { user_id: id }
       });
 
       if (deleteError) {
-        console.error('Error deleting sales rep:', deleteError);
-        throw deleteError;
+        console.error('Error deleting user:', deleteError);
+        toast({
+          title: "Error",
+          description: "Failed to remove sales representative",
+          variant: "destructive"
+        });
+        return;
       }
 
+      // Remove from local storage
+      const savedReps = localStorage.getItem('manager_dashboard_sales_reps') || '{}';
+      const allSavedReps = JSON.parse(savedReps);
+      delete allSavedReps[id];
+      localStorage.setItem('manager_dashboard_sales_reps', JSON.stringify(allSavedReps));
+
+      // Update state
       setSalesReps(prevReps => prevReps.filter(rep => rep.id !== id));
       
       toast({
@@ -127,10 +114,7 @@ export const useSalesReps = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      console.log('User changed, reloading sales reps');
-      loadSalesReps();
-    }
+    loadSalesReps();
   }, [user]);
 
   return {

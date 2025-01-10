@@ -9,39 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      assessment_scores: {
-        Row: {
-          assessment_index: number
-          created_at: string
-          id: string
-          manager_id: string
-          month: string
-          sales_rep_id: string
-          score: number | null
-          updated_at: string
-        }
-        Insert: {
-          assessment_index: number
-          created_at?: string
-          id?: string
-          manager_id: string
-          month: string
-          sales_rep_id: string
-          score?: number | null
-          updated_at?: string
-        }
-        Update: {
-          assessment_index?: number
-          created_at?: string
-          id?: string
-          manager_id?: string
-          month?: string
-          sales_rep_id?: string
-          score?: number | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string

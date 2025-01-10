@@ -4,57 +4,27 @@ import { AssessmentTable } from '@/components/manager/AssessmentTable';
 import { AssessmentControls } from '@/components/manager/AssessmentControls';
 import { assessments } from '@/constants/assessments';
 import { useSalesReps } from '@/hooks/useSalesReps';
-import { useAuth } from '@/lib/context/auth-context';
-import { supabase } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
 
 const ManagerDashboard = () => {
-  const { salesReps, addSalesRep, removeSalesRep, loadSalesReps } = useSalesReps();
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const { salesReps, addSalesRep, removeSalesRep } = useSalesReps();
 
-  const updateScore = async (repId: number, month: string, index: number, value: string) => {
+  const updateScore = (repId: number, month: string, index: number, value: string) => {
     const score = parseFloat(value);
-    if (isNaN(score) || score < 0 || score > 5 || !user) return;
+    if (isNaN(score) || score < 0 || score > 5) return;
 
-    try {
-      const { error } = await supabase
-        .from('assessment_scores')
-        .upsert({
-          sales_rep_id: repId,
-          manager_id: user.id,
-          month,
-          assessment_index: index,
-          score
-        }, {
-          onConflict: 'sales_rep_id,month,assessment_index'
-        });
+    const savedReps = localStorage.getItem('manager_dashboard_sales_reps') || '{}';
+    const allSavedReps = JSON.parse(savedReps);
 
-      if (error) {
-        console.error('Error updating score:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update assessment score",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Reload sales reps to get updated scores
-      loadSalesReps();
-
-      toast({
-        title: "Success",
-        description: "Assessment score updated successfully"
-      });
-    } catch (error: any) {
-      console.error('Error in updateScore:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update assessment score",
-        variant: "destructive"
-      });
+    const updatedRep = salesReps.find(rep => rep.id === repId);
+    if (updatedRep) {
+      allSavedReps[repId] = {
+        ...allSavedReps[repId],
+        [month]: [...updatedRep[month as keyof Pick<typeof updatedRep, 'month1' | 'month2' | 'month3'>]]
+      };
+      allSavedReps[repId][month][index] = score;
     }
+
+    localStorage.setItem('manager_dashboard_sales_reps', JSON.stringify(allSavedReps));
   };
 
   return (

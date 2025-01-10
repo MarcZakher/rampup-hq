@@ -1,4 +1,4 @@
-import { Bell, LogOut } from 'lucide-react';
+import { Bell, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/context/auth-context';
 import { useNavigate } from 'react-router-dom';
@@ -9,26 +9,18 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function TopNav() {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [userProfile, setUserProfile] = useState<{ full_name: string | null; email: string | null }>({
-    full_name: null,
-    email: null
-  });
+  const [userName, setUserName] = useState<string>('');
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!user?.id) return;
-
-      try {
+      if (user) {
         const { data, error } = await supabase
           .from('profiles')
           .select('full_name, email')
@@ -40,20 +32,12 @@ export function TopNav() {
           return;
         }
 
-        if (data) {
-          console.log('Profile data fetched:', data);
-          setUserProfile({
-            full_name: data.full_name,
-            email: data.email
-          });
-        }
-      } catch (error) {
-        console.error('Error in fetchUserProfile:', error);
+        setUserName(data.full_name || data.email || 'User');
       }
     };
 
     fetchUserProfile();
-  }, [user?.id]);
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -72,15 +56,6 @@ export function TopNav() {
     }
   };
 
-  const getInitials = (name: string | null) => {
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase();
-  };
-
   return (
     <header className="border-b bg-white">
       <div className="flex h-16 items-center px-6 justify-between">
@@ -93,26 +68,14 @@ export function TopNav() {
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Avatar>
-                  <AvatarFallback>
-                    {getInitials(userProfile.full_name)}
-                  </AvatarFallback>
-                </Avatar>
+              <Button variant="ghost" size="icon">
+                <User className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    {userProfile.full_name || 'User'}
-                  </p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {userProfile.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem className="font-semibold">
+                {userName}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign out
