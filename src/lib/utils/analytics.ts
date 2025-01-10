@@ -9,12 +9,14 @@ export const calculateAverage = (scores: number[]): number => {
 
 export const getSalesReps = async (userId: string, userRole?: string): Promise<SalesRep[]> => {
   try {
+    console.log('Getting sales reps with role:', userRole);
+
     // For directors, get all sales reps
     if (userRole === 'director') {
-      // First get all users with sales_rep role
+      // Get all sales rep roles
       const { data: salesRepRoles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id')
+        .select('user_id, manager_id')
         .eq('role', 'sales_rep');
 
       if (rolesError) {
@@ -27,7 +29,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
         return [];
       }
 
-      // Get profiles for all sales reps
+      // Get all sales rep profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -38,7 +40,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
         return [];
       }
 
-      // Get all assessment scores
+      // Get all assessment scores for all sales reps
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
@@ -48,6 +50,9 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
         console.error('Error fetching scores:', scoresError);
         return [];
       }
+
+      console.log('Found profiles:', profiles);
+      console.log('Found scores:', scores);
 
       // Map the data to the expected format
       return profiles.map(profile => {
@@ -73,7 +78,6 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
           ...repScores
         };
       });
-
     } else if (userRole === 'manager') {
       // For managers, get their direct reports
       const { data: salesReps, error: salesRepsError } = await supabase
@@ -87,9 +91,12 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
         return [];
       }
 
-      if (!salesReps?.length) return [];
+      if (!salesReps?.length) {
+        console.log('No sales reps found for manager');
+        return [];
+      }
 
-      // Get profiles in a separate query
+      // Get profiles for the sales reps
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -135,6 +142,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
       });
     }
 
+    console.log('No matching role found');
     return [];
   } catch (error) {
     console.error('Error in getSalesReps:', error);
