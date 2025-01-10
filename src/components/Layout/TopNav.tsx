@@ -9,14 +9,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function TopNav() {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [userName, setUserName] = useState<string>('');
+  const [userProfile, setUserProfile] = useState<{ full_name: string | null; email: string | null }>({
+    full_name: null,
+    email: null
+  });
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -32,7 +38,10 @@ export function TopNav() {
           return;
         }
 
-        setUserName(data.full_name || data.email || 'User');
+        setUserProfile({
+          full_name: data.full_name,
+          email: data.email
+        });
       }
     };
 
@@ -56,6 +65,14 @@ export function TopNav() {
     }
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase();
+  };
+
   return (
     <header className="border-b bg-white">
       <div className="flex h-16 items-center px-6 justify-between">
@@ -68,14 +85,26 @@ export function TopNav() {
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Avatar>
+                  <AvatarFallback>
+                    {userProfile.full_name ? getInitials(userProfile.full_name) : 'U'}
+                  </AvatarFallback>
+                </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem className="font-semibold">
-                {userName}
-              </DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    {userProfile.full_name || 'User'}
+                  </p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {userProfile.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign out
