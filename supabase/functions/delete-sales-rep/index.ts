@@ -55,9 +55,9 @@ serve(async (req) => {
       throw roleError
     }
 
-    console.log('User role:', userRole)
+    console.log('User role:', userRole?.role)
 
-    if (userRole.role !== 'manager') {
+    if (userRole?.role !== 'manager') {
       throw new Error('Unauthorized - only managers can delete sales representatives')
     }
 
@@ -77,7 +77,29 @@ serve(async (req) => {
 
     console.log('Attempting to delete user:', user_id)
 
-    // Delete the user using admin client
+    // First delete the user role
+    const { error: deleteRoleError } = await supabaseAdmin
+      .from('user_roles')
+      .delete()
+      .eq('user_id', user_id)
+
+    if (deleteRoleError) {
+      console.error('Error deleting user role:', deleteRoleError)
+      throw deleteRoleError
+    }
+
+    // Then delete the profile
+    const { error: deleteProfileError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', user_id)
+
+    if (deleteProfileError) {
+      console.error('Error deleting profile:', deleteProfileError)
+      throw deleteProfileError
+    }
+
+    // Finally delete the user using admin client
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(
       user_id
     )
