@@ -52,15 +52,27 @@ export default function Login() {
 
   const handleRedirect = async (userId: string) => {
     try {
+      console.log('Fetching role for user:', userId);
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .single();
 
-      if (roleError) throw roleError;
+      if (roleError) {
+        console.error('Role fetch error:', roleError);
+        throw roleError;
+      }
 
-      switch (roleData?.role) {
+      console.log('Role data:', roleData);
+
+      if (!roleData?.role) {
+        console.error('No role found for user');
+        navigate('/');
+        return;
+      }
+
+      switch (roleData.role) {
         case 'sales_rep':
           navigate('/sales-rep/dashboard');
           break;
@@ -71,10 +83,11 @@ export default function Login() {
           navigate('/director/dashboard');
           break;
         default:
+          console.log('Unknown role:', roleData.role);
           navigate('/');
       }
     } catch (error) {
-      console.error('Error fetching user role:', error);
+      console.error('Error in handleRedirect:', error);
       navigate('/');
     }
   };
@@ -136,6 +149,7 @@ export default function Login() {
         if (error) throw error;
         
         if (user) {
+          console.log('User logged in:', user.id);
           toast({
             title: "Success",
             description: "You have successfully logged in",
@@ -233,4 +247,4 @@ export default function Login() {
       </Card>
     </div>
   );
-}
+};
