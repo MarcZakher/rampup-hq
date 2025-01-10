@@ -1,6 +1,7 @@
 import { CustomAppLayout } from "@/components/Layout/CustomAppLayout";
 import { TrainingHeader } from "@/components/training/TrainingHeader";
 import { TrainingTabs } from "@/components/training/TrainingTabs";
+import { TrainingProgress } from "@/components/Dashboard/TrainingProgress";
 import { useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { mockTrainingData } from "@/lib/data/mockTrainingData";
@@ -22,6 +23,9 @@ export default function TrainingJourney() {
           title="Training Journey"
           description="Track your progress through the sales training program"
         />
+        <div className="mb-8">
+          <TrainingProgress />
+        </div>
         <TrainingTabs 
           periods={mockTrainingData.periods}
           onStartModule={handleStartModule}
