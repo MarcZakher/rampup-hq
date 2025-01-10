@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrainingPeriod } from "@/components/training/TrainingPeriod";
 import { useCallback } from "react";
 import { TrainingModule } from "@/types/training";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 // This would come from an API in a real SaaS platform
 const mockTrainingData = {
@@ -15,15 +15,15 @@ const mockTrainingData = {
       id: "month1",
       name: "Month 1",
       modules: [
-    {
-      id: 1,
-      title: "Bootcamp Pre-Work",
-      description: "Understanding of MongoDB, our Products, and Sales Process & Motions - and pass MSAT entrance exam as prerequisite to attending Bootcamp in Month 2",
-      progress: 0,
-      status: "not-started",
-      duration: "4 weeks",
-      platform: "MindTickle"
-    },
+        {
+          id: 1,
+          title: "Bootcamp Pre-Work",
+          description: "Understanding of MongoDB, our Products, and Sales Process & Motions - and pass MSAT entrance exam as prerequisite to attending Bootcamp in Month 2",
+          progress: 0,
+          status: "not-started" as const,
+          duration: "4 weeks",
+          platform: "MindTickle"
+        },
     {
       id: 2,
       title: "Condensed Pitch Training",
@@ -93,15 +93,15 @@ const mockTrainingData = {
       id: "month2",
       name: "Month 2",
       modules: [
-    {
-      id: 1,
-      title: "GTM Bootcamp in Dublin",
-      description: "The ability to position MongoDB, understand our products, and sales process & motions.",
-      progress: 0,
-      status: "not-started",
-      duration: "1 week",
-      platform: "Bootcamp"
-    },
+        {
+          id: 1,
+          title: "GTM Bootcamp in Dublin",
+          description: "The ability to position MongoDB, understand our products, and sales process & motions.",
+          progress: 0,
+          status: "not-started" as const,
+          duration: "1 week",
+          platform: "Bootcamp"
+        },
     {
       id: 2,
       title: "Partner Introduction and Assessment",
@@ -180,15 +180,15 @@ const mockTrainingData = {
       id: "month3",
       name: "Month 3",
       modules: [
-    {
-      id: 1,
-      title: "Champion Building & Analysis",
-      description: "Champion Analysis on first Scope+ created (with RD) to develop a documented Champion Plan which will evolve through deal.",
-      progress: 0,
-      status: "not-started",
-      duration: "1 week",
-      platform: "Champion Plan"
-    },
+        {
+          id: 1,
+          title: "Champion Building & Analysis",
+          description: "Champion Analysis on first Scope+ created (with RD) to develop a documented Champion Plan which will evolve through deal.",
+          progress: 0,
+          status: "not-started" as const,
+          duration: "1 week",
+          platform: "Champion Plan"
+        },
     {
       id: 2,
       title: "MEDDPICC Workshop",
@@ -240,15 +240,15 @@ const mockTrainingData = {
       id: "month4",
       name: "Month 4",
       modules: [
-    {
-      id: 1,
-      title: "Create and Launch New Spokes",
-      description: "Create, review with your RD, and launch 2 new Spokes each week from your Schedule (BAU PG operating rhythm)",
-      progress: 0,
-      status: "not-started",
-      duration: "Ongoing",
-      platform: "4-4-2"
-    },
+        {
+          id: 1,
+          title: "Create and Launch New Spokes",
+          description: "Create, review with your RD, and launch 2 new Spokes each week from your Schedule (BAU PG operating rhythm)",
+          progress: 0,
+          status: "not-started" as const,
+          duration: "Ongoing",
+          platform: "4-4-2"
+        },
     {
       id: 2,
       title: "Shadow Technical Validation Events",
