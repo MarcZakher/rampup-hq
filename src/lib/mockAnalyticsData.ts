@@ -101,33 +101,44 @@ export const getAreasOfFocus = () => {
   };
 };
 
-const calculateAverage = (scores: number[]) => {
+const calculateAverage = (scores: number[]): number => {
   const validScores = scores.filter(score => score > 0);
-  return validScores.length > 0 ? validScores.reduce((a, b) => a + b, 0) / validScores.length : 0;
+  if (validScores.length === 0) return 0;
+  return validScores.reduce((a, b) => a + b, 0) / validScores.length;
 };
 
 export const getMonthlyScores = () => {
   const savedReps = localStorage.getItem(STORAGE_KEY);
   const salesReps: SalesRep[] = savedReps ? JSON.parse(savedReps) : [];
 
+  if (salesReps.length === 0) {
+    return Array(3).fill({
+      month: '',
+      avgScore: '0.0',
+      totalReps: 0,
+      improving: 0,
+      declining: 0
+    });
+  }
+
   return [
     {
       month: 'Month 1',
-      avgScore: Number(salesReps.reduce((acc, rep) => acc + calculateAverage(rep.month1), 0) / salesReps.length).toFixed(1),
+      avgScore: Number(calculateAverage(salesReps.map(rep => calculateAverage(rep.month1)))).toFixed(1),
       totalReps: salesReps.length,
       improving: salesReps.filter(rep => calculateAverage(rep.month1) > 3).length,
       declining: salesReps.filter(rep => calculateAverage(rep.month1) <= 3).length
     },
     {
       month: 'Month 2',
-      avgScore: Number(salesReps.reduce((acc, rep) => acc + calculateAverage(rep.month2), 0) / salesReps.length).toFixed(1),
+      avgScore: Number(calculateAverage(salesReps.map(rep => calculateAverage(rep.month2)))).toFixed(1),
       totalReps: salesReps.length,
       improving: salesReps.filter(rep => calculateAverage(rep.month2) > 3).length,
       declining: salesReps.filter(rep => calculateAverage(rep.month2) <= 3).length
     },
     {
       month: 'Month 3',
-      avgScore: Number(salesReps.reduce((acc, rep) => acc + calculateAverage(rep.month3), 0) / salesReps.length).toFixed(1),
+      avgScore: Number(calculateAverage(salesReps.map(rep => calculateAverage(rep.month3)))).toFixed(1),
       totalReps: salesReps.length,
       improving: salesReps.filter(rep => calculateAverage(rep.month3) > 3).length,
       declining: salesReps.filter(rep => calculateAverage(rep.month3) <= 3).length
