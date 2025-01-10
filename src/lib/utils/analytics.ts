@@ -13,7 +13,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
       .from('user_roles')
       .select(`
         user_id,
-        profiles:user_id(id, full_name)
+        profiles (id, full_name)
       `);
 
     // If user is a manager, only get their sales reps
@@ -69,8 +69,8 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
       });
 
       return {
-        id: rep.profiles?.id || rep.user_id,
-        name: rep.profiles?.full_name || 'Unknown',
+        id: rep.user_id,
+        name: rep.profiles?.[0]?.full_name || 'Unknown',
         month1: repScores.month1,
         month2: repScores.month2,
         month3: repScores.month3,

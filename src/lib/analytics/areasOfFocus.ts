@@ -2,8 +2,8 @@ import { AreaOfFocus } from '../types/analytics';
 import { getSalesReps, calculateAverage } from '../utils/analytics';
 import { ASSESSMENTS } from '../constants/assessments';
 
-export const getAreasOfFocus = (): AreaOfFocus => {
-  const salesReps = getSalesReps();
+export const getAreasOfFocus = async (userId: string, userRole?: string): Promise<AreaOfFocus> => {
+  const salesReps = await getSalesReps(userId, userRole);
 
   const concerningReps = salesReps.map(rep => {
     // Calculate monthly averages
