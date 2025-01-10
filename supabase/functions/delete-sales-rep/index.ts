@@ -41,16 +41,42 @@ serve(async (req) => {
     if (authError) throw authError
     if (!user) throw new Error('Not authenticated')
 
-    // Check if requester is a manager using maybeSingle() instead of single()
+    console.log('Authenticated user:', user.id)
+
+    // Check if requester is a manager
     const { data: userRole, error: roleError } = await supabaseClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
+      .eq('role', 'manager')
       .maybeSingle()
 
-    if (roleError) throw roleError
-    if (!userRole || userRole.role !== 'manager') {
+    if (roleError) {
+      console.error('Error checking manager role:', roleError)
+      throw roleError
+    }
+
+    console.log('User role data:', userRole)
+
+    if (!userRole) {
       throw new Error('Unauthorized - only managers can delete sales representatives')
+    }
+
+    // Verify the sales rep belongs to this manager
+    const { data: salesRepRole, error: salesRepError } = await supabaseClient
+      .from('user_roles')
+      .select('manager_id')
+      .eq('user_id', user_id)
+      .eq('role', 'sales_rep')
+      .maybeSingle()
+
+    if (salesRepError) {
+      console.error('Error checking sales rep:', salesRepError)
+      throw salesRepError
+    }
+
+    if (!salesRepRole || salesRepRole.manager_id !== user.id) {
+      throw new Error('Unauthorized - you can only delete your own sales representatives')
     }
 
     console.log('Attempting to delete user:', user_id)
