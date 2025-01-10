@@ -11,10 +11,10 @@ import {
 } from '@/components/ui/sidebar';
 
 const menuItems = [
-  { title: 'Dashboard', icon: Home, url: '/' },
+  { title: 'Dashboard', icon: Home, url: '/director/dashboard' },
   { title: 'Sales Reps', icon: Users, url: '/sales-reps' },
   { title: 'Assessments', icon: ClipboardList, url: '/assessments' },
-  { title: 'Performance Analytics', icon: LineChart, url: '/analytics' },
+  { title: 'Performance Analytics', icon: LineChart, url: '/director/analytics' },
   { title: 'Settings', icon: Settings, url: '/settings' },
 ];
 
