@@ -8,11 +8,12 @@ export function useAuthRedirect() {
 
   const handleRedirect = async (userId: string) => {
     try {
+      // Use single() at the end to get a single result
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (roleError) {
         console.error('Error fetching user role:', roleError);
@@ -21,6 +22,11 @@ export function useAuthRedirect() {
 
       if (!roleData?.role) {
         console.error('No role found for user');
+        toast({
+          title: 'Error',
+          description: 'No role found for user. Please contact support.',
+          variant: 'destructive',
+        });
         navigate('/');
         return;
       }
@@ -45,6 +51,8 @@ export function useAuthRedirect() {
         description: 'Failed to verify user role. Please try again.',
         variant: 'destructive',
       });
+      // Navigate to home page on error
+      navigate('/');
     }
   };
 
