@@ -6,27 +6,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 // Sample data structure based on the image
 const assessments = {
   month1: [
-    { name: 'Discovery meeting/pitch', shortName: 'Discovery' },
+    { name: 'Discovery meeting roleplay pitch', shortName: 'Discovery' },
     { name: 'SA program', shortName: 'SA' },
-    { name: 'Shadow program', shortName: 'Shadow' },
+    { name: 'Shadow capture', shortName: 'Shadow' },
     { name: 'Deliver 3 Proof points', shortName: 'Proof' },
-    { name: 'Account Tiering on territory + Workload & Quotes/Forecasting', shortName: 'Tiering' }
+    { name: 'Account Tiering on territory + Workload & Contact Researches on 2 accs', shortName: 'Tiering' }
   ],
   month2: [
     { name: 'PG plan', shortName: 'PG' },
     { name: 'SA program', shortName: 'SA' },
-    { name: 'NMH Role play', shortName: 'NMH' },
+    { name: 'NBM Role play', shortName: 'NBM' },
     { name: '1st meeting excellence deck', shortName: '1st Meeting' },
-    { name: 'Pitch/Trap setting questions versus main competitors in region', shortName: 'Pitch' }
+    { name: 'Pitch/Trap setting questions versus main competitors in region: PostGre, DynamoDB..', shortName: 'Pitch' },
+    { name: 'Account plan 1', shortName: 'Account' }
   ],
   month3: [
-    { name: 'Account plan', shortName: 'Account' },
-    { name: 'CGW: Review of one LSS through discovery capture sheet', shortName: 'CGW' },
+    { name: 'COM: Review of one LoS through discovery capture sheet', shortName: 'COM' },
     { name: 'SA program', shortName: 'SA' },
     { name: 'Champion plan', shortName: 'Champion' },
     { name: 'Deal review', shortName: 'Deal' },
     { name: 'TFW prep and execution', shortName: 'TFW' },
-    { name: 'Pitch PS', shortName: 'Pitch' }
+    { name: 'Pitch PS', shortName: 'Pitch PS' }
   ]
 };
 
