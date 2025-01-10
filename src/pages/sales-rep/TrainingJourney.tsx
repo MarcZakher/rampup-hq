@@ -232,12 +232,46 @@ const trainingModules: Record<string, TrainingModule[]> = {
   month4: [
     {
       id: 1,
-      title: "Enterprise Sales Mastery",
-      description: "Advanced techniques for enterprise-level sales",
+      title: "Create and Launch New Spokes",
+      description: "Create, review with your RD, and launch 2 new Spokes each week from your Schedule (BAU PG operating rhythm)",
       progress: 0,
       status: "not-started",
-      duration: "4 hours",
-      platform: "Sales Training"
+      duration: "Ongoing",
+      platform: "4-4-2"
+    },
+    {
+      id: 2,
+      title: "Shadow Technical Validation Events",
+      description: "Shadow at least 1 Technical Validation setup and 1 Technical Validation echoback events - discuss with RD",
+      progress: 0,
+      status: "not-started",
+      duration: "2 weeks"
+    },
+    {
+      id: 3,
+      title: "Industry Wins Profiling",
+      description: "Profile 10 industry wins relevant to your territory. Present back to RD the industry use cases and how you will build this into your PG planning moving forwards across your territory",
+      progress: 0,
+      status: "not-started",
+      duration: "2 weeks"
+    },
+    {
+      id: 4,
+      title: "Business Case Validation Workshop",
+      description: "Be able to use 3 Whys, TCO analysis, or BVA as part of Business Case stage in a live Scope+, prepare and review with RD as well as executed the echo-back to EB",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "Alignment with Business Value Consultant"
+    },
+    {
+      id: 5,
+      title: "Technical Validation Workshop",
+      description: "Plan and execute on a PoV for an opportunity you are working on, review with RD",
+      progress: 0,
+      status: "not-started",
+      duration: "2 weeks",
+      platform: "Alignment with SA and RD"
     }
   ]
 };
