@@ -13,6 +13,7 @@ export const useSalesReps = () => {
     if (!user) return;
 
     try {
+      // First get all sales reps under this manager
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -34,9 +35,7 @@ export const useSalesReps = () => {
         return;
       }
 
-      const savedReps = localStorage.getItem('manager_dashboard_sales_reps');
-      const savedAssessments = savedReps ? JSON.parse(savedReps) : {};
-
+      // Get the profiles for these sales reps
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -47,14 +46,43 @@ export const useSalesReps = () => {
         return;
       }
 
+      // Get all assessment scores for these sales reps
+      const { data: scores, error: scoresError } = await supabase
+        .from('assessment_scores')
+        .select('*')
+        .eq('manager_id', user.id)
+        .in('sales_rep_id', userRoles.map(role => role.user_id));
+
+      if (scoresError) {
+        console.error('Error fetching assessment scores:', scoresError);
+        return;
+      }
+
+      // Map the profiles to our SalesRep type, including their scores
       const mappedReps = profiles?.map(profile => {
-        const savedData = savedAssessments[profile.id] || {};
+        // Initialize empty score arrays
+        const repScores = {
+          month1: new Array(5).fill(0),
+          month2: new Array(6).fill(0),
+          month3: new Array(6).fill(0),
+        };
+
+        // Fill in the actual scores from the database
+        scores?.forEach(score => {
+          if (score.sales_rep_id === profile.id) {
+            const month = score.month as keyof typeof repScores;
+            if (repScores[month] && score.assessment_index < repScores[month].length) {
+              repScores[month][score.assessment_index] = Number(score.score) || 0;
+            }
+          }
+        });
+
         return {
           id: profile.id,
           name: profile.full_name || 'Unknown',
-          month1: savedData.month1 || new Array(5).fill(0),
-          month2: savedData.month2 || new Array(6).fill(0),
-          month3: savedData.month3 || new Array(6).fill(0),
+          month1: repScores.month1,
+          month2: repScores.month2,
+          month3: repScores.month3,
         };
       }) || [];
 
@@ -89,12 +117,6 @@ export const useSalesReps = () => {
         });
         return;
       }
-
-      // Remove from local storage
-      const savedReps = localStorage.getItem('manager_dashboard_sales_reps') || '{}';
-      const allSavedReps = JSON.parse(savedReps);
-      delete allSavedReps[id];
-      localStorage.setItem('manager_dashboard_sales_reps', JSON.stringify(allSavedReps));
 
       // Update state
       setSalesReps(prevReps => prevReps.filter(rep => rep.id !== id));
