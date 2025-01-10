@@ -43,22 +43,24 @@ serve(async (req) => {
 
     console.log('Authenticated user:', user.id)
 
-    // Check if requester is a manager by checking user_roles table
-    const { data: managerRole, error: roleError } = await supabaseClient
+    // First verify if the user is a manager
+    const { data: managerData, error: managerError } = await supabaseClient
       .from('user_roles')
-      .select('role')
+      .select('*')
       .eq('user_id', user.id)
       .eq('role', 'manager')
-      .maybeSingle()
+      .single()
 
-    if (roleError) {
-      console.error('Error checking manager role:', roleError)
-      throw roleError
+    if (managerError) {
+      console.error('Error checking manager role:', managerError)
+      throw new Error('Error verifying manager role')
     }
 
-    if (!managerRole) {
+    if (!managerData) {
       throw new Error('Unauthorized - only managers can delete sales representatives')
     }
+
+    console.log('Manager verified:', managerData)
 
     // Verify the sales rep belongs to this manager
     const { data: salesRepRole, error: salesRepError } = await supabaseClient
@@ -67,18 +69,18 @@ serve(async (req) => {
       .eq('user_id', user_id)
       .eq('role', 'sales_rep')
       .eq('manager_id', user.id)
-      .maybeSingle()
+      .single()
 
     if (salesRepError) {
       console.error('Error checking sales rep:', salesRepError)
-      throw salesRepError
+      throw new Error('Error verifying sales representative')
     }
 
     if (!salesRepRole) {
       throw new Error('Unauthorized - you can only delete your own sales representatives')
     }
 
-    console.log('Attempting to delete user:', user_id)
+    console.log('Sales rep verified:', salesRepRole)
 
     // First delete the user role
     const { error: deleteRoleError } = await supabaseAdmin
@@ -91,6 +93,8 @@ serve(async (req) => {
       throw deleteRoleError
     }
 
+    console.log('User role deleted')
+
     // Then delete the profile
     const { error: deleteProfileError } = await supabaseAdmin
       .from('profiles')
@@ -101,6 +105,8 @@ serve(async (req) => {
       console.error('Error deleting profile:', deleteProfileError)
       throw deleteProfileError
     }
+
+    console.log('Profile deleted')
 
     // Finally delete the user using admin client
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(
