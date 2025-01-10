@@ -2,17 +2,27 @@ import { CustomAppLayout } from "@/components/Layout/CustomAppLayout";
 import { TrainingProgress } from "@/components/Dashboard/TrainingProgress";
 import { getSalesReps } from "@/lib/utils/analytics";
 import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ASSESSMENTS } from "@/lib/constants/assessments";
 
 // Mock logged-in user - in a real app, this would come from auth
-const MOCK_LOGGED_IN_USER = "Charlie Hobbs";
+const MOCK_LOGGED_IN_USER = "Amina Boualem";
 
 interface MonthProgress {
   month: string;
   completion: number;
 }
 
+interface AssessmentScore {
+  name: string;
+  score: number;
+  month: number;
+}
+
 export default function SalesRepAnalytics() {
   const [monthlyProgress, setMonthlyProgress] = useState<MonthProgress[]>([]);
+  const [assessmentScores, setAssessmentScores] = useState<AssessmentScore[]>([]);
 
   useEffect(() => {
     // Get the logged-in sales rep's data
@@ -31,16 +41,74 @@ export default function SalesRepAnalytics() {
         { month: "Month 3", completion: Math.round(month3Completion) },
         { month: "Month 4", completion: 0 }
       ]);
+
+      // Prepare assessment scores
+      const scores: AssessmentScore[] = [
+        ...currentRep.month1.map((score, index) => ({
+          name: ASSESSMENTS.month1[index],
+          score,
+          month: 1
+        })),
+        ...currentRep.month2.map((score, index) => ({
+          name: ASSESSMENTS.month2[index],
+          score,
+          month: 2
+        })),
+        ...currentRep.month3.map((score, index) => ({
+          name: ASSESSMENTS.month3[index],
+          score,
+          month: 3
+        }))
+      ].filter(score => score.score > 0); // Only show completed assessments
+
+      setAssessmentScores(scores);
     }
   }, []);
+
+  const getScoreColor = (score: number) => {
+    if (score >= 4) return 'text-green-600';
+    if (score >= 3) return 'text-yellow-600';
+    return 'text-red-600';
+  };
 
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-8">My Analytics</h1>
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <TrainingProgress progress={monthlyProgress} />
-          {/* Additional analytics content will go here */}
+        <div className="space-y-8">
+          <Card>
+            <CardContent className="pt-6">
+              <TrainingProgress progress={monthlyProgress} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Assessment Scores</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month</TableHead>
+                    <TableHead>Assessment</TableHead>
+                    <TableHead>Score</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {assessmentScores.map((assessment, index) => (
+                    <TableRow key={index}>
+                      <TableCell>Month {assessment.month}</TableCell>
+                      <TableCell>{assessment.name}</TableCell>
+                      <TableCell className={getScoreColor(assessment.score)}>
+                        {assessment.score.toFixed(1)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </CustomAppLayout>
