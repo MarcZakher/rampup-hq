@@ -1,4 +1,4 @@
-import { Users, TrendingUp, Target } from 'lucide-react';
+import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -78,6 +78,18 @@ const DirectorDashboard = () => {
     return validScores.length > 0 && (validScores.reduce((sum, score) => sum + score, 0) / validScores.length) > 3;
   }).length;
 
+  const getTopRampingRep = () => {
+    if (salesReps.length === 0) return { name: "No reps", score: 0 };
+    
+    return salesReps.reduce((top, rep) => {
+      const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
+      const avgScore = calculateAverage(allScores);
+      return avgScore > top.score ? { name: rep.name, score: avgScore } : top;
+    }, { name: "", score: 0 });
+  };
+
+  const topRampingRep = getTopRampingRep();
+
   return (
     <CustomAppLayout>
       <div className="space-y-6 p-6">
@@ -86,7 +98,7 @@ const DirectorDashboard = () => {
           <p className="text-muted-foreground">Sales Team Assessment Scores</p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Sales Reps</CardTitle>
@@ -115,6 +127,17 @@ const DirectorDashboard = () => {
             <CardContent>
               <div className="text-2xl font-bold">{performingWell}</div>
               <p className="text-xs text-muted-foreground">Score above 3/5</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Top Ramping Rep</CardTitle>
+              <Trophy className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold truncate">{topRampingRep.name}</div>
+              <p className="text-xs text-muted-foreground">Score: {topRampingRep.score}/5</p>
             </CardContent>
           </Card>
         </div>
