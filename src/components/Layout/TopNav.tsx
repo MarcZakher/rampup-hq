@@ -27,6 +27,7 @@ export function TopNav() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (user) {
+        console.log('Fetching profile for user:', user.id);
         const { data, error } = await supabase
           .from('profiles')
           .select('full_name, email')
@@ -38,6 +39,7 @@ export function TopNav() {
           return;
         }
 
+        console.log('Fetched profile:', data);
         setUserProfile({
           full_name: data.full_name,
           email: data.email
@@ -66,6 +68,7 @@ export function TopNav() {
   };
 
   const getInitials = (name: string) => {
+    if (!name) return 'U';
     return name
       .split(' ')
       .map(word => word[0])
