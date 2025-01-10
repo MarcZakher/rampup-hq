@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
 import DirectorDashboard from './pages/director/Dashboard';
 import ManagerDashboard from './pages/manager/Dashboard';
@@ -6,7 +7,7 @@ import AnalyticsPage from './pages/director/Analytics';
 
 function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/director/dashboard" element={<DirectorDashboard />} />
@@ -14,7 +15,7 @@ function App() {
         <Route path="/manager/dashboard" element={<ManagerDashboard />} />
         <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
 
