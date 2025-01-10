@@ -22,7 +22,7 @@ function App() {
           <Route
             path="/director/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['director']}>
                 <DirectorDashboard />
               </ProtectedRoute>
             }
@@ -30,7 +30,7 @@ function App() {
           <Route
             path="/director/analytics"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['director']}>
                 <AnalyticsPage />
               </ProtectedRoute>
             }
@@ -38,7 +38,7 @@ function App() {
           <Route
             path="/manager/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['manager']}>
                 <ManagerDashboard />
               </ProtectedRoute>
             }
@@ -46,7 +46,7 @@ function App() {
           <Route
             path="/sales-rep/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['sales_rep']}>
                 <SalesRepDashboard />
               </ProtectedRoute>
             }
@@ -54,7 +54,7 @@ function App() {
           <Route
             path="/sales-rep/training"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['sales_rep']}>
                 <TrainingJourney />
               </ProtectedRoute>
             }
@@ -62,7 +62,7 @@ function App() {
           <Route
             path="/sales-rep/analytics"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['sales_rep']}>
                 <SalesRepAnalytics />
               </ProtectedRoute>
             }
