@@ -19,26 +19,31 @@ const ManagerDashboard = () => {
 
     try {
       // First try to find if a record already exists
-      const { data: existingScore } = await supabase
+      const { data: existingScore, error: queryError } = await supabase
         .from('assessment_scores')
         .select()
         .eq('sales_rep_id', repId.toString())
         .eq('manager_id', user.id)
         .eq('month', month)
         .eq('assessment_index', index)
-        .single();
+        .maybeSingle();  // Changed from .single() to .maybeSingle()
 
+      if (queryError) {
+        console.error('Error checking existing score:', queryError);
+        throw queryError;
+      }
+
+      let error;
       if (existingScore) {
         // If record exists, update it
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from('assessment_scores')
           .update({ score })
           .eq('id', existingScore.id);
-
-        if (error) throw error;
+        error = updateError;
       } else {
         // If no record exists, insert a new one
-        const { error } = await supabase
+        const { error: insertError } = await supabase
           .from('assessment_scores')
           .insert({
             sales_rep_id: repId.toString(),
@@ -47,24 +52,10 @@ const ManagerDashboard = () => {
             assessment_index: index,
             score
           });
-
-        if (error) throw error;
+        error = insertError;
       }
 
-      // Update local storage for immediate UI feedback
-      const savedReps = localStorage.getItem('manager_dashboard_sales_reps') || '{}';
-      const allSavedReps = JSON.parse(savedReps);
-
-      const updatedRep = salesReps.find(rep => rep.id === repId);
-      if (updatedRep) {
-        allSavedReps[repId] = {
-          ...allSavedReps[repId],
-          [month]: [...updatedRep[month as keyof Pick<typeof updatedRep, 'month1' | 'month2' | 'month3'>]]
-        };
-        allSavedReps[repId][month][index] = score;
-      }
-
-      localStorage.setItem('manager_dashboard_sales_reps', JSON.stringify(allSavedReps));
+      if (error) throw error;
 
       toast({
         title: "Success",
