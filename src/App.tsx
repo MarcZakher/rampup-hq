@@ -14,6 +14,7 @@ function App() {
         <Route path="/director/analytics" element={<AnalyticsPage />} />
         <Route path="/manager/dashboard" element={<ManagerDashboard />} />
         <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
+        <Route path="/sales-rep/dashboard" element={<div>Sales Rep Dashboard</div>} />
       </Routes>
     </BrowserRouter>
   );

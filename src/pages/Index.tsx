@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { UserCog, BarChart3, Users2 } from "lucide-react";
+import { UserCog, BarChart3, Users2, User } from "lucide-react";
 
 export default function Index() {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function Index() {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-3xl mx-auto">
           <Button 
             onClick={() => navigate("/director/dashboard")}
             className="h-auto py-6 px-4 flex flex-col items-center gap-3 hover:scale-105 transition-transform"
@@ -39,6 +39,18 @@ export default function Index() {
             <div className="space-y-1">
               <div className="font-semibold">Manager View</div>
               <div className="text-xs text-primary-foreground/80">Team management & tracking</div>
+            </div>
+          </Button>
+
+          <Button 
+            onClick={() => navigate("/sales-rep/dashboard")}
+            className="h-auto py-6 px-4 flex flex-col items-center gap-3 hover:scale-105 transition-transform"
+            variant="default"
+          >
+            <User className="h-6 w-6" />
+            <div className="space-y-1">
+              <div className="font-semibold">Sales Rep View</div>
+              <div className="text-xs text-primary-foreground/80">Personal progress & tasks</div>
             </div>
           </Button>
           
