@@ -16,10 +16,10 @@ const ManagerDashboard = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  useEffect(() => {
-    const loadSalesReps = async () => {
-      if (!user) return;
+  const loadSalesReps = async () => {
+    if (!user) return;
 
+    try {
       const { data: userRoles, error } = await supabase
         .from('user_roles')
         .select('user_id, role')
@@ -35,51 +35,76 @@ const ManagerDashboard = () => {
         return;
       }
 
+      // Get the saved assessment data for each sales rep
       const savedReps = localStorage.getItem(STORAGE_KEY);
       const allSavedReps = savedReps ? JSON.parse(savedReps) : [];
 
+      // Filter to only show reps managed by this manager
       const managedReps = allSavedReps.filter((rep: SalesRep) => 
         userRoles.some(role => role.user_id === rep.id.toString())
       );
 
       setSalesReps(managedReps);
-    };
-
-    loadSalesReps();
-  }, [user, toast]);
-
-  useEffect(() => {
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    const allSavedReps = savedReps ? JSON.parse(savedReps) : [];
-
-    const updatedReps = allSavedReps.map((rep: SalesRep) => {
-      const managedRep = salesReps.find(r => r.id === rep.id);
-      return managedRep || rep;
-    });
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedReps));
-  }, [salesReps]);
-
-  const removeSalesRep = async (id: number) => {
-    const { error } = await supabase.auth.admin.deleteUser(id.toString());
-
-    if (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to remove sales representative",
+        description: error.message || "Failed to load sales representatives",
         variant: "destructive"
       });
-      return;
     }
-
-    setSalesReps(salesReps.filter(rep => rep.id !== id));
-    toast({
-      title: "Success",
-      description: "Sales representative removed successfully"
-    });
   };
 
-  const updateScore = (repId: number, month: 'month1' | 'month2' | 'month3', index: number, value: string) => {
+  useEffect(() => {
+    loadSalesReps();
+  }, [user]);
+
+  const handleSalesRepAdded = (newRep: SalesRep) => {
+    // Update local storage with the new rep
+    const savedReps = localStorage.getItem(STORAGE_KEY);
+    const allSavedReps = savedReps ? JSON.parse(savedReps) : [];
+    const updatedReps = [...allSavedReps, newRep];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedReps));
+
+    // Update the state to show the new rep
+    setSalesReps(prevReps => [...prevReps, newRep]);
+  };
+
+  const removeSalesRep = async (id: number) => {
+    try {
+      const { error } = await supabase.auth.admin.deleteUser(id.toString());
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to remove sales representative",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Remove from local storage
+      const savedReps = localStorage.getItem(STORAGE_KEY);
+      const allSavedReps = savedReps ? JSON.parse(savedReps) : [];
+      const updatedReps = allSavedReps.filter((rep: SalesRep) => rep.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedReps));
+
+      // Update state
+      setSalesReps(prevReps => prevReps.filter(rep => rep.id !== id));
+      
+      toast({
+        title: "Success",
+        description: "Sales representative removed successfully"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove sales representative",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateScore = (repId: number, month: string, index: number, value: string) => {
     const score = parseFloat(value);
     if (isNaN(score) || score < 0 || score > 5) {
       toast({
@@ -90,14 +115,27 @@ const ManagerDashboard = () => {
       return;
     }
 
-    setSalesReps(salesReps.map(rep => {
-      if (rep.id === repId) {
-        const newScores = [...rep[month]];
-        newScores[index] = score;
-        return { ...rep, [month]: newScores };
-      }
-      return rep;
-    }));
+    setSalesReps(prevReps => {
+      const updatedReps = prevReps.map(rep => {
+        if (rep.id === repId) {
+          const newScores = [...rep[month as keyof Pick<SalesRep, 'month1' | 'month2' | 'month3'>]];
+          newScores[index] = score;
+          return { ...rep, [month]: newScores };
+        }
+        return rep;
+      });
+
+      // Update local storage
+      const savedReps = localStorage.getItem(STORAGE_KEY);
+      const allSavedReps = savedReps ? JSON.parse(savedReps) : [];
+      const updatedAllReps = allSavedReps.map((rep: SalesRep) => {
+        const updatedRep = updatedReps.find(r => r.id === rep.id);
+        return updatedRep || rep;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedAllReps));
+
+      return updatedReps;
+    });
   };
 
   return (
@@ -105,7 +143,7 @@ const ManagerDashboard = () => {
       <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Manager Dashboard</h1>
-          <AddSalesRep onSalesRepAdded={(newRep) => setSalesReps([...salesReps, newRep])} />
+          <AddSalesRep onSalesRepAdded={handleSalesRepAdded} />
         </div>
 
         <div className="space-y-6">
