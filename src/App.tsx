@@ -16,6 +16,8 @@ function App() {
         <Route path="/manager/dashboard" element={<ManagerDashboard />} />
         <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
         <Route path="/sales-rep/dashboard" element={<SalesRepDashboard />} />
+        <Route path="/sales-rep/training" element={<div>Training Journey</div>} />
+        <Route path="/sales-rep/analytics" element={<div>Sales Rep Analytics</div>} />
       </Routes>
     </BrowserRouter>
   );
