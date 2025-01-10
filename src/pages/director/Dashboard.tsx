@@ -4,34 +4,10 @@ import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useEffect, useState } from 'react';
-
-const assessments = {
-  month1: [
-    { name: 'Discovery meeting roleplay pitch', shortName: 'Discovery' },
-    { name: 'SA program', shortName: 'SA' },
-    { name: 'Shadow capture', shortName: 'Shadow' },
-    { name: 'Deliver 3 Proof points', shortName: 'Proof' },
-    { name: 'Account Tiering on territory + Workload & Contact Researches on 2 accs', shortName: 'Tiering' }
-  ],
-  month2: [
-    { name: 'PG plan', shortName: 'PG' },
-    { name: 'SA program', shortName: 'SA' },
-    { name: 'NBM Role play', shortName: 'NBM' },
-    { name: '1st meeting excellence deck', shortName: '1st Meeting' },
-    { name: 'Pitch/Trap setting questions versus main competitors in region: PostGre, DynamoDB..', shortName: 'Pitch' },
-    { name: 'Account plan 1', shortName: 'Account' }
-  ],
-  month3: [
-    { name: 'COM: Review of one LoS through discovery capture sheet', shortName: 'COM' },
-    { name: 'SA program', shortName: 'SA' },
-    { name: 'Champion plan', shortName: 'Champion' },
-    { name: 'Deal review', shortName: 'Deal' },
-    { name: 'TFW prep and execution', shortName: 'TFW' },
-    { name: 'Pitch PS', shortName: 'Pitch PS' }
-  ]
-};
-
-const STORAGE_KEY = 'manager_dashboard_sales_reps';
+import { useAuth } from '@/lib/context/auth-context';
+import { assessments } from '@/constants/assessments';
+import { useSalesReps } from '@/hooks/useSalesReps';
+import { SalesRep } from '@/types/manager';
 
 const calculateAverage = (scores: number[]) => {
   const validScores = scores.filter(score => score > 0);
@@ -47,23 +23,9 @@ const getScoreColor = (score: number) => {
   return 'bg-[#FFC7CE]'; // Light red for lower scores
 };
 
-interface SalesRep {
-  id: number;
-  name: string;
-  month1: number[];
-  month2: number[];
-  month3: number[];
-}
-
 const DirectorDashboard = () => {
-  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
-
-  useEffect(() => {
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    if (savedReps) {
-      setSalesReps(JSON.parse(savedReps));
-    }
-  }, []);
+  const { user } = useAuth();
+  const { salesReps } = useSalesReps();
 
   const totalReps = salesReps.length;
   const avgScore = totalReps === 0 ? 0 : (salesReps.reduce((acc, rep) => {
