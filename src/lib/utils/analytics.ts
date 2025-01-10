@@ -9,43 +9,65 @@ export const calculateAverage = (scores: number[]): number => {
 
 export const getSalesReps = async (userId: string, userRole?: string): Promise<SalesRep[]> => {
   try {
-    // First get the sales reps based on role
-    let salesRepsQuery = supabase
-      .from('user_roles')
-      .select('user_id, manager_id')
-      .eq('role', 'sales_rep');
+    let salesRepsData;
 
-    if (userRole === 'manager') {
-      // If manager, only get their direct reports
-      salesRepsQuery = salesRepsQuery.eq('manager_id', userId);
-    } else if (userRole === 'director') {
-      // If director, get all sales reps under managers who report to them
-      const { data: managerIds } = await supabase
+    if (userRole === 'director') {
+      // First, get all managers under this director
+      const { data: managers, error: managersError } = await supabase
         .from('user_roles')
         .select('user_id')
         .eq('role', 'manager')
         .eq('manager_id', userId);
 
-      if (managerIds && managerIds.length > 0) {
-        salesRepsQuery = salesRepsQuery.in('manager_id', managerIds.map(m => m.user_id));
+      if (managersError) {
+        console.error('Error fetching managers:', managersError);
+        return [];
       }
+
+      // Then get all sales reps under these managers
+      const { data: salesReps, error: salesRepsError } = await supabase
+        .from('user_roles')
+        .select(`
+          user_id,
+          manager_id,
+          profiles!inner (
+            full_name,
+            email
+          )
+        `)
+        .eq('role', 'sales_rep')
+        .in('manager_id', managers.map(m => m.user_id));
+
+      if (salesRepsError) {
+        console.error('Error fetching sales reps:', salesRepsError);
+        return [];
+      }
+
+      salesRepsData = salesReps;
+    } else if (userRole === 'manager') {
+      // If manager, get their direct reports
+      const { data: salesReps, error: salesRepsError } = await supabase
+        .from('user_roles')
+        .select(`
+          user_id,
+          manager_id,
+          profiles!inner (
+            full_name,
+            email
+          )
+        `)
+        .eq('role', 'sales_rep')
+        .eq('manager_id', userId);
+
+      if (salesRepsError) {
+        console.error('Error fetching sales reps:', salesRepsError);
+        return [];
+      }
+
+      salesRepsData = salesReps;
     }
 
-    const { data: salesRepsData, error: salesRepsError } = await salesRepsQuery;
-
-    if (salesRepsError) {
-      console.error('Error fetching sales reps:', salesRepsError);
-      return [];
-    }
-
-    // Get profiles for the sales reps
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, full_name')
-      .in('id', salesRepsData.map(rep => rep.user_id));
-
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
+    if (!salesRepsData || salesRepsData.length === 0) {
       return [];
     }
 
@@ -61,7 +83,6 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
     }
 
     return salesRepsData.map(rep => {
-      const profile = profiles?.find(p => p.id === rep.user_id);
       const repScores = {
         month1: new Array(5).fill(0),
         month2: new Array(6).fill(0),
@@ -79,7 +100,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
 
       return {
         id: rep.user_id,
-        name: profile?.full_name || 'Unknown',
+        name: rep.profiles.full_name || rep.profiles.email || 'Unknown',
         ...repScores
       };
     });
