@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/context/auth-context";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react"; // Added this import
 
 const initialProgressData = [
   {
