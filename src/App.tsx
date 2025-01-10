@@ -10,6 +10,7 @@ function App() {
         <Route path="/" element={<Index />} />
         <Route path="/director/dashboard" element={<DirectorDashboard />} />
         <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+        <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
       </Routes>
     </Router>
   );

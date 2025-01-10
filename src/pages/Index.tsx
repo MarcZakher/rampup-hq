@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { UserCog } from "lucide-react";
 
 export default function Index() {
   const navigate = useNavigate();
@@ -20,6 +21,14 @@ export default function Index() {
             className="w-48"
           >
             Manager View
+          </Button>
+          <Button 
+            onClick={() => navigate("/admin/dashboard")}
+            className="w-48"
+            variant="secondary"
+          >
+            <UserCog />
+            Admin View
           </Button>
         </div>
       </div>
