@@ -19,7 +19,7 @@ export const getAssessmentData = (): AssessmentStats[] => {
         name,
         successRate: Math.round(stats.successRate),
         avgScore: Number(stats.avgScore.toFixed(1)),
-        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low'
+        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low' as const
       };
     }),
     ...ASSESSMENTS.month2.map((name, index) => {
@@ -28,7 +28,7 @@ export const getAssessmentData = (): AssessmentStats[] => {
         name,
         successRate: Math.round(stats.successRate),
         avgScore: Number(stats.avgScore.toFixed(1)),
-        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low'
+        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low' as const
       };
     }),
     ...ASSESSMENTS.month3.map((name, index) => {
@@ -37,7 +37,7 @@ export const getAssessmentData = (): AssessmentStats[] => {
         name,
         successRate: Math.round(stats.successRate),
         avgScore: Number(stats.avgScore.toFixed(1)),
-        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low'
+        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low' as const
       };
     })
   ];

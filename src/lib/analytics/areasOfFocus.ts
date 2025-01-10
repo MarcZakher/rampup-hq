@@ -62,7 +62,7 @@ export const getAreasOfFocus = (): AreaOfFocus => {
     };
   }).filter(Boolean);
 
-  const assessmentPatterns = concerningReps.flatMap(rep => rep?.areas || [])
+  const assessmentPatterns: { [key: string]: number } = concerningReps.flatMap(rep => rep?.areas || [])
     .reduce((acc: { [key: string]: number }, curr) => {
       acc[curr.assessment] = (acc[curr.assessment] || 0) + 1;
       return acc;
