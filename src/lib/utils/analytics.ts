@@ -13,7 +13,10 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
       .from('user_roles')
       .select(`
         user_id,
-        profiles (id, full_name)
+        profiles (
+          id,
+          full_name
+        )
       `);
 
     // If user is a manager, only get their sales reps
@@ -45,14 +48,14 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
     const { data: scores, error: scoresError } = await supabase
       .from('assessment_scores')
       .select('*')
-      .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
+      .in('sales_rep_id', salesRepsData?.map(rep => rep.user_id) || []);
 
     if (scoresError) {
       console.error('Error fetching scores:', scoresError);
       return [];
     }
 
-    return salesRepsData.map(rep => {
+    return (salesRepsData || []).map(rep => {
       const repScores = {
         month1: new Array(5).fill(0),
         month2: new Array(6).fill(0),

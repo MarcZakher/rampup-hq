@@ -14,6 +14,26 @@ import { StatCard } from '@/components/Dashboard/StatCard';
 import { Users, TrendingUp, Target, Trophy, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area
+} from 'recharts';
+
+// Define colors for charts
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const AnalyticsPage = () => {
   const [monthlyScores, setMonthlyScores] = useState([]);
