@@ -6,9 +6,10 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/context/auth-context';
 import { AuthError } from '@supabase/supabase-js';
+import { SalesRep } from '@/types/manager';
 
 interface AddSalesRepProps {
-  onSalesRepAdded: (newRep: any) => void;
+  onSalesRepAdded: (newRep: SalesRep) => void;
 }
 
 export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
@@ -80,7 +81,6 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
         return;
       }
 
-      // Update the profiles table with the full name
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ full_name: newRepName })
