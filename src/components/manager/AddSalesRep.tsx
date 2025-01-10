@@ -51,17 +51,26 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
     try {
       const uniqueEmail = generateUniqueEmail(newRepName);
       
-      // Create user through the admin API
-      const { data: { user: newUser }, error: createError } = await supabase.auth.admin.createUser({
+      // Create user with signUp but maintain current session
+      const currentSession = await supabase.auth.getSession();
+      
+      const { data: newUser, error: createError } = await supabase.auth.signUp({
         email: uniqueEmail,
         password: 'tempPassword123',
-        email_confirm: true,
-        user_metadata: {
-          role: 'sales_rep',
-          manager_id: user.id,
-          name: newRepName
+        options: {
+          data: {
+            role: 'sales_rep',
+            manager_id: user.id,
+            name: newRepName
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
+
+      // Restore the manager's session immediately
+      if (currentSession.data.session) {
+        await supabase.auth.setSession(currentSession.data.session);
+      }
 
       if (createError) {
         toast({
@@ -72,7 +81,7 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
         return;
       }
 
-      if (!newUser) {
+      if (!newUser.user) {
         toast({
           title: "Error",
           description: "Failed to create sales representative account",
@@ -84,7 +93,7 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ full_name: newRepName })
-        .eq('id', newUser.id);
+        .eq('id', newUser.user.id);
 
       if (profileError) {
         toast({
@@ -96,7 +105,7 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
       }
 
       onSalesRepAdded({
-        id: Number(newUser.id),
+        id: Number(newUser.user.id),
         name: newRepName,
         month1: new Array(5).fill(0),
         month2: new Array(6).fill(0),
