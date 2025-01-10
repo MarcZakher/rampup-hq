@@ -6,6 +6,7 @@ import ManagerDashboard from './pages/manager/Dashboard';
 import AnalyticsPage from './pages/director/Analytics';
 import SalesRepDashboard from './pages/sales-rep/Dashboard';
 import TrainingJourney from './pages/sales-rep/TrainingJourney';
+import SalesRepAnalytics from './pages/sales-rep/Analytics';
 
 function App() {
   return (
@@ -18,7 +19,7 @@ function App() {
         <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
         <Route path="/sales-rep/dashboard" element={<SalesRepDashboard />} />
         <Route path="/sales-rep/training" element={<TrainingJourney />} />
-        <Route path="/sales-rep/analytics" element={<div>Sales Rep Analytics</div>} />
+        <Route path="/sales-rep/analytics" element={<SalesRepAnalytics />} />
       </Routes>
     </BrowserRouter>
   );
