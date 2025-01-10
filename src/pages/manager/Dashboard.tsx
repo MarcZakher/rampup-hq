@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,10 +41,25 @@ const assessments = {
   ]
 };
 
+const STORAGE_KEY = 'manager_dashboard_sales_reps';
+
 const ManagerDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
+
+  // Load saved data on component mount
+  useEffect(() => {
+    const savedReps = localStorage.getItem(STORAGE_KEY);
+    if (savedReps) {
+      setSalesReps(JSON.parse(savedReps));
+    }
+  }, []);
+
+  // Save data whenever salesReps changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(salesReps));
+  }, [salesReps]);
 
   const addSalesRep = () => {
     if (!newRepName.trim()) {
