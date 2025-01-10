@@ -75,25 +75,45 @@ export const useSalesReps = () => {
 
   const removeSalesRep = async (id: number) => {
     try {
-      const { error } = await supabase
+      // First delete the user role
+      const { error: roleError } = await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', id);
 
-      if (error) {
+      if (roleError) {
+        console.error('Error deleting user role:', roleError);
         toast({
           title: "Error",
-          description: "Failed to remove sales representative",
+          description: "Failed to remove sales representative role",
           variant: "destructive"
         });
         return;
       }
 
+      // Then delete the profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id);
+
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+        toast({
+          title: "Error",
+          description: "Failed to remove sales representative profile",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Remove from local storage
       const savedReps = localStorage.getItem('manager_dashboard_sales_reps') || '{}';
       const allSavedReps = JSON.parse(savedReps);
       delete allSavedReps[id];
       localStorage.setItem('manager_dashboard_sales_reps', JSON.stringify(allSavedReps));
 
+      // Update state
       setSalesReps(prevReps => prevReps.filter(rep => rep.id !== id));
       
       toast({
@@ -101,6 +121,7 @@ export const useSalesReps = () => {
         description: "Sales representative removed successfully"
       });
     } catch (error: any) {
+      console.error('Error in removeSalesRep:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to remove sales representative",
