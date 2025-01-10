@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface SalesRep {
   id: number;
@@ -46,7 +47,30 @@ const ManagerDashboard = () => {
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
 
-  const addSalesRep = () => {
+  useEffect(() => {
+    fetchSalesReps();
+  }, []);
+
+  const fetchSalesReps = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sales_reps')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setSalesReps(data || []);
+    } catch (error) {
+      console.error('Error fetching sales reps:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch sales representatives",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const addSalesRep = async () => {
     if (!newRepName.trim()) {
       toast({
         title: "Error",
@@ -56,31 +80,64 @@ const ManagerDashboard = () => {
       return;
     }
 
-    const newRep: SalesRep = {
-      id: Date.now(),
-      name: newRepName,
-      month1: new Array(assessments.month1.length).fill(0),
-      month2: new Array(assessments.month2.length).fill(0),
-      month3: new Array(assessments.month3.length).fill(0)
-    };
+    try {
+      const newRep = {
+        name: newRepName,
+        month1: new Array(assessments.month1.length).fill(0),
+        month2: new Array(assessments.month2.length).fill(0),
+        month3: new Array(assessments.month3.length).fill(0),
+        created_at: new Date().toISOString()
+      };
 
-    setSalesReps([...salesReps, newRep]);
-    setNewRepName('');
-    toast({
-      title: "Success",
-      description: "Sales representative added successfully"
-    });
+      const { data, error } = await supabase
+        .from('sales_reps')
+        .insert([newRep])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setSalesReps([...salesReps, data]);
+      setNewRepName('');
+      toast({
+        title: "Success",
+        description: "Sales representative added successfully"
+      });
+    } catch (error) {
+      console.error('Error adding sales rep:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add sales representative",
+        variant: "destructive"
+      });
+    }
   };
 
-  const removeSalesRep = (id: number) => {
-    setSalesReps(salesReps.filter(rep => rep.id !== id));
-    toast({
-      title: "Success",
-      description: "Sales representative removed successfully"
-    });
+  const removeSalesRep = async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('sales_reps')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setSalesReps(salesReps.filter(rep => rep.id !== id));
+      toast({
+        title: "Success",
+        description: "Sales representative removed successfully"
+      });
+    } catch (error) {
+      console.error('Error removing sales rep:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove sales representative",
+        variant: "destructive"
+      });
+    }
   };
 
-  const updateScore = (repId: number, month: 'month1' | 'month2' | 'month3', index: number, value: string) => {
+  const updateScore = async (repId: number, month: 'month1' | 'month2' | 'month3', index: number, value: string) => {
     const score = parseFloat(value);
     if (isNaN(score) || score < 0 || score > 5) {
       toast({
@@ -91,14 +148,34 @@ const ManagerDashboard = () => {
       return;
     }
 
-    setSalesReps(salesReps.map(rep => {
-      if (rep.id === repId) {
-        const newScores = [...rep[month]];
-        newScores[index] = score;
-        return { ...rep, [month]: newScores };
-      }
-      return rep;
-    }));
+    try {
+      const rep = salesReps.find(r => r.id === repId);
+      if (!rep) return;
+
+      const updatedScores = [...rep[month]];
+      updatedScores[index] = score;
+
+      const { error } = await supabase
+        .from('sales_reps')
+        .update({ [month]: updatedScores })
+        .eq('id', repId);
+
+      if (error) throw error;
+
+      setSalesReps(salesReps.map(rep => {
+        if (rep.id === repId) {
+          return { ...rep, [month]: updatedScores };
+        }
+        return rep;
+      }));
+    } catch (error) {
+      console.error('Error updating score:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update score",
+        variant: "destructive"
+      });
+    }
   };
 
   const getScoreColor = (score: number) => {
