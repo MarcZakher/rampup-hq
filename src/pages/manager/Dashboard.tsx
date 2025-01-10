@@ -84,7 +84,8 @@ const ManagerDashboard = () => {
   }, [user]);
 
   const handleSalesRepAdded = async (newRep: any) => {
-    setSalesReps(prevReps => [...prevReps, newRep]);
+    // Refresh the entire list to ensure we have all sales reps
+    await loadSalesReps();
   };
 
   const removeSalesRep = async (id: number) => {
