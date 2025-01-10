@@ -2,6 +2,7 @@ import { Users, TrendingUp, Target } from 'lucide-react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useEffect, useState } from 'react';
 
 // Sample data structure based on the image
 const assessments = {
@@ -30,49 +31,13 @@ const assessments = {
   ]
 };
 
+const STORAGE_KEY = 'manager_dashboard_sales_reps';
+
 const calculateAverage = (scores: number[]) => {
   const validScores = scores.filter(score => score > 0);
   if (validScores.length === 0) return 0;
   return Number((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(1));
 };
-
-const salesReps = [
-  { 
-    id: 1, 
-    name: 'Charlie Hobbs',
-    month1: [1.8, 2, 0, 3, 3],
-    month2: [3, 2, 2, 2, 2, 2],
-    month3: [2.5, 2.5, 2, 0, 2.5, 0]
-  },
-  { 
-    id: 2, 
-    name: 'Amina Boualem',
-    month1: [4.0, 3, 3, 4, 3.5],
-    month2: [3, 3, 3, 3, 3.5, 3],
-    month3: [0, 2.5, 4, 3, 2, 3.5]
-  },
-  { 
-    id: 3, 
-    name: 'John Doe',
-    month1: [3, 3, 3, 3, 3],
-    month2: [4, 4, 4, 4, 4, 4],
-    month3: [2, 2, 2, 2, 2, 2]
-  },
-  { 
-    id: 4, 
-    name: 'Jane Smith',
-    month1: [2, 2, 2, 2, 2],
-    month2: [3, 3, 3, 3, 3, 3],
-    month3: [4, 4, 4, 4, 4, 4]
-  },
-  { 
-    id: 5, 
-    name: 'Mike Johnson',
-    month1: [1, 1, 1, 1, 1],
-    month2: [2, 2, 2, 2, 2, 2],
-    month3: [3, 3, 3, 3, 3, 3]
-  }
-];
 
 const getScoreColor = (score: number) => {
   if (score === 0) return 'bg-white';
@@ -82,18 +47,35 @@ const getScoreColor = (score: number) => {
   return 'bg-[#FFC7CE]'; // Light red for lower scores
 };
 
+interface SalesRep {
+  id: number;
+  name: string;
+  month1: number[];
+  month2: number[];
+  month3: number[];
+}
+
 const DirectorDashboard = () => {
+  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+
+  useEffect(() => {
+    const savedReps = localStorage.getItem(STORAGE_KEY);
+    if (savedReps) {
+      setSalesReps(JSON.parse(savedReps));
+    }
+  }, []);
+
   const totalReps = salesReps.length;
-  const avgScore = (salesReps.reduce((acc, rep) => {
+  const avgScore = totalReps === 0 ? 0 : (salesReps.reduce((acc, rep) => {
     const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
     const validScores = allScores.filter(score => score > 0);
-    return acc + (validScores.reduce((sum, score) => sum + score, 0) / validScores.length);
+    return acc + (validScores.length > 0 ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length : 0);
   }, 0) / totalReps).toFixed(1);
 
   const performingWell = salesReps.filter(rep => {
     const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
     const validScores = allScores.filter(score => score > 0);
-    return (validScores.reduce((sum, score) => sum + score, 0) / validScores.length) > 3;
+    return validScores.length > 0 && (validScores.reduce((sum, score) => sum + score, 0) / validScores.length) > 3;
   }).length;
 
   return (
