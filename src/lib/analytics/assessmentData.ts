@@ -12,6 +12,12 @@ export const getAssessmentData = (): AssessmentStats[] => {
     return { avgScore, successRate };
   };
 
+  const getDifficulty = (avgScore: number): 'High' | 'Medium' | 'Low' => {
+    if (avgScore < 3) return 'High';
+    if (avgScore < 4) return 'Medium';
+    return 'Low';
+  };
+
   return [
     ...ASSESSMENTS.month1.map((name, index) => {
       const stats = getAssessmentStats('month1', index);
@@ -19,7 +25,7 @@ export const getAssessmentData = (): AssessmentStats[] => {
         name,
         successRate: Math.round(stats.successRate),
         avgScore: Number(stats.avgScore.toFixed(1)),
-        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low' as const
+        difficulty: getDifficulty(stats.avgScore)
       };
     }),
     ...ASSESSMENTS.month2.map((name, index) => {
@@ -28,7 +34,7 @@ export const getAssessmentData = (): AssessmentStats[] => {
         name,
         successRate: Math.round(stats.successRate),
         avgScore: Number(stats.avgScore.toFixed(1)),
-        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low' as const
+        difficulty: getDifficulty(stats.avgScore)
       };
     }),
     ...ASSESSMENTS.month3.map((name, index) => {
@@ -37,7 +43,7 @@ export const getAssessmentData = (): AssessmentStats[] => {
         name,
         successRate: Math.round(stats.successRate),
         avgScore: Number(stats.avgScore.toFixed(1)),
-        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low' as const
+        difficulty: getDifficulty(stats.avgScore)
       };
     })
   ];
