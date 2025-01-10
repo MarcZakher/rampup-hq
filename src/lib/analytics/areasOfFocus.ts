@@ -1,17 +1,26 @@
 import { AreaOfFocus } from '../types/analytics';
-import { getSalesReps } from '../utils/analytics';
+import { getSalesReps, calculateAverage } from '../utils/analytics';
 import { ASSESSMENTS } from '../constants/assessments';
 
 export const getAreasOfFocus = (): AreaOfFocus => {
   const salesReps = getSalesReps();
 
   const concerningReps = salesReps.map(rep => {
-    const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
-    const lowScores = allScores.filter(score => score > 0 && score < 3);
-    
-    if (lowScores.length === 0) return null;
+    // Calculate monthly averages
+    const month1Avg = calculateAverage(rep.month1);
+    const month2Avg = calculateAverage(rep.month2);
+    const month3Avg = calculateAverage(rep.month3);
 
+    // Check for consecutive months below threshold
+    const hasConsecutiveLowScores = 
+      (month1Avg < 3 && month2Avg < 3) || 
+      (month2Avg < 3 && month3Avg < 3);
+
+    if (!hasConsecutiveLowScores) return null;
+
+    // Get all low scores across months
     const lowScoreAreas = [];
+    
     rep.month1.forEach((score, index) => {
       if (score > 0 && score < 3) {
         lowScoreAreas.push({
@@ -42,10 +51,13 @@ export const getAreasOfFocus = (): AreaOfFocus => {
       }
     });
 
+    // Only include reps with multiple low-scoring assessments
+    if (lowScoreAreas.length < 2) return null;
+
     return {
       name: rep.name,
-      lowScoreCount: lowScores.length,
-      averageLowScore: Number((lowScores.reduce((a, b) => a + b, 0) / lowScores.length).toFixed(1)),
+      lowScoreCount: lowScoreAreas.length,
+      averageLowScore: Number((lowScoreAreas.reduce((a, b) => a + b.score, 0) / lowScoreAreas.length).toFixed(1)),
       areas: lowScoreAreas
     };
   }).filter(Boolean);
