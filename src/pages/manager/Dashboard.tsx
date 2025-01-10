@@ -19,20 +19,14 @@ const ManagerDashboard = () => {
 
     try {
       // Get all sales reps managed by this manager
-      const { data: salesRepsData, error: salesRepsError } = await supabase
+      const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
-        .select(`
-          user_id,
-          users:user_id (
-            email,
-            raw_user_meta_data
-          )
-        `)
+        .select('user_id')
         .eq('manager_id', user.id)
         .eq('role', 'sales_rep');
 
-      if (salesRepsError) {
-        console.error('Error fetching sales reps:', salesRepsError);
+      if (rolesError) {
+        console.error('Error fetching sales reps:', rolesError);
         toast({
           title: "Error",
           description: "Failed to load sales representatives",
@@ -41,23 +35,38 @@ const ManagerDashboard = () => {
         return;
       }
 
+      if (!userRoles?.length) {
+        setSalesReps([]);
+        return;
+      }
+
       // Get stored assessment data
       const savedReps = localStorage.getItem('manager_dashboard_sales_reps');
       const savedAssessments = savedReps ? JSON.parse(savedReps) : {};
 
+      // Get user data from auth.users
+      const { data: userData, error: userError } = await supabase.auth.admin.users({
+        userIds: userRoles.map(role => role.user_id)
+      });
+
+      if (userError) {
+        console.error('Error fetching user data:', userError);
+        return;
+      }
+
       // Map the data to our SalesRep type
-      const mappedReps = salesRepsData?.map(rep => {
-        const userData = rep.users;
-        const savedData = savedAssessments[rep.user_id] || {};
+      const mappedReps = userRoles.map(role => {
+        const userInfo = userData?.users?.find(u => u.id === role.user_id);
+        const savedData = savedAssessments[role.user_id] || {};
         
         return {
-          id: rep.user_id,
-          name: userData?.raw_user_meta_data?.name || userData?.email || 'Unknown',
+          id: role.user_id,
+          name: userInfo?.user_metadata?.name || userInfo?.email || 'Unknown',
           month1: savedData.month1 || new Array(5).fill(0),
           month2: savedData.month2 || new Array(6).fill(0),
           month3: savedData.month3 || new Array(6).fill(0),
         };
-      }) || [];
+      });
 
       setSalesReps(mappedReps);
     } catch (error: any) {
