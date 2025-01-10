@@ -5,7 +5,6 @@ import { UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/context/auth-context';
-import { AuthError } from '@supabase/supabase-js';
 import { SalesRep } from '@/types/manager';
 
 interface AddSalesRepProps {
@@ -14,29 +13,9 @@ interface AddSalesRepProps {
 
 export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
   const [newRepName, setNewRepName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-
-  const generateUniqueEmail = (name: string) => {
-    const timestamp = Date.now();
-    const sanitizedName = name.toLowerCase()
-      .replace(/[^a-z0-9]/g, '.')
-      .replace(/\.+/g, '.')
-      .replace(/^\.+|\.+$/g, '');
-    
-    return `${sanitizedName}.${timestamp}@salesrep.example.com`;
-  };
-
-  const getErrorMessage = (error: AuthError) => {
-    switch (error.message) {
-      case 'User already registered':
-        return 'A user with this email already exists. Please try again.';
-      case 'Unable to validate email address: invalid format':
-        return 'Invalid email format generated. Please try a different name.';
-      default:
-        return error.message;
-    }
-  };
 
   const addSalesRep = async () => {
     if (!newRepName.trim() || !user) {
@@ -48,53 +27,31 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
       return;
     }
 
+    setIsLoading(true);
+
     try {
-      const uniqueEmail = generateUniqueEmail(newRepName);
+      const { data: { session } } = await supabase.auth.getSession();
       
-      // Create new user with signUp
-      const { data, error: createError } = await supabase.auth.signUp({
-        email: uniqueEmail,
-        password: 'tempPassword123',
-        options: {
-          data: {
-            role: 'sales_rep',
-            manager_id: user.id,
-            name: newRepName
-          }
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      const response = await fetch(
+        'https://cyqiqcpvbsgayzdglssx.supabase.co/functions/v1/create-sales-rep',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ name: newRepName }),
         }
-      });
+      );
 
-      if (createError) {
-        toast({
-          title: "Error",
-          description: getErrorMessage(createError),
-          variant: "destructive"
-        });
-        return;
-      }
+      const data = await response.json();
 
-      if (!data.user) {
-        toast({
-          title: "Error",
-          description: "Failed to create sales representative account",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Update the profile with the full name
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ full_name: newRepName })
-        .eq('id', data.user.id);
-
-      if (profileError) {
-        toast({
-          title: "Error",
-          description: "Failed to update sales representative profile",
-          variant: "destructive"
-        });
-        return;
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create sales representative');
       }
 
       onSalesRepAdded({
@@ -116,6 +73,8 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
         description: error.message || "Failed to create sales representative",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -127,9 +86,9 @@ export const AddSalesRep = ({ onSalesRepAdded }: AddSalesRepProps) => {
         onChange={(e) => setNewRepName(e.target.value)}
         className="w-64"
       />
-      <Button onClick={addSalesRep}>
+      <Button onClick={addSalesRep} disabled={isLoading}>
         <UserPlus className="mr-2 h-4 w-4" />
-        Add Sales Rep
+        {isLoading ? 'Adding...' : 'Add Sales Rep'}
       </Button>
     </div>
   );
