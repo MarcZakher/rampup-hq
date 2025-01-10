@@ -34,9 +34,6 @@ export const useSalesReps = () => {
         return;
       }
 
-      const savedReps = localStorage.getItem('manager_dashboard_sales_reps');
-      const savedAssessments = savedReps ? JSON.parse(savedReps) : {};
-
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -47,14 +44,37 @@ export const useSalesReps = () => {
         return;
       }
 
+      // Fetch all assessment scores for the sales reps
+      const { data: scores, error: scoresError } = await supabase
+        .from('assessment_scores')
+        .select('*')
+        .eq('manager_id', user.id)
+        .in('sales_rep_id', userRoles.map(role => role.user_id));
+
+      if (scoresError) {
+        console.error('Error fetching assessment scores:', scoresError);
+        return;
+      }
+
       const mappedReps = profiles?.map(profile => {
-        const savedData = savedAssessments[profile.id] || {};
+        const repScores = scores?.filter(score => score.sales_rep_id === profile.id) || [];
+        
+        const getMonthScores = (month: string, length: number) => {
+          const monthScores = new Array(length).fill(0);
+          repScores
+            .filter(score => score.month === month)
+            .forEach(score => {
+              monthScores[score.assessment_index] = score.score;
+            });
+          return monthScores;
+        };
+
         return {
           id: profile.id,
           name: profile.full_name || 'Unknown',
-          month1: savedData.month1 || new Array(5).fill(0),
-          month2: savedData.month2 || new Array(6).fill(0),
-          month3: savedData.month3 || new Array(6).fill(0),
+          month1: getMonthScores('month1', 5),
+          month2: getMonthScores('month2', 6),
+          month3: getMonthScores('month3', 6),
         };
       }) || [];
 
@@ -75,7 +95,6 @@ export const useSalesReps = () => {
 
   const removeSalesRep = async (id: number) => {
     try {
-      // First delete the user from auth.users using our Edge Function
       const { error: deleteError } = await supabase.functions.invoke('delete-sales-rep', {
         body: { user_id: id }
       });
@@ -90,13 +109,6 @@ export const useSalesReps = () => {
         return;
       }
 
-      // Remove from local storage
-      const savedReps = localStorage.getItem('manager_dashboard_sales_reps') || '{}';
-      const allSavedReps = JSON.parse(savedReps);
-      delete allSavedReps[id];
-      localStorage.setItem('manager_dashboard_sales_reps', JSON.stringify(allSavedReps));
-
-      // Update state
       setSalesReps(prevReps => prevReps.filter(rep => rep.id !== id));
       
       toast({
