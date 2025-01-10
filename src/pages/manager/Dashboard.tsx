@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
+import { useAuth } from '@/lib/context/auth-context';
+import { supabase } from '@/lib/supabase';
 
 interface SalesRep {
   id: number;
@@ -41,112 +43,66 @@ const assessments = {
   ]
 };
 
-const initialSalesReps: SalesRep[] = [
-  {
-    id: 1,
-    name: "Charlie Hobbs",
-    month1: [1.8, 2, 0, 3, 3],
-    month2: [3, 2, 2, 2, 2, 2.5],
-    month3: [2.5, 2, 0, 2.5, 0, 0]
-  },
-  {
-    id: 2,
-    name: "Amina Boualem",
-    month1: [4.0, 3, 3, 4, 3.5],
-    month2: [3, 3, 3, 3, 3.5, 0],
-    month3: [2.5, 4, 3, 2, 3.5, 3]
-  },
-  {
-    id: 3,
-    name: "Tayfun Kurtbas",
-    month1: [2.3, 3, 3, 3, 3],
-    month2: [3, 3, 2, 2, 3, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 4,
-    name: "Katrien VanHeusden",
-    month1: [2.0, 0, 0, 3, 2.5],
-    month2: [2, 3, 2, 3, 2, 0],
-    month3: [2, 2, 1, 0, 0, 0]
-  },
-  {
-    id: 5,
-    name: "Derynne Wittes",
-    month1: [2.2, 0, 3, 3, 4.5],
-    month2: [0, 0, 3, 3.5, 0, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 6,
-    name: "Ziad Ayman",
-    month1: [3.0, 0, 3, 3.25, 3.5],
-    month2: [3.5, 0, 0, 4, 3.5, 4],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 7,
-    name: "Karl Chayeb",
-    month1: [3.5, 0, 3, 3.5, 3],
-    month2: [3, 0, 3, 3.5, 0, 3.5],
-    month3: [4, 0, 0, 3, 4, 0]
-  },
-  {
-    id: 8,
-    name: "Jose Konopnicki",
-    month1: [4.0, 0, 3, 3.075, 3.5],
-    month2: [3, 0, 4, 4, 4, 4],
-    month3: [4, 0, 0, 3.5, 3.5, 0]
-  },
-  {
-    id: 9,
-    name: "Emma Hellqvist",
-    month1: [3.0, 0, 0, 4, 4],
-    month2: [3, 0, 3.5, 3, 3, 4],
-    month3: [0, 0, 0, 4.5, 0, 0]
-  },
-  {
-    id: 10,
-    name: "Jake Curtis",
-    month1: [0.0, 0, 0, 4, 0],
-    month2: [0, 0, 0, 0, 0, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 11,
-    name: "Riccardo Profiti",
-    month1: [3.5, 4, 2.5, 3.875, 3],
-    month2: [3, 4, 3, 3.5, 2.25, 0],
-    month3: [3, 0, 0, 4, 3.75, 0]
-  }
-];
-
 const STORAGE_KEY = 'manager_dashboard_sales_reps';
 
 const ManagerDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Load saved data on component mount
   useEffect(() => {
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    if (savedReps) {
-      setSalesReps(JSON.parse(savedReps));
-    } else {
-      // If no saved data, use the initial data
-      setSalesReps(initialSalesReps);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialSalesReps));
-    }
-  }, []);
+    const loadSalesReps = async () => {
+      if (!user) return;
+
+      // Get sales reps managed by the current manager
+      const { data: userRoles, error } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('manager_id', user.id)
+        .eq('role', 'sales_rep');
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load sales representatives",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Get the saved scores for these sales reps
+      const savedReps = localStorage.getItem(STORAGE_KEY);
+      const allSavedReps = savedReps ? JSON.parse(savedReps) : [];
+
+      // Filter saved reps to only include those managed by the current manager
+      const managedReps = allSavedReps.filter((rep: SalesRep) => 
+        userRoles.some(role => role.user_id === rep.id.toString())
+      );
+
+      setSalesReps(managedReps);
+    };
+
+    loadSalesReps();
+  }, [user, toast]);
 
   // Save data whenever salesReps changes
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(salesReps));
+    const savedReps = localStorage.getItem(STORAGE_KEY);
+    const allSavedReps = savedReps ? JSON.parse(savedReps) : [];
+
+    // Update only the managed reps while preserving others
+    const updatedReps = allSavedReps.map((rep: SalesRep) => {
+      const managedRep = salesReps.find(r => r.id === rep.id);
+      return managedRep || rep;
+    });
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedReps));
   }, [salesReps]);
 
-  const addSalesRep = () => {
-    if (!newRepName.trim()) {
+  const addSalesRep = async () => {
+    if (!newRepName.trim() || !user) {
       toast({
         title: "Error",
         description: "Please enter a name for the sales representative",
@@ -155,8 +111,29 @@ const ManagerDashboard = () => {
       return;
     }
 
+    // Create a new user account for the sales rep
+    const { data: newUser, error: createError } = await supabase.auth.signUp({
+      email: `${newRepName.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+      password: 'tempPassword123', // You should implement a secure password generation/management system
+      options: {
+        data: {
+          role: 'sales_rep',
+          manager_id: user.id
+        }
+      }
+    });
+
+    if (createError || !newUser.user) {
+      toast({
+        title: "Error",
+        description: "Failed to create sales representative account",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const newRep: SalesRep = {
-      id: Date.now(),
+      id: parseInt(newUser.user.id),
       name: newRepName,
       month1: new Array(assessments.month1.length).fill(0),
       month2: new Array(assessments.month2.length).fill(0),
@@ -171,7 +148,19 @@ const ManagerDashboard = () => {
     });
   };
 
-  const removeSalesRep = (id: number) => {
+  const removeSalesRep = async (id: number) => {
+    // Remove the sales rep's user account
+    const { error } = await supabase.auth.admin.deleteUser(id.toString());
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove sales representative",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSalesReps(salesReps.filter(rep => rep.id !== id));
     toast({
       title: "Success",
