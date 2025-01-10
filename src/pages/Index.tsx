@@ -2,14 +2,23 @@ import { Users, Target, Award, TrendingUp } from 'lucide-react';
 import { AppLayout } from '@/components/Layout/AppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Welcome back, Admin</h1>
-          <p className="text-muted-foreground">Here's an overview of your sales team's progress.</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Welcome back, Admin</h1>
+            <p className="text-muted-foreground">Here's an overview of your sales team's progress.</p>
+          </div>
+          <Link 
+            to="/director/dashboard" 
+            className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          >
+            View Director Dashboard
+          </Link>
         </div>
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
