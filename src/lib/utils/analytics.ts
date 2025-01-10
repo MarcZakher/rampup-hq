@@ -13,7 +13,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
       .from('user_roles')
       .select(`
         user_id,
-        profiles!user_roles_user_id_fkey (
+        profiles:user_id (
           id,
           full_name
         )
