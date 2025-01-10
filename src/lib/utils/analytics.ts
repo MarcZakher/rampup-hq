@@ -12,19 +12,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
     let salesRepsData;
 
     if (userRole === 'director') {
-      // First, get all managers under this director
-      const { data: managers, error: managersError } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'manager')
-        .eq('manager_id', userId);
-
-      if (managersError) {
-        console.error('Error fetching managers:', managersError);
-        return [];
-      }
-
-      // Then get all sales reps under these managers
+      // If director, get all sales reps
       const { data: salesReps, error: salesRepsError } = await supabase
         .from('user_roles')
         .select(`
@@ -35,8 +23,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
             email
           )
         `)
-        .eq('role', 'sales_rep')
-        .in('manager_id', managers.map(m => m.user_id));
+        .eq('role', 'sales_rep');
 
       if (salesRepsError) {
         console.error('Error fetching sales reps:', salesRepsError);
