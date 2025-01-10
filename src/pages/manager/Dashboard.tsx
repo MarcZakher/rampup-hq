@@ -18,18 +18,38 @@ const ManagerDashboard = () => {
     if (isNaN(score) || score < 0 || score > 5 || !user) return;
 
     try {
-      // Update in Supabase
-      const { error } = await supabase
+      // First try to find if a record already exists
+      const { data: existingScore } = await supabase
         .from('assessment_scores')
-        .upsert({
-          sales_rep_id: repId.toString(),
-          manager_id: user.id,
-          month,
-          assessment_index: index,
-          score
-        });
+        .select()
+        .eq('sales_rep_id', repId.toString())
+        .eq('manager_id', user.id)
+        .eq('month', month)
+        .eq('assessment_index', index)
+        .single();
 
-      if (error) throw error;
+      if (existingScore) {
+        // If record exists, update it
+        const { error } = await supabase
+          .from('assessment_scores')
+          .update({ score })
+          .eq('id', existingScore.id);
+
+        if (error) throw error;
+      } else {
+        // If no record exists, insert a new one
+        const { error } = await supabase
+          .from('assessment_scores')
+          .insert({
+            sales_rep_id: repId.toString(),
+            manager_id: user.id,
+            month,
+            assessment_index: index,
+            score
+          });
+
+        if (error) throw error;
+      }
 
       // Update local storage for immediate UI feedback
       const savedReps = localStorage.getItem('manager_dashboard_sales_reps') || '{}';
