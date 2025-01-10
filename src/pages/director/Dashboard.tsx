@@ -41,36 +41,36 @@ const salesReps = [
     id: 1, 
     name: 'Charlie Hobbs',
     month1: [1.8, 2, 0, 3, 3],
-    month2: [3, 2, 2, 2, 2],
-    month3: [2.5, 2.5, 2, 0, 2.5, 0, 0]
+    month2: [3, 2, 2, 2, 2, 2],
+    month3: [2.5, 2.5, 2, 0, 2.5, 0]
   },
   { 
     id: 2, 
     name: 'Amina Boualem',
     month1: [4.0, 3, 3, 4, 3.5],
-    month2: [3, 3, 3, 3, 3.5],
-    month3: [0, 2.5, 4, 3, 2, 3.5, 3]
+    month2: [3, 3, 3, 3, 3.5, 3],
+    month3: [0, 2.5, 4, 3, 2, 3.5]
   },
   { 
     id: 3, 
     name: 'John Doe',
     month1: [3, 3, 3, 3, 3],
-    month2: [4, 4, 4, 4, 4],
-    month3: [2, 2, 2, 2, 2]
+    month2: [4, 4, 4, 4, 4, 4],
+    month3: [2, 2, 2, 2, 2, 2]
   },
   { 
     id: 4, 
     name: 'Jane Smith',
     month1: [2, 2, 2, 2, 2],
-    month2: [3, 3, 3, 3, 3],
-    month3: [4, 4, 4, 4, 4]
+    month2: [3, 3, 3, 3, 3, 3],
+    month3: [4, 4, 4, 4, 4, 4]
   },
   { 
     id: 5, 
     name: 'Mike Johnson',
     month1: [1, 1, 1, 1, 1],
-    month2: [2, 2, 2, 2, 2],
-    month3: [3, 3, 3, 3, 3]
+    month2: [2, 2, 2, 2, 2, 2],
+    month3: [3, 3, 3, 3, 3, 3]
   }
 ];
 
