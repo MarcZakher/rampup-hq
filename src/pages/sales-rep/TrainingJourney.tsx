@@ -2,26 +2,82 @@ import { CustomAppLayout } from "@/components/Layout/CustomAppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { PlayCircle, CheckCircle2, BookOpen } from "lucide-react";
+import { PlayCircle, CheckCircle2, BookOpen, ExternalLink } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const trainingModules = {
   month1: [
     {
       id: 1,
-      title: "Discovery Meeting Fundamentals",
-      description: "Learn the key components of successful discovery meetings",
-      progress: 100,
-      status: "completed",
-      duration: "2 hours"
+      title: "Bootcamp Pre-Work",
+      description: "Understanding of MongoDB, our Products, and Sales Process & Motions - and pass MSAT entrance exam as prerequisite to attending Bootcamp in Month 2",
+      progress: 0,
+      status: "not-started",
+      duration: "4 weeks",
+      platform: "MindTickle"
     },
     {
       id: 2,
-      title: "Solution Architecture Program",
-      description: "Understanding technical architecture and solution design",
-      progress: 60,
-      status: "in-progress",
-      duration: "4 hours"
+      title: "Condensed Pitch Training",
+      description: "Record your version of the condensed pitch, be able to discuss with your RD the challenges we help our customers with and how. Be audible ready on pitch.",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "MindTickle"
+    },
+    {
+      id: 3,
+      title: "High Propensity Migrate Playbook - Competitor 101",
+      description: "Ability to identify Migrate and Replace (CosmosDB / DocumentDB) plays",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "MindTickle"
+    },
+    {
+      id: 4,
+      title: "Route 2 Money Workshop",
+      description: "Clear path to earnings objectives mapped out along with supporting leading indicators",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "R2M"
+    },
+    {
+      id: 5,
+      title: "Identify Proof Points",
+      description: "Be audible ready to deliver 3 proof points in Month 1",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "Highspot"
+    },
+    {
+      id: 6,
+      title: "Pipeline Success Plan",
+      description: "Account Tiering / Value Pyramid on 2 accounts and PRP session on those 2 accounts by end of week 2 to Build 6 spokes to start PG from Week 3",
+      progress: 0,
+      status: "not-started",
+      duration: "1 week",
+      platform: "PSP"
+    },
+    {
+      id: 7,
+      title: "Execute on 6 Spokes",
+      description: "Book a minimum of 3 meetings per week to achieve your 5 DMs booked by the end of Month 1",
+      progress: 0,
+      status: "not-started",
+      duration: "2 weeks",
+      platform: "4-4-2"
+    },
+    {
+      id: 8,
+      title: "Shadow Meetings",
+      description: "Discovery capture sheet for each call shadowed to be discussed with Managed in 121 (Preference on NBM). Use Chorus if unable to shadow live meetings.",
+      progress: 0,
+      status: "not-started",
+      duration: "4 weeks",
+      platform: "AE shadow"
     }
   ],
   month2: [
@@ -68,7 +124,7 @@ export default function TrainingJourney() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
-        return <CheckCircle2 className="h-6 w-6 text-green-500" />;
+        return <CheckCircle2 className="h-6 w-6 text-assessment-green" />;
       case "in-progress":
         return <PlayCircle className="h-6 w-6 text-blue-500" />;
       default:
@@ -87,7 +143,15 @@ export default function TrainingJourney() {
                 {module.title}
               </div>
             </CardTitle>
-            <span className="text-sm text-gray-500">{module.duration}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">{module.duration}</span>
+              {module.platform && (
+                <Button variant="outline" size="sm" className="gap-2">
+                  <ExternalLink className="h-4 w-4" />
+                  {module.platform}
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">{module.description}</p>
