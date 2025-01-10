@@ -8,6 +8,99 @@ interface SalesRep {
   month3: number[];
 }
 
+export const getAreasOfFocus = () => {
+  const savedReps = localStorage.getItem(STORAGE_KEY);
+  const salesReps: SalesRep[] = savedReps ? JSON.parse(savedReps) : [];
+
+  const assessments = {
+    month1: [
+      'Discovery meeting roleplay pitch',
+      'SA program',
+      'Shadow capture',
+      'Deliver 3 Proof points',
+      'Account Tiering'
+    ],
+    month2: [
+      'PG plan',
+      'SA program',
+      'NBM Role play',
+      '1st meeting excellence deck',
+      'Pitch/Trap setting questions',
+      'Account plan 1'
+    ],
+    month3: [
+      'COM Review',
+      'SA program',
+      'Champion plan',
+      'Deal review',
+      'TFW prep and execution',
+      'Pitch PS'
+    ]
+  };
+
+  const concerningReps = salesReps.map(rep => {
+    const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
+    const lowScores = allScores.filter(score => score > 0 && score < 3);
+    
+    if (lowScores.length === 0) return null;
+
+    const lowScoreAreas = [];
+    rep.month1.forEach((score, index) => {
+      if (score > 0 && score < 3) {
+        lowScoreAreas.push({
+          assessment: assessments.month1[index],
+          score,
+          month: 'Month 1'
+        });
+      }
+    });
+
+    rep.month2.forEach((score, index) => {
+      if (score > 0 && score < 3) {
+        lowScoreAreas.push({
+          assessment: assessments.month2[index],
+          score,
+          month: 'Month 2'
+        });
+      }
+    });
+
+    rep.month3.forEach((score, index) => {
+      if (score > 0 && score < 3) {
+        lowScoreAreas.push({
+          assessment: assessments.month3[index],
+          score,
+          month: 'Month 3'
+        });
+      }
+    });
+
+    return {
+      name: rep.name,
+      lowScoreCount: lowScores.length,
+      averageLowScore: Number((lowScores.reduce((a, b) => a + b, 0) / lowScores.length).toFixed(1)),
+      areas: lowScoreAreas
+    };
+  }).filter(Boolean);
+
+  // Group similar assessments to identify patterns
+  const assessmentPatterns = concerningReps.flatMap(rep => rep?.areas || [])
+    .reduce((acc: { [key: string]: number }, curr) => {
+      acc[curr.assessment] = (acc[curr.assessment] || 0) + 1;
+      return acc;
+    }, {});
+
+  return {
+    repsNeedingAttention: concerningReps,
+    commonChallenges: Object.entries(assessmentPatterns)
+      .sort(([, a], [, b]) => b - a)
+      .map(([assessment, count]) => ({
+        assessment,
+        count
+      }))
+  };
+};
+
 const calculateAverage = (scores: number[]) => {
   const validScores = scores.filter(score => score > 0);
   return validScores.length > 0 ? validScores.reduce((a, b) => a + b, 0) / validScores.length : 0;

@@ -10,10 +10,11 @@ import {
   getAssessmentData,
   getRepPerformance,
   getScoreDistribution,
-  getTeamProgress
+  getTeamProgress,
+  getAreasOfFocus
 } from '@/lib/mockAnalyticsData';
 import { StatCard } from '@/components/Dashboard/StatCard';
-import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
+import { Users, TrendingUp, Target, Trophy, AlertTriangle } from 'lucide-react';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -23,6 +24,7 @@ const AnalyticsPage = () => {
   const [repPerformance, setRepPerformance] = useState([]);
   const [scoreDistribution, setScoreDistribution] = useState([]);
   const [teamProgress, setTeamProgress] = useState({ meetingTarget: 0, completionRate: 0, averageImprovement: 0 });
+  const [areasOfFocus, setAreasOfFocus] = useState({ repsNeedingAttention: [], commonChallenges: [] });
 
   useEffect(() => {
     const updateData = () => {
@@ -31,10 +33,10 @@ const AnalyticsPage = () => {
       setRepPerformance(getRepPerformance());
       setScoreDistribution(getScoreDistribution());
       setTeamProgress(getTeamProgress());
+      setAreasOfFocus(getAreasOfFocus());
     };
 
     updateData();
-    // Update when localStorage changes
     window.addEventListener('storage', updateData);
     return () => window.removeEventListener('storage', updateData);
   }, []);
@@ -185,6 +187,50 @@ const AnalyticsPage = () => {
                 <Tooltip />
                 <Legend />
                 <Bar dataKey="successRate" fill="#8884d8" name="Completion Rate %" />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+        </div>
+
+        {/* Areas of Focus Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <h2 className="text-lg font-semibold">Areas Needing Attention</h2>
+            </div>
+            <div className="space-y-4">
+              {areasOfFocus.repsNeedingAttention.map((rep, index) => (
+                <div key={index} className="border-b border-gray-200 pb-4 last:border-0">
+                  <h3 className="font-medium text-lg mb-2">{rep.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {rep.lowScoreCount} low scores (avg: {rep.averageLowScore})
+                  </p>
+                  <div className="space-y-2">
+                    {rep.areas.map((area, areaIndex) => (
+                      <div key={areaIndex} className="flex justify-between items-center text-sm">
+                        <span className="text-red-500">{area.assessment}</span>
+                        <span>{area.month} - Score: {area.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <h2 className="text-lg font-semibold">Common Challenges</h2>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={areasOfFocus.commonChallenges}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="assessment" angle={-45} textAnchor="end" height={100} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="count" fill="#fbbf24" name="Number of Low Scores" />
               </BarChart>
             </ResponsiveContainer>
           </Card>
