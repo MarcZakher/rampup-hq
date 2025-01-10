@@ -9,16 +9,14 @@ export const calculateAverage = (scores: number[]): number => {
 
 export const getSalesReps = async (userId: string, userRole?: string): Promise<SalesRep[]> => {
   try {
-    // First get the user roles and their associated profiles
+    // First get the user roles and profiles in a single query
     const { data: salesRepsData, error: salesRepsError } = await supabase
       .from('user_roles')
       .select(`
         user_id,
-        user:user_id (
-          profile:profiles (
-            id,
-            full_name
-          )
+        manager_id,
+        profiles!user_roles_user_id_fkey (
+          full_name
         )
       `)
       .eq('role', 'sales_rep');
@@ -75,7 +73,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
 
       return {
         id: rep.user_id,
-        name: rep.user?.profile?.full_name || 'Unknown',
+        name: rep.profiles?.full_name || 'Unknown',
         month1: repScores.month1,
         month2: repScores.month2,
         month3: repScores.month3,
