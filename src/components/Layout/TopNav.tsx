@@ -2,7 +2,7 @@ import { Bell, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/context/auth-context';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
