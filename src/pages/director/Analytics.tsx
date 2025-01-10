@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import {
@@ -6,16 +6,39 @@ import {
   BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 import {
-  monthlyScores,
-  assessmentData,
-  repPerformance,
-  scoreDistribution,
-  teamProgress
+  getMonthlyScores,
+  getAssessmentData,
+  getRepPerformance,
+  getScoreDistribution,
+  getTeamProgress
 } from '@/lib/mockAnalyticsData';
+import { StatCard } from '@/components/Dashboard/StatCard';
+import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 const AnalyticsPage = () => {
+  const [monthlyScores, setMonthlyScores] = useState([]);
+  const [assessmentData, setAssessmentData] = useState([]);
+  const [repPerformance, setRepPerformance] = useState([]);
+  const [scoreDistribution, setScoreDistribution] = useState([]);
+  const [teamProgress, setTeamProgress] = useState({ meetingTarget: 0, completionRate: 0, averageImprovement: 0 });
+
+  useEffect(() => {
+    const updateData = () => {
+      setMonthlyScores(getMonthlyScores());
+      setAssessmentData(getAssessmentData());
+      setRepPerformance(getRepPerformance());
+      setScoreDistribution(getScoreDistribution());
+      setTeamProgress(getTeamProgress());
+    };
+
+    updateData();
+    // Update when localStorage changes
+    window.addEventListener('storage', updateData);
+    return () => window.removeEventListener('storage', updateData);
+  }, []);
+
   return (
     <CustomAppLayout>
       <div className="p-6 space-y-6">
@@ -23,26 +46,30 @@ const AnalyticsPage = () => {
         
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card className="p-4">
-            <h3 className="text-sm font-medium text-gray-500">Team Average Score</h3>
-            <p className="text-2xl font-bold">4.1/5.0</p>
-            <span className="text-green-500 text-sm">+0.3 from last month</span>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium text-gray-500">Reps Meeting Target</h3>
-            <p className="text-2xl font-bold">{teamProgress.meetingTarget}%</p>
-            <span className="text-green-500 text-sm">+5% from last month</span>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium text-gray-500">Completion Rate</h3>
-            <p className="text-2xl font-bold">{teamProgress.completionRate}%</p>
-            <span className="text-green-500 text-sm">+2% from last month</span>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium text-gray-500">Avg Improvement</h3>
-            <p className="text-2xl font-bold">+{teamProgress.averageImprovement}</p>
-            <span className="text-green-500 text-sm">Trending up</span>
-          </Card>
+          <StatCard
+            title="Team Average Score"
+            value={`${monthlyScores[2]?.avgScore || '0'}/5.0`}
+            icon={<Users className="h-4 w-4 text-muted-foreground" />}
+            description={`${teamProgress.averageImprovement >= 0 ? '+' : ''}${teamProgress.averageImprovement} from last month`}
+          />
+          <StatCard
+            title="Reps Meeting Target"
+            value={`${teamProgress.meetingTarget}%`}
+            icon={<Target className="h-4 w-4 text-muted-foreground" />}
+            description="Score above 3/5"
+          />
+          <StatCard
+            title="Completion Rate"
+            value={`${teamProgress.completionRate}%`}
+            icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+            description="Of all assessments"
+          />
+          <StatCard
+            title="Top Performer"
+            value={repPerformance[0]?.name || 'N/A'}
+            icon={<Trophy className="h-4 w-4 text-muted-foreground" />}
+            description={`Score: ${repPerformance[0]?.overallScore || 0}/5`}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -101,7 +128,7 @@ const AnalyticsPage = () => {
             </ResponsiveContainer>
           </Card>
 
-          {/* Top Performers */}
+          {/* Individual Performance */}
           <Card className="p-4">
             <h2 className="text-lg font-semibold mb-4">Individual Performance</h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -117,7 +144,7 @@ const AnalyticsPage = () => {
             </ResponsiveContainer>
           </Card>
 
-          {/* Improvement Trends */}
+          {/* Monthly Progress */}
           <Card className="p-4">
             <h2 className="text-lg font-semibold mb-4">Monthly Progress</h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -147,7 +174,7 @@ const AnalyticsPage = () => {
             </ResponsiveContainer>
           </Card>
 
-          {/* Team Progress */}
+          {/* Assessment Completion */}
           <Card className="p-4">
             <h2 className="text-lg font-semibold mb-4">Assessment Completion Rates</h2>
             <ResponsiveContainer width="100%" height={300}>

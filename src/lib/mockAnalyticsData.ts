@@ -1,32 +1,198 @@
-export const monthlyScores = [
-  { month: 'Jan', avgScore: 3.8, totalReps: 24, improving: 15, declining: 6 },
-  { month: 'Feb', avgScore: 4.1, totalReps: 24, improving: 18, declining: 4 },
-  { month: 'Mar', avgScore: 4.3, totalReps: 24, improving: 20, declining: 3 },
-];
+const STORAGE_KEY = 'manager_dashboard_sales_reps';
 
-export const assessmentData = [
-  { name: 'Product Knowledge', successRate: 85, avgScore: 4.2, difficulty: 'Medium' },
-  { name: 'Sales Technique', successRate: 78, avgScore: 3.9, difficulty: 'High' },
-  { name: 'Customer Service', successRate: 92, avgScore: 4.5, difficulty: 'Low' },
-  { name: 'Negotiation Skills', successRate: 75, avgScore: 3.8, difficulty: 'High' },
-];
+interface SalesRep {
+  id: number;
+  name: string;
+  month1: number[];
+  month2: number[];
+  month3: number[];
+}
 
-export const repPerformance = [
-  { name: 'John Doe', overallScore: 4.8, improvement: 0.5, consistency: 0.9 },
-  { name: 'Jane Smith', overallScore: 4.6, improvement: 0.3, consistency: 0.95 },
-  { name: 'Mike Johnson', overallScore: 3.2, improvement: -0.2, consistency: 0.7 },
-  { name: 'Sarah Wilson', overallScore: 4.1, improvement: 0.4, consistency: 0.85 },
-];
+const calculateAverage = (scores: number[]) => {
+  const validScores = scores.filter(score => score > 0);
+  return validScores.length > 0 ? validScores.reduce((a, b) => a + b, 0) / validScores.length : 0;
+};
 
-export const scoreDistribution = [
-  { range: '4.5-5.0', count: 8 },
-  { range: '4.0-4.4', count: 10 },
-  { range: '3.5-3.9', count: 4 },
-  { range: '3.0-3.4', count: 2 },
-];
+export const getMonthlyScores = () => {
+  const savedReps = localStorage.getItem(STORAGE_KEY);
+  const salesReps: SalesRep[] = savedReps ? JSON.parse(savedReps) : [];
 
-export const teamProgress = {
-  meetingTarget: 85,
-  completionRate: 92,
-  averageImprovement: 0.4,
+  return [
+    {
+      month: 'Month 1',
+      avgScore: Number(salesReps.reduce((acc, rep) => acc + calculateAverage(rep.month1), 0) / salesReps.length).toFixed(1),
+      totalReps: salesReps.length,
+      improving: salesReps.filter(rep => calculateAverage(rep.month1) > 3).length,
+      declining: salesReps.filter(rep => calculateAverage(rep.month1) <= 3).length
+    },
+    {
+      month: 'Month 2',
+      avgScore: Number(salesReps.reduce((acc, rep) => acc + calculateAverage(rep.month2), 0) / salesReps.length).toFixed(1),
+      totalReps: salesReps.length,
+      improving: salesReps.filter(rep => calculateAverage(rep.month2) > 3).length,
+      declining: salesReps.filter(rep => calculateAverage(rep.month2) <= 3).length
+    },
+    {
+      month: 'Month 3',
+      avgScore: Number(salesReps.reduce((acc, rep) => acc + calculateAverage(rep.month3), 0) / salesReps.length).toFixed(1),
+      totalReps: salesReps.length,
+      improving: salesReps.filter(rep => calculateAverage(rep.month3) > 3).length,
+      declining: salesReps.filter(rep => calculateAverage(rep.month3) <= 3).length
+    }
+  ];
+};
+
+export const getAssessmentData = () => {
+  const savedReps = localStorage.getItem(STORAGE_KEY);
+  const salesReps: SalesRep[] = savedReps ? JSON.parse(savedReps) : [];
+  const assessments = {
+    month1: [
+      'Discovery meeting roleplay pitch',
+      'SA program',
+      'Shadow capture',
+      'Deliver 3 Proof points',
+      'Account Tiering'
+    ],
+    month2: [
+      'PG plan',
+      'SA program',
+      'NBM Role play',
+      '1st meeting excellence deck',
+      'Pitch/Trap setting questions',
+      'Account plan 1'
+    ],
+    month3: [
+      'COM Review',
+      'SA program',
+      'Champion plan',
+      'Deal review',
+      'TFW prep and execution',
+      'Pitch PS'
+    ]
+  };
+
+  const getAssessmentStats = (monthKey: 'month1' | 'month2' | 'month3', index: number) => {
+    const scores = salesReps.map(rep => rep[monthKey][index]).filter(score => score > 0);
+    const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    const successRate = (scores.filter(score => score >= 3).length / scores.length) * 100;
+    return { avgScore, successRate };
+  };
+
+  return [
+    ...assessments.month1.map((name, index) => {
+      const stats = getAssessmentStats('month1', index);
+      return {
+        name,
+        successRate: Math.round(stats.successRate),
+        avgScore: Number(stats.avgScore.toFixed(1)),
+        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low'
+      };
+    }),
+    ...assessments.month2.map((name, index) => {
+      const stats = getAssessmentStats('month2', index);
+      return {
+        name,
+        successRate: Math.round(stats.successRate),
+        avgScore: Number(stats.avgScore.toFixed(1)),
+        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low'
+      };
+    }),
+    ...assessments.month3.map((name, index) => {
+      const stats = getAssessmentStats('month3', index);
+      return {
+        name,
+        successRate: Math.round(stats.successRate),
+        avgScore: Number(stats.avgScore.toFixed(1)),
+        difficulty: stats.avgScore < 3 ? 'High' : stats.avgScore < 4 ? 'Medium' : 'Low'
+      };
+    })
+  ];
+};
+
+export const getRepPerformance = () => {
+  const savedReps = localStorage.getItem(STORAGE_KEY);
+  const salesReps: SalesRep[] = savedReps ? JSON.parse(savedReps) : [];
+
+  return salesReps.map(rep => {
+    const month1Avg = calculateAverage(rep.month1);
+    const month2Avg = calculateAverage(rep.month2);
+    const month3Avg = calculateAverage(rep.month3);
+    const scores = [month1Avg, month2Avg, month3Avg].filter(score => score > 0);
+    const overallScore = calculateAverage(scores);
+    
+    const improvement = scores.length >= 2 ? 
+      scores[scores.length - 1] - scores[scores.length - 2] : 0;
+
+    const consistency = scores.length > 0 ? 
+      1 - (Math.max(...scores) - Math.min(...scores)) / 5 : 0;
+
+    return {
+      name: rep.name,
+      overallScore: Number(overallScore.toFixed(1)),
+      improvement: Number(improvement.toFixed(1)),
+      consistency: Number(consistency.toFixed(2))
+    };
+  });
+};
+
+export const getScoreDistribution = () => {
+  const savedReps = localStorage.getItem(STORAGE_KEY);
+  const salesReps: SalesRep[] = savedReps ? JSON.parse(savedReps) : [];
+
+  const ranges = [
+    { range: '4.5-5.0', min: 4.5, max: 5.0 },
+    { range: '4.0-4.4', min: 4.0, max: 4.4 },
+    { range: '3.5-3.9', min: 3.5, max: 3.9 },
+    { range: '3.0-3.4', min: 3.0, max: 3.4 },
+    { range: '0.0-2.9', min: 0, max: 2.9 }
+  ];
+
+  return ranges.map(({ range, min, max }) => {
+    const count = salesReps.filter(rep => {
+      const avgScore = calculateAverage([
+        ...rep.month1,
+        ...rep.month2,
+        ...rep.month3
+      ]);
+      return avgScore >= min && avgScore <= max;
+    }).length;
+
+    return { range, count };
+  });
+};
+
+export const getTeamProgress = () => {
+  const savedReps = localStorage.getItem(STORAGE_KEY);
+  const salesReps: SalesRep[] = savedReps ? JSON.parse(savedReps) : [];
+
+  const totalScores = salesReps.flatMap(rep => [
+    ...rep.month1,
+    ...rep.month2,
+    ...rep.month3
+  ]).filter(score => score > 0);
+
+  const meetingTarget = totalScores.length > 0 ?
+    Math.round((totalScores.filter(score => score >= 3).length / totalScores.length) * 100) : 0;
+
+  const completionRate = salesReps.length > 0 ?
+    Math.round((totalScores.length / (salesReps.length * (5 + 6 + 6))) * 100) : 0;
+
+  const monthlyAverages = salesReps.map(rep => [
+    calculateAverage(rep.month1),
+    calculateAverage(rep.month2),
+    calculateAverage(rep.month3)
+  ].filter(avg => avg > 0));
+
+  const averageImprovement = monthlyAverages.reduce((sum, reps) => {
+    if (reps.length >= 2) {
+      return sum + (reps[reps.length - 1] - reps[reps.length - 2]);
+    }
+    return sum;
+  }, 0) / salesReps.length;
+
+  return {
+    meetingTarget,
+    completionRate,
+    averageImprovement: Number(averageImprovement.toFixed(1))
+  };
 };
