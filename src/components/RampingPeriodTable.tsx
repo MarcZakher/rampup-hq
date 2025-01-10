@@ -57,7 +57,7 @@ const rampingData = [
 export function RampingPeriodTable() {
   return (
     <div className="w-full">
-      <div className="text-2xl font-semibold text-center mb-6">Ramping Period</div>
+      <div className="text-2xl font-semibold text-center mb-6">Expectations during the Ramping Period</div>
       <Table>
         <TableHeader>
           <TableRow>
