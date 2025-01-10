@@ -1,22 +1,20 @@
 import { CustomAppLayout } from "@/components/Layout/CustomAppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { PlayCircle, CheckCircle2, BookOpen, ExternalLink } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TrainingPeriod } from "@/components/training/TrainingPeriod";
+import { useCallback } from "react";
+import { TrainingModule } from "@/types/training";
+import { useToast } from "@/components/ui/use-toast";
 
-interface TrainingModule {
-  id: number;
-  title: string;
-  description: string;
-  progress: number;
-  status: "completed" | "in-progress" | "not-started";
-  duration: string;
-  platform?: string;
-}
-
-const trainingModules: Record<string, TrainingModule[]> = {
-  month1: [
+// This would come from an API in a real SaaS platform
+const mockTrainingData = {
+  id: "default-program",
+  organizationId: "mongodb",
+  name: "MongoDB Sales Training Program",
+  periods: [
+    {
+      id: "month1",
+      name: "Month 1",
+      modules: [
     {
       id: 1,
       title: "Bootcamp Pre-Work",
@@ -89,8 +87,12 @@ const trainingModules: Record<string, TrainingModule[]> = {
       duration: "4 weeks",
       platform: "AE shadow"
     }
-  ],
-  month2: [
+      ]
+    },
+    {
+      id: "month2",
+      name: "Month 2",
+      modules: [
     {
       id: 1,
       title: "GTM Bootcamp in Dublin",
@@ -172,8 +174,12 @@ const trainingModules: Record<string, TrainingModule[]> = {
       duration: "1 week",
       platform: "IST recording bank"
     }
-  ],
-  month3: [
+      ]
+    },
+    {
+      id: "month3",
+      name: "Month 3",
+      modules: [
     {
       id: 1,
       title: "Champion Building & Analysis",
@@ -228,8 +234,12 @@ const trainingModules: Record<string, TrainingModule[]> = {
       duration: "1 week",
       platform: "RD led"
     }
-  ],
-  month4: [
+      ]
+    },
+    {
+      id: "month4",
+      name: "Month 4",
+      modules: [
     {
       id: 1,
       title: "Create and Launch New Spokes",
@@ -273,91 +283,49 @@ const trainingModules: Record<string, TrainingModule[]> = {
       duration: "2 weeks",
       platform: "Alignment with SA and RD"
     }
+      ]
+    }
   ]
 };
 
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case "completed":
-      return <CheckCircle2 className="h-6 w-6 text-assessment-green" />;
-    case "in-progress":
-      return <PlayCircle className="h-6 w-6 text-blue-500" />;
-    default:
-      return <BookOpen className="h-6 w-6 text-gray-400" />;
-  }
-};
-
-const renderModules = (modules: typeof trainingModules.month1) => (
-  <div className="grid gap-6">
-    {modules.map((module) => (
-      <Card key={module.id} className="hover:shadow-lg transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-xl font-semibold">
-            <div className="flex items-center gap-3">
-              {getStatusIcon(module.status)}
-              {module.title}
-            </div>
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">{module.duration}</span>
-            {module.platform && (
-              <Button variant="outline" size="sm" className="gap-2">
-                <ExternalLink className="h-4 w-4" />
-                {module.platform}
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-600 mb-4">{module.description}</p>
-          <div className="space-y-4">
-            <Progress value={module.progress} className="h-2" />
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-500">
-                {module.progress}% Complete
-              </span>
-              <Button
-                variant={module.status === "completed" ? "secondary" : "default"}
-                disabled={module.status === "completed"}
-              >
-                {module.status === "completed" ? "Completed" : "Start Module"}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    ))}
-  </div>
-);
-
 export default function TrainingJourney() {
+  const { toast } = useToast();
+
+  const handleStartModule = useCallback((moduleId: number) => {
+    // In a real app, this would make an API call to update the module status
+    toast({
+      title: "Module Started",
+      description: "Your progress has been saved.",
+    });
+  }, [toast]);
+
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Training Journey</h1>
-          <p className="text-gray-600">Track your progress through the sales training program</p>
+          <p className="text-gray-600">
+            Track your progress through the sales training program
+          </p>
         </div>
 
         <Tabs defaultValue="month1" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="month1">Month 1</TabsTrigger>
-            <TabsTrigger value="month2">Month 2</TabsTrigger>
-            <TabsTrigger value="month3">Month 3</TabsTrigger>
-            <TabsTrigger value="month4">Month 4</TabsTrigger>
+            {mockTrainingData.periods.map((period) => (
+              <TabsTrigger key={period.id} value={period.id}>
+                {period.name}
+              </TabsTrigger>
+            ))}
           </TabsList>
-          <TabsContent value="month1">
-            {renderModules(trainingModules.month1)}
-          </TabsContent>
-          <TabsContent value="month2">
-            {renderModules(trainingModules.month2)}
-          </TabsContent>
-          <TabsContent value="month3">
-            {renderModules(trainingModules.month3)}
-          </TabsContent>
-          <TabsContent value="month4">
-            {renderModules(trainingModules.month4)}
-          </TabsContent>
+          
+          {mockTrainingData.periods.map((period) => (
+            <TabsContent key={period.id} value={period.id}>
+              <TrainingPeriod
+                period={period}
+                onStartModule={handleStartModule}
+              />
+            </TabsContent>
+          ))}
         </Tabs>
       </div>
     </CustomAppLayout>
