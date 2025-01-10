@@ -25,7 +25,7 @@ export default function Login() {
     return emailRegex.test(email);
   };
 
-  const handleLogin = async (email: string, password: string, role: string) => {
+  const handleLogin = async (email: string, password: string) => {
     if (!validateEmail(email)) {
       toast({
         title: 'Invalid Email',
