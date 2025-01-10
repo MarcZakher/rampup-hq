@@ -13,12 +13,20 @@ const Index = () => {
             <h1 className="text-3xl font-bold">Welcome back, Admin</h1>
             <p className="text-muted-foreground">Here's an overview of your sales team's progress.</p>
           </div>
-          <Link 
-            to="/director/dashboard" 
-            className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-          >
-            View Director Dashboard
-          </Link>
+          <div className="space-x-4">
+            <Link 
+              to="/director/dashboard" 
+              className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              View Director Dashboard
+            </Link>
+            <Link 
+              to="/manager/dashboard" 
+              className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              View Manager Dashboard
+            </Link>
+          </div>
         </div>
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
