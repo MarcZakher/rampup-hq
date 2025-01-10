@@ -5,6 +5,7 @@ import DirectorDashboard from './pages/director/Dashboard';
 import ManagerDashboard from './pages/manager/Dashboard';
 import AnalyticsPage from './pages/director/Analytics';
 import SalesRepDashboard from './pages/sales-rep/Dashboard';
+import TrainingJourney from './pages/sales-rep/TrainingJourney';
 
 function App() {
   return (
@@ -16,7 +17,7 @@ function App() {
         <Route path="/manager/dashboard" element={<ManagerDashboard />} />
         <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
         <Route path="/sales-rep/dashboard" element={<SalesRepDashboard />} />
-        <Route path="/sales-rep/training" element={<div>Training Journey</div>} />
+        <Route path="/sales-rep/training" element={<TrainingJourney />} />
         <Route path="/sales-rep/analytics" element={<div>Sales Rep Analytics</div>} />
       </Routes>
     </BrowserRouter>
