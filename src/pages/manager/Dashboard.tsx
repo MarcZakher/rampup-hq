@@ -18,15 +18,21 @@ const ManagerDashboard = () => {
     if (!user) return;
 
     try {
-      // First, get all sales reps managed by this manager from user_roles table
-      const { data: userRoles, error: rolesError } = await supabase
+      // Get all sales reps managed by this manager
+      const { data: salesRepsData, error: salesRepsError } = await supabase
         .from('user_roles')
-        .select('user_id, created_at')
+        .select(`
+          user_id,
+          users:user_id (
+            email,
+            raw_user_meta_data
+          )
+        `)
         .eq('manager_id', user.id)
         .eq('role', 'sales_rep');
 
-      if (rolesError) {
-        console.error('Error fetching user roles:', rolesError);
+      if (salesRepsError) {
+        console.error('Error fetching sales reps:', salesRepsError);
         toast({
           title: "Error",
           description: "Failed to load sales representatives",
@@ -35,36 +41,23 @@ const ManagerDashboard = () => {
         return;
       }
 
-      if (!userRoles?.length) {
-        setSalesReps([]);
-        return;
-      }
-
-      // Get user details from auth.users
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.error('Error fetching auth users:', authError);
-        return;
-      }
-
       // Get stored assessment data
       const savedReps = localStorage.getItem('manager_dashboard_sales_reps');
       const savedAssessments = savedReps ? JSON.parse(savedReps) : {};
 
-      // Combine the data
-      const mappedReps = userRoles.map((role) => {
-        const authUser = authUsers.users.find(u => u.id === role.user_id);
-        const savedData = savedAssessments[role.user_id] || {};
+      // Map the data to our SalesRep type
+      const mappedReps = salesRepsData?.map(rep => {
+        const userData = rep.users;
+        const savedData = savedAssessments[rep.user_id] || {};
         
         return {
-          id: role.user_id,
-          name: authUser?.user_metadata?.name || 'Unknown',
+          id: rep.user_id,
+          name: userData?.raw_user_meta_data?.name || userData?.email || 'Unknown',
           month1: savedData.month1 || new Array(5).fill(0),
           month2: savedData.month2 || new Array(6).fill(0),
           month3: savedData.month3 || new Array(6).fill(0),
         };
-      });
+      }) || [];
 
       setSalesReps(mappedReps);
     } catch (error: any) {
@@ -81,19 +74,13 @@ const ManagerDashboard = () => {
     loadSalesReps();
   }, [user]);
 
-  const handleSalesRepAdded = async (newRep: SalesRep) => {
-    // Update local storage
-    const savedReps = localStorage.getItem('manager_dashboard_sales_reps') || '{}';
-    const allSavedReps = JSON.parse(savedReps);
-    allSavedReps[newRep.id] = {
-      month1: newRep.month1,
-      month2: newRep.month2,
-      month3: newRep.month3,
-    };
-    localStorage.setItem('manager_dashboard_sales_reps', JSON.stringify(allSavedReps));
-
-    // Refresh the sales reps list
+  const handleSalesRepAdded = async () => {
+    // Refresh the sales reps list when a new rep is added
     await loadSalesReps();
+    toast({
+      title: "Success",
+      description: "Sales representative added successfully"
+    });
   };
 
   const removeSalesRep = async (id: number) => {
