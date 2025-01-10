@@ -21,6 +21,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [role, setRole] = useState<string>('');
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -47,38 +48,6 @@ export default function Login() {
       }
     }
     return 'An error occurred. Please try again.';
-  };
-
-  const handleRedirect = async (userId: string) => {
-    try {
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
-
-      if (roleError) {
-        console.error('Error fetching user role:', roleError);
-        return;
-      }
-
-      switch (roleData?.role) {
-        case 'sales_rep':
-          navigate('/sales-rep/dashboard');
-          break;
-        case 'manager':
-          navigate('/manager/dashboard');
-          break;
-        case 'director':
-          navigate('/director/dashboard');
-          break;
-        default:
-          navigate('/');
-      }
-    } catch (error) {
-      console.error('Error during redirect:', error);
-      navigate('/');
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,19 +98,11 @@ export default function Login() {
           description: "Please check your email to verify your account",
         });
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+        await signIn(email, password);
+        toast({
+          title: "Success",
+          description: "You have successfully logged in",
         });
-        if (error) throw error;
-        
-        if (data.user) {
-          await handleRedirect(data.user.id);
-          toast({
-            title: "Success",
-            description: "You have successfully logged in",
-          });
-        }
       }
     } catch (error: any) {
       console.error('Auth error:', error);
