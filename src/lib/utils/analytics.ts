@@ -9,10 +9,8 @@ export const calculateAverage = (scores: number[]): number => {
 
 export const getSalesReps = async (userId: string, userRole?: string): Promise<SalesRep[]> => {
   try {
-    let salesRepsData;
-
     if (userRole === 'director') {
-      // For directors, first get all users with sales_rep role
+      // For directors, get all sales reps
       const { data: salesRepRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -28,7 +26,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
         return [];
       }
 
-      // Get profiles for all sales reps
+      // Get profiles in a separate query
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email')
@@ -39,7 +37,7 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
         return [];
       }
 
-      // Get all assessment scores for these sales reps
+      // Get assessment scores
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
@@ -76,17 +74,10 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
       });
 
     } else if (userRole === 'manager') {
-      // If manager, get their direct reports
+      // For managers, get their direct reports
       const { data: salesReps, error: salesRepsError } = await supabase
         .from('user_roles')
-        .select(`
-          user_id,
-          manager_id,
-          profiles!inner (
-            full_name,
-            email
-          )
-        `)
+        .select('user_id')
         .eq('role', 'sales_rep')
         .eq('manager_id', userId);
 
@@ -95,46 +86,55 @@ export const getSalesReps = async (userId: string, userRole?: string): Promise<S
         return [];
       }
 
-      salesRepsData = salesReps;
-    }
+      if (!salesReps?.length) return [];
 
-    if (!salesRepsData || salesRepsData.length === 0) {
-      return [];
-    }
+      // Get profiles in a separate query
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', salesReps.map(rep => rep.user_id));
 
-    // Get assessment scores for these sales reps
-    const { data: scores, error: scoresError } = await supabase
-      .from('assessment_scores')
-      .select('*')
-      .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return [];
+      }
 
-    if (scoresError) {
-      console.error('Error fetching scores:', scoresError);
-      return [];
-    }
+      // Get assessment scores
+      const { data: scores, error: scoresError } = await supabase
+        .from('assessment_scores')
+        .select('*')
+        .in('sales_rep_id', salesReps.map(rep => rep.user_id));
 
-    return salesRepsData.map(rep => {
-      const repScores = {
-        month1: new Array(5).fill(0),
-        month2: new Array(6).fill(0),
-        month3: new Array(6).fill(0),
-      };
+      if (scoresError) {
+        console.error('Error fetching scores:', scoresError);
+        return [];
+      }
 
-      scores?.forEach(score => {
-        if (score.sales_rep_id === rep.user_id) {
-          const month = score.month as keyof typeof repScores;
-          if (repScores[month] && score.assessment_index < repScores[month].length) {
-            repScores[month][score.assessment_index] = Number(score.score) || 0;
+      return profiles.map(profile => {
+        const repScores = {
+          month1: new Array(5).fill(0),
+          month2: new Array(6).fill(0),
+          month3: new Array(6).fill(0),
+        };
+
+        scores?.forEach(score => {
+          if (score.sales_rep_id === profile.id) {
+            const month = score.month as keyof typeof repScores;
+            if (repScores[month] && score.assessment_index < repScores[month].length) {
+              repScores[month][score.assessment_index] = Number(score.score) || 0;
+            }
           }
-        }
-      });
+        });
 
-      return {
-        id: rep.user_id,
-        name: rep.profiles.full_name || rep.profiles.email || 'Unknown',
-        ...repScores
-      };
-    });
+        return {
+          id: profile.id,
+          name: profile.full_name || profile.email || 'Unknown',
+          ...repScores
+        };
+      });
+    }
+
+    return [];
   } catch (error) {
     console.error('Error in getSalesReps:', error);
     return [];
