@@ -57,6 +57,19 @@ export default function Login() {
   // Override the default signup handler to include role
   const authConfig = {
     providers: [],
+    localization: {
+      variables: {
+        sign_up: {
+          email_label: 'Email',
+          password_label: 'Password',
+          button_label: 'Sign Up',
+          loading_button_label: 'Signing Up ...',
+          social_provider_text: 'Sign in with {{provider}}',
+          link_text: "Don't have an account? Sign up",
+          confirmation_text: 'Check your email for the confirmation link',
+        },
+      },
+    },
     onViewChange: (newView: 'sign_in' | 'sign_up') => {
       setView(newView);
       if (newView === 'sign_in') {
@@ -115,7 +128,7 @@ export default function Login() {
           )}
 
           {view === 'sign_up' && (
-            <div className="space-y-2">
+            <div className="space-y-2 mb-4">
               <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
               <Select onValueChange={setSelectedRole} value={selectedRole}>
                 <SelectTrigger className="w-full bg-white border-purple-200 focus:ring-purple-200">
