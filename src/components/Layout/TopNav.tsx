@@ -2,13 +2,33 @@ import { Bell, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 export function TopNav() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/login');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        toast({
+          variant: "destructive",
+          title: "Error logging out",
+          description: "Please try again"
+        });
+      } else {
+        // Clear any local storage or state if needed
+        localStorage.clear();
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force navigation to login even if there's an error
+      localStorage.clear();
+      navigate('/login');
+    }
   };
 
   return (
