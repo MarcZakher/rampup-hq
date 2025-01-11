@@ -2,15 +2,37 @@ import React from 'react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
-import { RampTrajectoryChart } from '@/components/Analytics/RampTrajectoryChart';
-import { TeamRampScorecard } from '@/components/Analytics/TeamRampScorecard';
-import { RampingTable } from '@/components/Analytics/RampingTable';
-import { getRampingData, getTeamRampMetrics, getTargetMetrics } from '@/lib/analytics/rampingMetrics';
+import { 
+  getMonthlyScores, 
+  getAssessmentData, 
+  getAreasOfFocus,
+  getTeamProgress 
+} from '@/lib/mockAnalyticsData';
+import { 
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle 
+} from '@/components/ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { 
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 
 const AnalyticsPage = () => {
-  const rampingData = getRampingData();
-  const teamMetrics = getTeamRampMetrics();
-  const targetMetrics = getTargetMetrics();
+  const monthlyScores = getMonthlyScores();
+  const assessmentData = getAssessmentData();
+  const areasOfFocus = getAreasOfFocus();
+  const teamProgress = getTeamProgress();
 
   const summaryMetrics = [
     {
@@ -39,13 +61,6 @@ const AnalyticsPage = () => {
     }
   ];
 
-  const teamRampMetrics = [
-    { label: "DM Achievement Rate", value: teamMetrics.dmAchievementRate },
-    { label: "NBM Achievement Rate", value: teamMetrics.nbmAchievementRate },
-    { label: "Scope+ Achievement Rate", value: teamMetrics.scopePlusAchievementRate },
-    { label: "New Logo Achievement Rate", value: teamMetrics.newLogoAchievementRate }
-  ];
-
   return (
     <CustomAppLayout>
       <div className="p-6 space-y-6">
@@ -64,46 +79,125 @@ const AnalyticsPage = () => {
           ))}
         </div>
 
-        {/* Ramping Progress Table */}
-        <div className="grid grid-cols-1 gap-6">
-          <RampingTable
-            data={rampingData.map(rep => ({
-              name: rep.name,
-              dmProgress: 85,
-              nbmProgress: 75,
-              scopePlusProgress: 80,
-              newLogoProgress: 60,
-              status: rep.isAtRisk ? 'at-risk' : rep.isStarPerformer ? 'exceeding' : 'on-track'
-            }))}
-          />
-        </div>
+        {/* Monthly Progress */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ChartContainer>
+                <AreaChart data={monthlyScores}>
+                  <defs>
+                    <linearGradient id="improving" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="declining" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#EF4444" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <ChartTooltip />
+                  <Area 
+                    type="monotone" 
+                    dataKey="improving" 
+                    stroke="#10B981" 
+                    fillOpacity={1} 
+                    fill="url(#improving)" 
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="declining" 
+                    stroke="#EF4444" 
+                    fillOpacity={1} 
+                    fill="url(#declining)" 
+                  />
+                </AreaChart>
+              </ChartContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Trajectory Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <RampTrajectoryChart
-            data={[
-              { month: 'Month 1', actual: 5, target: 5 },
-              { month: 'Month 2', actual: 12, target: 10 },
-              { month: 'Month 3', actual: 18, target: 15 },
-              // Add more data points...
-            ]}
-            metric="Discovery Meetings"
-          />
-          <RampTrajectoryChart
-            data={[
-              { month: 'Month 1', actual: 0, target: 0 },
-              { month: 'Month 2', actual: 1, target: 1 },
-              { month: 'Month 3', actual: 2, target: 1 },
-              // Add more data points...
-            ]}
-            metric="New Business Meetings"
-          />
-        </div>
+        {/* Assessment Performance */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Assessment Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ChartContainer>
+                <BarChart data={assessmentData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <ChartTooltip />
+                  <Bar dataKey="successRate" fill="#8884d8" name="Success Rate %" />
+                  <Bar dataKey="avgScore" fill="#82ca9d" name="Average Score" />
+                </BarChart>
+              </ChartContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Team Ramp Scorecard */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <TeamRampScorecard metrics={teamRampMetrics} />
-        </div>
+        {/* Areas Needing Attention */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Areas Needing Attention
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {areasOfFocus.repsNeedingAttention.map((rep, index) => (
+                <div key={index} className="space-y-2">
+                  <h3 className="text-lg font-semibold">{rep.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {rep.lowScoreCount} low scores (avg: {rep.averageLowScore})
+                  </p>
+                  <div className="space-y-2">
+                    {rep.areas.map((area, areaIndex) => (
+                      <div key={areaIndex} className="flex justify-between text-sm">
+                        <span className="text-red-500">{area.assessment}</span>
+                        <span>{area.month} - Score: {area.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Common Challenges */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Common Challenges
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ChartContainer>
+                <BarChart 
+                  data={areasOfFocus.commonChallenges} 
+                  layout="vertical"
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="assessment" type="category" width={150} />
+                  <ChartTooltip />
+                  <Bar dataKey="count" fill="#fbbf24" />
+                </BarChart>
+              </ChartContainer>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </CustomAppLayout>
   );
