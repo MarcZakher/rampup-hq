@@ -29,7 +29,6 @@ export function MeetingDefinitionForm({ onSuccess, initialData }: MeetingDefinit
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!meetingType || !definition || !idealScenario) {
       toast({
         title: "Error",
@@ -40,42 +39,30 @@ export function MeetingDefinitionForm({ onSuccess, initialData }: MeetingDefinit
     }
 
     setIsSubmitting(true);
-    
     try {
-      const { data, error } = await supabase
-        .from("meeting_definitions")
-        .upsert(
-          {
-            ...(initialData?.id ? { id: initialData.id } : {}),
-            meeting_type: meetingType,
-            definition,
-            ideal_scenario: idealScenario,
-          },
-          { onConflict: "id" }
-        );
+      const { error } = await supabase.from("meeting_definitions").upsert({
+        ...(initialData?.id ? { id: initialData.id } : {}),
+        meeting_type: meetingType as MeetingType,
+        definition,
+        ideal_scenario: idealScenario,
+      });
 
-      if (error) {
-        console.error("Error saving meeting definition:", error);
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
-        description: `Meeting definition ${initialData ? "updated" : "saved"} successfully`,
+        description: "Meeting definition saved successfully",
       });
-      
       onSuccess();
-      
       if (!initialData) {
         setMeetingType("");
         setDefinition("");
         setIdealScenario("");
       }
     } catch (error) {
-      console.error("Error in form submission:", error);
       toast({
         title: "Error",
-        description: "Failed to save meeting definition. Please try again.",
+        description: "Failed to save meeting definition",
         variant: "destructive",
       });
     } finally {
