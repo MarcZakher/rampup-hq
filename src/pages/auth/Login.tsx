@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { AuthChangeEvent } from '@supabase/supabase-js';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -53,7 +54,7 @@ export default function Login() {
 
   // Listen for auth state changes to handle role selection
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent) => {
       if (event === 'SIGNED_UP' && selectedRole) {
         const { error: updateError } = await supabase.auth.updateUser({
           data: { role: selectedRole }
@@ -67,6 +68,14 @@ export default function Login() {
 
     return () => subscription.unsubscribe();
   }, [selectedRole]);
+
+  const handleViewChange = (newView: 'sign_in' | 'sign_up') => {
+    setView(newView);
+    setError('');
+    if (newView === 'sign_in') {
+      setSelectedRole('');
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#9b87f5] via-[#7E69AB] to-[#6E59A5] p-4">
@@ -129,20 +138,7 @@ export default function Login() {
               },
             }}
             providers={[]}
-            view={view}
-            localization={{
-              variables: {
-                sign_up: {
-                  email_label: 'Email',
-                  password_label: 'Password',
-                  button_label: 'Sign Up',
-                  loading_button_label: 'Signing Up...',
-                  link_text: "Don't have an account? Sign up",
-                  confirmation_text: 'Check your email for the confirmation link',
-                },
-              },
-            }}
-            onViewChange={setView}
+            magicLink={false}
           />
         </div>
       </div>
