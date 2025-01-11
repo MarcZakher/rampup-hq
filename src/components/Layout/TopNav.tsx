@@ -10,8 +10,23 @@ export function TopNav() {
 
   const handleLogout = async () => {
     try {
+      // First check if we have a session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // If no session, just redirect to login
+        navigate('/login', { replace: true });
+        return;
+      }
+
       const { error } = await supabase.auth.signOut();
       if (error) {
+        if (error.message.includes('session_not_found')) {
+          // If session not found, just redirect to login
+          navigate('/login', { replace: true });
+          return;
+        }
+        
         toast({
           variant: "destructive",
           title: "Error logging out",
@@ -29,6 +44,9 @@ export function TopNav() {
       });
     } catch (error) {
       console.error('Error during logout:', error);
+      // If any error occurs, force redirect to login
+      navigate('/login', { replace: true });
+      
       toast({
         variant: "destructive",
         title: "Error logging out",
