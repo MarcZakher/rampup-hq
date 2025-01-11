@@ -10,6 +10,8 @@ import AnalyticsPage from './pages/director/Analytics';
 import SalesRepDashboard from './pages/sales-rep/Dashboard';
 import TrainingJourney from './pages/sales-rep/TrainingJourney';
 import SalesRepAnalytics from './pages/sales-rep/Analytics';
+import CoachingDashboard from './pages/coaching/Dashboard';
+import MeetingDefinitions from './pages/admin/MeetingDefinitions';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -76,6 +78,14 @@ function App() {
           }
         />
         <Route
+          path="/admin/meeting-definitions"
+          element={
+            <ProtectedRoute>
+              <MeetingDefinitions />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/sales-rep/dashboard"
           element={
             <ProtectedRoute>
@@ -103,7 +113,7 @@ function App() {
           path="/coaching/dashboard"
           element={
             <ProtectedRoute>
-              <div>Coaching Dashboard</div>
+              <CoachingDashboard />
             </ProtectedRoute>
           }
         />
