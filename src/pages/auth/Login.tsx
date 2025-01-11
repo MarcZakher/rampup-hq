@@ -31,7 +31,7 @@ export default function Login() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         handleAuthRedirect(session.user.user_metadata.role);
-      } else if (event === 'SIGNED_UP' && selectedRole) {
+      } else if (event === 'USER_UPDATED' && selectedRole) {
         supabase.auth.updateUser({
           data: { role: selectedRole }
         }).then(({ error: updateError }) => {
