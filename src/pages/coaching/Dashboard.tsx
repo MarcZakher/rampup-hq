@@ -7,9 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type MeetingType = Database["public"]["Enums"]["meeting_type"];
 
 export default function CoachingDashboard() {
-  const [meetingType, setMeetingType] = useState<string>("");
+  const [meetingType, setMeetingType] = useState<MeetingType | "">("");
   const [transcript, setTranscript] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -27,9 +30,13 @@ export default function CoachingDashboard() {
 
     setIsSubmitting(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
       const { error } = await supabase.from("meeting_analyses").insert({
-        meeting_type: meetingType,
+        meeting_type: meetingType as MeetingType,
         transcript: transcript,
+        sales_rep_id: user.id
       });
 
       if (error) throw error;
@@ -62,7 +69,7 @@ export default function CoachingDashboard() {
               <Label htmlFor="meetingType">Meeting Type</Label>
               <Select
                 value={meetingType}
-                onValueChange={setMeetingType}
+                onValueChange={(value: MeetingType) => setMeetingType(value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select meeting type" />

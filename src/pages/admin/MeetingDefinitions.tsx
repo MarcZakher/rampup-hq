@@ -7,9 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type MeetingType = Database["public"]["Enums"]["meeting_type"];
 
 export default function MeetingDefinitions() {
-  const [meetingType, setMeetingType] = useState<string>("");
+  const [meetingType, setMeetingType] = useState<MeetingType | "">("");
   const [definition, setDefinition] = useState("");
   const [idealScenario, setIdealScenario] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,7 +47,7 @@ export default function MeetingDefinitions() {
     setIsSubmitting(true);
     try {
       const { error } = await supabase.from("meeting_definitions").upsert({
-        meeting_type: meetingType,
+        meeting_type: meetingType as MeetingType,
         definition: definition,
         ideal_scenario: idealScenario,
       });
@@ -81,7 +84,7 @@ export default function MeetingDefinitions() {
               <Label htmlFor="meetingType">Meeting Type</Label>
               <Select
                 value={meetingType}
-                onValueChange={setMeetingType}
+                onValueChange={(value: MeetingType) => setMeetingType(value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select meeting type" />
