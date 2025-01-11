@@ -51,39 +51,12 @@ export default function Login() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleSignUp = async ({ email, password }: { email: string; password: string }) => {
-    if (!selectedRole) {
-      setError('Please select a role before signing up');
-      return false;
-    }
-    setError('');
-    
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          role: selectedRole,
-        },
-      },
-    });
-
-    if (signUpError) {
-      setError(signUpError.message);
-      return false;
-    }
-
-    return true;
-  };
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#9b87f5] via-[#7E69AB] to-[#6E59A5] p-4">
       <div className="w-full max-w-md space-y-8 relative">
-        {/* Decorative Elements */}
         <div className="absolute -top-4 -left-4 w-24 h-24 bg-[#D6BCFA] rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
         <div className="absolute -bottom-8 -right-4 w-32 h-32 bg-[#9b87f5] rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse delay-300"></div>
         
-        {/* Main Content */}
         <div className="relative bg-white/95 backdrop-blur-lg rounded-2xl shadow-xl p-8 space-y-6 border border-purple-100">
           <div className="text-center space-y-2">
             <h2 className="text-4xl font-bold bg-gradient-to-r from-[#9b87f5] to-[#6E59A5] bg-clip-text text-transparent">
@@ -104,7 +77,7 @@ export default function Login() {
             <div className="space-y-2 mb-4">
               <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
               <Select onValueChange={setSelectedRole} value={selectedRole}>
-                <SelectTrigger className="w-full bg-white border-purple-200 focus:ring-purple-200">
+                <SelectTrigger id="role" className="w-full bg-white border-purple-200 focus:ring-purple-200">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -118,7 +91,6 @@ export default function Login() {
 
           <Auth
             supabaseClient={supabase}
-            view={view}
             appearance={{
               theme: ThemeSupa,
               variables: {
@@ -139,31 +111,38 @@ export default function Login() {
                 label: 'text-gray-700',
               },
             }}
-            localization={{
-              variables: {
-                sign_up: {
-                  email_label: 'Email',
-                  password_label: 'Password',
-                  button_label: 'Sign Up',
-                  loading_button_label: 'Signing Up ...',
-                  social_provider_text: 'Sign in with {{provider}}',
-                  link_text: "Don't have an account? Sign up",
-                  confirmation_text: 'Check your email for the confirmation link',
-                },
-              },
+            providers={[]}
+            onSubmit={async (formData) => {
+              if (view === 'sign_up') {
+                if (!selectedRole) {
+                  setError('Please select a role before signing up');
+                  return false;
+                }
+                setError('');
+                
+                const { error: signUpError } = await supabase.auth.signUp({
+                  email: formData.email,
+                  password: formData.password,
+                  options: {
+                    data: {
+                      role: selectedRole,
+                    },
+                  },
+                });
+
+                if (signUpError) {
+                  setError(signUpError.message);
+                  return false;
+                }
+              }
+              return true;
             }}
-            onViewChange={(newView: 'sign_in' | 'sign_up') => {
+            onViewChange={(newView) => {
               setView(newView);
               if (newView === 'sign_in') {
                 setError('');
                 setSelectedRole('');
               }
-            }}
-            onSubmit={async (formData) => {
-              if (view === 'sign_up') {
-                return handleSignUp(formData);
-              }
-              return true;
             }}
           />
         </div>
