@@ -25,17 +25,23 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#1E40AF",
+          DEFAULT: "#9b87f5", // Updated from blue to RampUP purple
           foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "#60A5FA",
+          DEFAULT: "#7E69AB", // Updated to secondary purple
           foreground: "#1E293B",
         },
         assessment: {
           red: "#EF4444",
           yellow: "#FBBF24",
           green: "#22C55E",
+        },
+        rampup: {
+          primary: "#9b87f5",    // Primary Purple
+          secondary: "#7E69AB",  // Secondary Purple
+          tertiary: "#6E59A5",   // Tertiary Purple
+          light: "#D6BCFA",      // Light Purple
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
