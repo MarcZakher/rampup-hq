@@ -10,23 +10,33 @@ export function TopNav() {
 
   const handleLogout = async () => {
     try {
+      // First clear local storage to ensure we remove any stale session data
+      localStorage.clear();
+      
+      // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
+      
       if (error) {
         console.error('Logout error:', error);
+        // If it's a session not found error, we can ignore it since we've already cleared local storage
+        if (error.message?.includes('session_not_found')) {
+          navigate('/login');
+          return;
+        }
+        
         toast({
           variant: "destructive",
           title: "Error logging out",
           description: "Please try again"
         });
-      } else {
-        // Clear any local storage or state if needed
-        localStorage.clear();
-        navigate('/login');
       }
+      
+      // Always navigate to login page
+      navigate('/login');
+      
     } catch (error) {
       console.error('Logout error:', error);
       // Force navigation to login even if there's an error
-      localStorage.clear();
       navigate('/login');
     }
   };
