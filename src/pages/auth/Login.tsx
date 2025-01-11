@@ -12,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
-import { Session } from '@supabase/supabase-js';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,11 +20,13 @@ export default function Login() {
   const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        // Get the user's role from metadata
         const { data: { user } } = await supabase.auth.getUser();
         const userRole = user?.user_metadata?.role;
 
+        // Redirect based on role
         if (userRole === 'director') {
           navigate('/director/dashboard');
         } else if (userRole === 'manager') {
@@ -36,6 +37,7 @@ export default function Login() {
       }
     });
 
+    // Check if user is already signed in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         const userRole = session.user.user_metadata.role;
@@ -52,37 +54,49 @@ export default function Login() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Listen for auth state changes to handle role selection
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string) => {
-      if (event === 'SIGNED_UP' && selectedRole) {
-        const { error: updateError } = await supabase.auth.updateUser({
-          data: { role: selectedRole }
-        });
-
-        if (updateError) {
-          setError(updateError.message);
-        }
+  // Override the default signup handler to include role
+  const authConfig = {
+    providers: [],
+    onViewChange: (newView: 'sign_in' | 'sign_up') => {
+      setView(newView);
+      if (newView === 'sign_in') {
+        setError('');
       }
-    });
+    },
+    onSignUp: async ({ email, password }: { email: string; password: string }) => {
+      if (!selectedRole) {
+        setError('Please select a role before signing up');
+        return false;
+      }
+      setError('');
+      
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            role: selectedRole,
+          },
+        },
+      });
 
-    return () => subscription.unsubscribe();
-  }, [selectedRole]);
+      if (signUpError) {
+        setError(signUpError.message);
+        return false;
+      }
 
-  const handleViewChange = (newView: 'sign_in' | 'sign_up') => {
-    setView(newView);
-    setError('');
-    if (newView === 'sign_in') {
-      setSelectedRole('');
-    }
+      return true;
+    },
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#9b87f5] via-[#7E69AB] to-[#6E59A5] p-4">
       <div className="w-full max-w-md space-y-8 relative">
+        {/* Decorative Elements */}
         <div className="absolute -top-4 -left-4 w-24 h-24 bg-[#D6BCFA] rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
         <div className="absolute -bottom-8 -right-4 w-32 h-32 bg-[#9b87f5] rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse delay-300"></div>
         
+        {/* Main Content */}
         <div className="relative bg-white/95 backdrop-blur-lg rounded-2xl shadow-xl p-8 space-y-6 border border-purple-100">
           <div className="text-center space-y-2">
             <h2 className="text-4xl font-bold bg-gradient-to-r from-[#9b87f5] to-[#6E59A5] bg-clip-text text-transparent">
@@ -100,10 +114,10 @@ export default function Login() {
           )}
 
           {view === 'sign_up' && (
-            <div className="space-y-2 mb-4">
+            <div className="space-y-2">
               <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
               <Select onValueChange={setSelectedRole} value={selectedRole}>
-                <SelectTrigger id="role" className="w-full bg-white border-purple-200 focus:ring-purple-200">
+                <SelectTrigger className="w-full bg-white border-purple-200 focus:ring-purple-200">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -137,8 +151,8 @@ export default function Login() {
                 label: 'text-gray-700',
               },
             }}
-            providers={[]}
-            magicLink={false}
+            theme="default"
+            {...authConfig}
           />
         </div>
       </div>
