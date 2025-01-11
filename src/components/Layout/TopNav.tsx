@@ -10,32 +10,13 @@ export function TopNav() {
 
   const handleLogout = async () => {
     try {
-      // First check if we have a session
-      const { data: { session } } = await supabase.auth.getSession();
+      // First clear the session from local storage
+      localStorage.removeItem('supabase.auth.token');
       
-      if (!session) {
-        // If no session, just redirect to login
-        navigate('/login', { replace: true });
-        return;
-      }
-
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        if (error.message.includes('session_not_found')) {
-          // If session not found, just redirect to login
-          navigate('/login', { replace: true });
-          return;
-        }
-        
-        toast({
-          variant: "destructive",
-          title: "Error logging out",
-          description: error.message
-        });
-        return;
-      }
+      // Attempt to sign out from Supabase
+      await supabase.auth.signOut();
       
-      // Clear any local storage or state if needed
+      // Always navigate to login page
       navigate('/login', { replace: true });
       
       toast({
@@ -44,7 +25,8 @@ export function TopNav() {
       });
     } catch (error) {
       console.error('Error during logout:', error);
-      // If any error occurs, force redirect to login
+      
+      // Even if there's an error, redirect to login
       navigate('/login', { replace: true });
       
       toast({
