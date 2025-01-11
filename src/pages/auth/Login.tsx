@@ -12,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
-import { Session } from '@supabase/supabase-js';
 
 export default function Login() {
   const navigate = useNavigate();
