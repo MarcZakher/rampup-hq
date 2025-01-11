@@ -99,6 +99,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/coaching/dashboard"
+          element={
+            <ProtectedRoute>
+              <div>Coaching Dashboard</div>
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

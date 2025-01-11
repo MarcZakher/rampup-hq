@@ -42,6 +42,63 @@ export type Database = {
         }
         Relationships: []
       }
+      meeting_analyses: {
+        Row: {
+          ai_feedback: string | null
+          created_at: string
+          id: string
+          meeting_type: Database["public"]["Enums"]["meeting_type"]
+          sales_rep_id: string
+          transcript: string
+          updated_at: string
+        }
+        Insert: {
+          ai_feedback?: string | null
+          created_at?: string
+          id?: string
+          meeting_type: Database["public"]["Enums"]["meeting_type"]
+          sales_rep_id: string
+          transcript: string
+          updated_at?: string
+        }
+        Update: {
+          ai_feedback?: string | null
+          created_at?: string
+          id?: string
+          meeting_type?: Database["public"]["Enums"]["meeting_type"]
+          sales_rep_id?: string
+          transcript?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      meeting_definitions: {
+        Row: {
+          created_at: string
+          definition: string
+          id: string
+          ideal_scenario: string
+          meeting_type: Database["public"]["Enums"]["meeting_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          definition: string
+          id?: string
+          ideal_scenario: string
+          meeting_type: Database["public"]["Enums"]["meeting_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          definition?: string
+          id?: string
+          ideal_scenario?: string
+          meeting_type?: Database["public"]["Enums"]["meeting_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -95,6 +152,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      meeting_type: "discovery" | "new_business"
       user_role: "sales_rep" | "manager" | "director"
     }
     CompositeTypes: {
