@@ -130,19 +130,31 @@ const ManagerDashboard = () => {
 
   // Load saved data on component mount
   useEffect(() => {
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    if (savedReps) {
-      setSalesReps(JSON.parse(savedReps));
-    } else {
-      // If no saved data, use the initial data
+    try {
+      const savedReps = localStorage.getItem(STORAGE_KEY);
+      if (savedReps) {
+        const parsedReps = JSON.parse(savedReps);
+        // Ensure we have a valid array
+        setSalesReps(Array.isArray(parsedReps) ? parsedReps : initialSalesReps);
+      } else {
+        setSalesReps(initialSalesReps);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialSalesReps));
+      }
+    } catch (error) {
+      console.error('Error loading sales reps:', error);
       setSalesReps(initialSalesReps);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialSalesReps));
     }
   }, []);
 
   // Save data whenever salesReps changes
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(salesReps));
+    try {
+      if (Array.isArray(salesReps)) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(salesReps));
+      }
+    } catch (error) {
+      console.error('Error saving sales reps:', error);
+    }
   }, [salesReps]);
 
   const addSalesRep = () => {
@@ -163,7 +175,7 @@ const ManagerDashboard = () => {
       month3: new Array(assessments.month3.length).fill(0)
     };
 
-    setSalesReps([...salesReps, newRep]);
+    setSalesReps(prevReps => Array.isArray(prevReps) ? [...prevReps, newRep] : [newRep]);
     setNewRepName('');
     toast({
       title: "Success",
@@ -172,7 +184,9 @@ const ManagerDashboard = () => {
   };
 
   const removeSalesRep = (id: number) => {
-    setSalesReps(salesReps.filter(rep => rep.id !== id));
+    setSalesReps(prevReps => 
+      Array.isArray(prevReps) ? prevReps.filter(rep => rep.id !== id) : []
+    );
     toast({
       title: "Success",
       description: "Sales representative removed successfully"
@@ -190,14 +204,17 @@ const ManagerDashboard = () => {
       return;
     }
 
-    setSalesReps(salesReps.map(rep => {
-      if (rep.id === repId) {
-        const newScores = [...rep[month]];
-        newScores[index] = score;
-        return { ...rep, [month]: newScores };
-      }
-      return rep;
-    }));
+    setSalesReps(prevReps => {
+      if (!Array.isArray(prevReps)) return [];
+      return prevReps.map(rep => {
+        if (rep.id === repId) {
+          const newScores = [...rep[month]];
+          newScores[index] = score;
+          return { ...rep, [month]: newScores };
+        }
+        return rep;
+      });
+    });
   };
 
   const getScoreColor = (score: number) => {
@@ -206,6 +223,9 @@ const ManagerDashboard = () => {
     if (score >= 3) return 'bg-[#FFEB9C]';
     return 'bg-[#FFC7CE]';
   };
+
+  // Ensure we have valid data before rendering
+  const monthsToRender = ['month1', 'month2', 'month3'] as const;
 
   return (
     <AppLayout>
@@ -227,7 +247,7 @@ const ManagerDashboard = () => {
         </div>
 
         <div className="space-y-6">
-          {['month1', 'month2', 'month3'].map((month, monthIndex) => (
+          {monthsToRender.map((month, monthIndex) => (
             <Card key={month}>
               <CardHeader>
                 <CardTitle>Month {monthIndex + 1} Assessments</CardTitle>
@@ -237,7 +257,7 @@ const ManagerDashboard = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      {assessments[month as keyof typeof assessments].map((assessment, index) => (
+                      {(assessments[month] || []).map((assessment, index) => (
                         <TableHead key={index} title={assessment.name}>
                           {assessment.shortName}
                         </TableHead>
@@ -246,10 +266,10 @@ const ManagerDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {salesReps.map((rep) => (
+                    {(Array.isArray(salesReps) ? salesReps : []).map((rep) => (
                       <TableRow key={rep.id}>
                         <TableCell className="font-medium">{rep.name}</TableCell>
-                        {rep[month as keyof Pick<SalesRep, 'month1' | 'month2' | 'month3'>].map((score, scoreIndex) => (
+                        {(Array.isArray(rep[month]) ? rep[month] : []).map((score, scoreIndex) => (
                           <TableCell key={scoreIndex} className={getScoreColor(score)}>
                             <Input
                               type="number"
@@ -257,7 +277,7 @@ const ManagerDashboard = () => {
                               max="5"
                               step="0.5"
                               value={score || ''}
-                              onChange={(e) => updateScore(rep.id, month as 'month1' | 'month2' | 'month3', scoreIndex, e.target.value)}
+                              onChange={(e) => updateScore(rep.id, month, scoreIndex, e.target.value)}
                               className="w-16 text-center"
                             />
                           </TableCell>
