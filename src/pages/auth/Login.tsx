@@ -17,6 +17,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -56,6 +57,12 @@ export default function Login() {
   // Override the default signup handler to include role
   const authConfig = {
     providers: [],
+    onViewChange: (newView: 'sign_in' | 'sign_up') => {
+      setView(newView);
+      if (newView === 'sign_in') {
+        setError(''); // Clear any signup-related errors
+      }
+    },
     onSignUp: async ({ email, password }: { email: string; password: string }) => {
       if (!selectedRole) {
         setError('Please select a role before signing up');
@@ -99,19 +106,21 @@ export default function Login() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <div className="mb-6">
-            <Label htmlFor="role">Select Role (for Sign Up)</Label>
-            <Select onValueChange={setSelectedRole} value={selectedRole}>
-              <SelectTrigger className="w-full mt-1">
-                <SelectValue placeholder="Select your role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sales_rep">Sales Representative</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="director">Director</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {view === 'sign_up' && (
+            <div className="mb-6">
+              <Label htmlFor="role">Select Role (for Sign Up)</Label>
+              <Select onValueChange={setSelectedRole} value={selectedRole}>
+                <SelectTrigger className="w-full mt-1">
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sales_rep">Sales Representative</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="director">Director</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <Auth
             supabaseClient={supabase}
             appearance={{ theme: ThemeSupa }}
