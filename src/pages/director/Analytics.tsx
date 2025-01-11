@@ -1,7 +1,7 @@
 import React from 'react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
-import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
+import { Users, TrendingUp, Target, Trophy, AlertTriangle } from 'lucide-react';
 import { 
   getMonthlyScores, 
   getAssessmentData, 
@@ -27,6 +27,43 @@ import {
   Area
 } from 'recharts';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
+
+const chartConfig = {
+  area: {
+    improving: {
+      theme: {
+        light: '#10B981',
+        dark: '#059669',
+      },
+    },
+    declining: {
+      theme: {
+        light: '#EF4444',
+        dark: '#DC2626',
+      },
+    },
+  },
+  bar: {
+    primary: {
+      theme: {
+        light: '#8884d8',
+        dark: '#6366f1',
+      },
+    },
+    secondary: {
+      theme: {
+        light: '#82ca9d',
+        dark: '#10b981',
+      },
+    },
+    warning: {
+      theme: {
+        light: '#fbbf24',
+        dark: '#d97706',
+      },
+    },
+  },
+};
 
 const AnalyticsPage = () => {
   const monthlyScores = getMonthlyScores();
@@ -86,7 +123,7 @@ const AnalyticsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ChartContainer>
+              <ChartContainer config={chartConfig}>
                 <AreaChart data={monthlyScores}>
                   <defs>
                     <linearGradient id="improving" x1="0" y1="0" x2="0" y2="1">
@@ -129,7 +166,7 @@ const AnalyticsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ChartContainer>
+              <ChartContainer config={chartConfig}>
                 <BarChart data={assessmentData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
@@ -183,7 +220,7 @@ const AnalyticsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ChartContainer>
+              <ChartContainer config={chartConfig}>
                 <BarChart 
                   data={areasOfFocus.commonChallenges} 
                   layout="vertical"
