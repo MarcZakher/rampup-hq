@@ -22,25 +22,29 @@ export default function Login() {
   useEffect(() => {
     // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      if (session?.user?.user_metadata?.role) {
         handleAuthRedirect(session.user.user_metadata.role);
       }
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user?.user_metadata?.role) {
         handleAuthRedirect(session.user.user_metadata.role);
-      } else if (event === 'USER_UPDATED' && selectedRole) {
-        supabase.auth.updateUser({
-          data: { role: selectedRole }
-        }).then(({ error: updateError }) => {
+      } else if (event === 'SIGNED_IN' && session && selectedRole) {
+        try {
+          const { error: updateError } = await supabase.auth.updateUser({
+            data: { role: selectedRole }
+          });
+          
           if (updateError) {
             setError(updateError.message);
           } else {
             handleAuthRedirect(selectedRole);
           }
-        });
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'An error occurred during sign in');
+        }
       }
     });
 
