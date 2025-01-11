@@ -60,7 +60,7 @@ export default function Login() {
     onViewChange: (newView: 'sign_in' | 'sign_up') => {
       setView(newView);
       if (newView === 'sign_in') {
-        setError(''); // Clear any signup-related errors
+        setError('');
       }
     },
     onSignUp: async ({ email, password }: { email: string; password: string }) => {
@@ -90,27 +90,34 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            RampUP Platform
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to access your dashboard
-          </p>
-        </div>
-        <div className="mt-8 bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#9b87f5] via-[#7E69AB] to-[#6E59A5] p-4">
+      <div className="w-full max-w-md space-y-8 relative">
+        {/* Decorative Elements */}
+        <div className="absolute -top-4 -left-4 w-24 h-24 bg-[#D6BCFA] rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
+        <div className="absolute -bottom-8 -right-4 w-32 h-32 bg-[#9b87f5] rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse delay-300"></div>
+        
+        {/* Main Content */}
+        <div className="relative bg-white/95 backdrop-blur-lg rounded-2xl shadow-xl p-8 space-y-6 border border-purple-100">
+          <div className="text-center space-y-2">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-[#9b87f5] to-[#6E59A5] bg-clip-text text-transparent">
+              RampUP
+            </h2>
+            <p className="text-gray-600">
+              Accelerate your sales journey
+            </p>
+          </div>
+
           {error && (
-            <Alert variant="destructive" className="mb-4">
+            <Alert variant="destructive" className="mb-4 bg-red-50 border-red-200">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
           {view === 'sign_up' && (
-            <div className="mb-6">
-              <Label htmlFor="role">Select Role (for Sign Up)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
               <Select onValueChange={setSelectedRole} value={selectedRole}>
-                <SelectTrigger className="w-full mt-1">
+                <SelectTrigger className="w-full bg-white border-purple-200 focus:ring-purple-200">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -121,10 +128,30 @@ export default function Login() {
               </Select>
             </div>
           )}
+
           <Auth
             supabaseClient={supabase}
-            appearance={{ theme: ThemeSupa }}
-            theme="light"
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: '#9b87f5',
+                    brandAccent: '#7E69AB',
+                    inputBackground: 'white',
+                    inputBorder: '#e2e8f0',
+                    inputBorderFocus: '#9b87f5',
+                    inputBorderHover: '#7E69AB',
+                  },
+                },
+              },
+              className: {
+                button: 'bg-gradient-to-r from-[#9b87f5] to-[#7E69AB] hover:from-[#7E69AB] hover:to-[#6E59A5] text-white font-medium py-2 px-4 rounded-lg transition-all duration-200',
+                input: 'bg-white border-gray-200 focus:border-purple-300 focus:ring-purple-200',
+                label: 'text-gray-700',
+              },
+            }}
+            theme="default"
             {...authConfig}
           />
         </div>
