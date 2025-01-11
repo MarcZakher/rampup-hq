@@ -22,11 +22,9 @@ export default function Login() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // Get the user's role from metadata
         const { data: { user } } = await supabase.auth.getUser();
         const userRole = user?.user_metadata?.role;
 
-        // Redirect based on role
         if (userRole === 'director') {
           navigate('/director/dashboard');
         } else if (userRole === 'manager') {
@@ -37,7 +35,6 @@ export default function Login() {
       }
     });
 
-    // Check if user is already signed in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         const userRole = session.user.user_metadata.role;
@@ -54,53 +51,29 @@ export default function Login() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Override the default signup handler to include role
-  const authConfig = {
-    providers: [],
-    localization: {
-      variables: {
-        sign_up: {
-          email_label: 'Email',
-          password_label: 'Password',
-          button_label: 'Sign Up',
-          loading_button_label: 'Signing Up ...',
-          social_provider_text: 'Sign in with {{provider}}',
-          link_text: "Don't have an account? Sign up",
-          confirmation_text: 'Check your email for the confirmation link',
+  const handleSignUp = async ({ email, password }: { email: string; password: string }) => {
+    if (!selectedRole) {
+      setError('Please select a role before signing up');
+      return false;
+    }
+    setError('');
+    
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          role: selectedRole,
         },
       },
-    },
-    onViewChange: (newView: 'sign_in' | 'sign_up') => {
-      setView(newView);
-      if (newView === 'sign_in') {
-        setError('');
-        setSelectedRole('');
-      }
-    },
-    onSignUp: async ({ email, password }: { email: string; password: string }) => {
-      if (!selectedRole) {
-        setError('Please select a role before signing up');
-        return false;
-      }
-      setError('');
-      
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            role: selectedRole,
-          },
-        },
-      });
+    });
 
-      if (signUpError) {
-        setError(signUpError.message);
-        return false;
-      }
+    if (signUpError) {
+      setError(signUpError.message);
+      return false;
+    }
 
-      return true;
-    },
+    return true;
   };
 
   return (
@@ -134,7 +107,7 @@ export default function Login() {
                 <SelectTrigger className="w-full bg-white border-purple-200 focus:ring-purple-200">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
-                <SelectContent className="bg-white">
+                <SelectContent>
                   <SelectItem value="sales_rep">Sales Representative</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="director">Director</SelectItem>
@@ -145,6 +118,7 @@ export default function Login() {
 
           <Auth
             supabaseClient={supabase}
+            view={view}
             appearance={{
               theme: ThemeSupa,
               variables: {
@@ -165,8 +139,32 @@ export default function Login() {
                 label: 'text-gray-700',
               },
             }}
-            theme="default"
-            {...authConfig}
+            localization={{
+              variables: {
+                sign_up: {
+                  email_label: 'Email',
+                  password_label: 'Password',
+                  button_label: 'Sign Up',
+                  loading_button_label: 'Signing Up ...',
+                  social_provider_text: 'Sign in with {{provider}}',
+                  link_text: "Don't have an account? Sign up",
+                  confirmation_text: 'Check your email for the confirmation link',
+                },
+              },
+            }}
+            onViewChange={(newView: 'sign_in' | 'sign_up') => {
+              setView(newView);
+              if (newView === 'sign_in') {
+                setError('');
+                setSelectedRole('');
+              }
+            }}
+            onSubmit={async (formData) => {
+              if (view === 'sign_up') {
+                return handleSignUp(formData);
+              }
+              return true;
+            }}
           />
         </div>
       </div>
