@@ -51,6 +51,23 @@ export default function Login() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Listen for auth state changes to handle role selection
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_UP' && selectedRole) {
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: { role: selectedRole }
+        });
+
+        if (updateError) {
+          setError(updateError.message);
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [selectedRole]);
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#9b87f5] via-[#7E69AB] to-[#6E59A5] p-4">
       <div className="w-full max-w-md space-y-8 relative">
@@ -112,38 +129,20 @@ export default function Login() {
               },
             }}
             providers={[]}
-            onSubmit={async (formData) => {
-              if (view === 'sign_up') {
-                if (!selectedRole) {
-                  setError('Please select a role before signing up');
-                  return false;
-                }
-                setError('');
-                
-                const { error: signUpError } = await supabase.auth.signUp({
-                  email: formData.email,
-                  password: formData.password,
-                  options: {
-                    data: {
-                      role: selectedRole,
-                    },
-                  },
-                });
-
-                if (signUpError) {
-                  setError(signUpError.message);
-                  return false;
-                }
-              }
-              return true;
+            view={view}
+            localization={{
+              variables: {
+                sign_up: {
+                  email_label: 'Email',
+                  password_label: 'Password',
+                  button_label: 'Sign Up',
+                  loading_button_label: 'Signing Up...',
+                  link_text: "Don't have an account? Sign up",
+                  confirmation_text: 'Check your email for the confirmation link',
+                },
+              },
             }}
-            onViewChange={(newView) => {
-              setView(newView);
-              if (newView === 'sign_in') {
-                setError('');
-                setSelectedRole('');
-              }
-            }}
+            onViewChange={setView}
           />
         </div>
       </div>
