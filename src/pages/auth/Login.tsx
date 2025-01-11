@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
-import { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,8 +21,8 @@ export default function Login() {
   const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-      if (event === AuthChangeEvent.SIGNED_IN && session) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
+      if (event === 'SIGNED_IN' && session) {
         const { data: { user } } = await supabase.auth.getUser();
         const userRole = user?.user_metadata?.role;
 
@@ -54,8 +54,8 @@ export default function Login() {
 
   // Listen for auth state changes to handle role selection
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent) => {
-      if (event === AuthChangeEvent.SIGNED_UP && selectedRole) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string) => {
+      if (event === 'SIGNED_UP' && selectedRole) {
         const { error: updateError } = await supabase.auth.updateUser({
           data: { role: selectedRole }
         });
