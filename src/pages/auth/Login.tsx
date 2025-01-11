@@ -29,26 +29,35 @@ export default function Login() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user?.user_metadata?.role) {
-        handleAuthRedirect(session.user.user_metadata.role);
-      } else if (event === 'SIGNED_IN' && session && selectedRole) {
-        try {
-          const { error: updateError } = await supabase.auth.updateUser({
-            data: { role: selectedRole }
-          });
-          
-          if (updateError) {
-            setError(updateError.message);
-          } else {
-            handleAuthRedirect(selectedRole);
+      if (event === 'SIGNED_IN') {
+        if (session?.user?.user_metadata?.role) {
+          handleAuthRedirect(session.user.user_metadata.role);
+        } else if (selectedRole) {
+          try {
+            const { data: { user }, error: updateError } = await supabase.auth.updateUser({
+              data: { role: selectedRole }
+            });
+            
+            if (updateError) {
+              setError(updateError.message);
+              return;
+            }
+            
+            if (user?.user_metadata?.role) {
+              handleAuthRedirect(user.user_metadata.role);
+            }
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred during sign in');
           }
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'An error occurred during sign in');
+        } else {
+          setError('Please select a role before signing in');
         }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate, selectedRole]);
 
   const handleAuthRedirect = (role: string) => {
