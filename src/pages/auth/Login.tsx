@@ -61,6 +61,7 @@ export default function Login() {
       setView(newView);
       if (newView === 'sign_in') {
         setError('');
+        setSelectedRole('');
       }
     },
     onSignUp: async ({ email, password }: { email: string; password: string }) => {
@@ -120,7 +121,7 @@ export default function Login() {
                 <SelectTrigger className="w-full bg-white border-purple-200 focus:ring-purple-200">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="sales_rep">Sales Representative</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="director">Director</SelectItem>
