@@ -55,3 +55,41 @@ export interface AreaOfFocus {
     count: number;
   }[];
 }
+
+export interface RampingMetrics {
+  dm: {
+    actual: number;
+    target: number;
+  };
+  nbm: {
+    actual: number;
+    target: number;
+  };
+  scopePlus: {
+    actual: number;
+    target: number;
+  };
+  newLogo: {
+    actual: number;
+    target: number;
+  };
+}
+
+export interface RepRampingData {
+  name: string;
+  metrics: {
+    [month: number]: RampingMetrics;
+  };
+  isAtRisk: boolean;
+  isStarPerformer: boolean;
+  timeToFirstLogo?: number;
+}
+
+export interface TeamRampMetrics {
+  dmAchievementRate: number;
+  nbmAchievementRate: number;
+  scopePlusAchievementRate: number;
+  newLogoAchievementRate: number;
+  averageRampingTimeline: number;
+  averageTimeToFirstLogo: number;
+}
