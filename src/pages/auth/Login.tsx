@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { AuthError } from '@supabase/supabase-js';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -27,19 +28,19 @@ export default function Login() {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         handleAuthRedirect(session.user.user_metadata.role);
       } else if (event === 'SIGNED_UP' && selectedRole) {
-        const { error: updateError } = await supabase.auth.updateUser({
+        supabase.auth.updateUser({
           data: { role: selectedRole }
+        }).then(({ error: updateError }) => {
+          if (updateError) {
+            setError(updateError.message);
+          } else {
+            handleAuthRedirect(selectedRole);
+          }
         });
-
-        if (updateError) {
-          setError(updateError.message);
-        } else {
-          handleAuthRedirect(selectedRole);
-        }
       }
     });
 
