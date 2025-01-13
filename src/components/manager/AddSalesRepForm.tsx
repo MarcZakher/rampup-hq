@@ -31,15 +31,9 @@ export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
 
     try {
       // Get the current session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (sessionError || !session) {
-        throw new Error(sessionError?.message || 'Not authenticated');
-      }
-
-      // Make sure we have the access token
-      const accessToken = session.access_token;
-      if (!accessToken) {
+      if (!session?.access_token) {
         throw new Error('No access token available');
       }
 
@@ -51,7 +45,7 @@ export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
           managerId: user?.id
         },
         headers: {
-          Authorization: `Bearer ${accessToken}`
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
@@ -59,7 +53,7 @@ export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
 
       toast({
         title: "Success",
-        description: "Sales representative added successfully"
+        description: data?.message || "Sales representative added successfully"
       });
 
       onAddSalesRep(newRepName);
