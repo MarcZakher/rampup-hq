@@ -1,7 +1,7 @@
 import React from 'react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
-import { Users, TrendingUp, Target, Trophy, AlertTriangle } from 'lucide-react';
+import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
@@ -45,28 +45,33 @@ const chartConfig = {
 };
 
 const AnalyticsPage = () => {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
 
-  // Fetch user role
-  const { data: userRole } = useQuery({
+  // Fetch user role only when user is available
+  const { data: userRole, isLoading: isRoleLoading } = useQuery({
     queryKey: ['userRole', user?.id],
     queryFn: async () => {
+      if (!user?.id) throw new Error('User ID not available');
+      
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .single();
       
       if (error) throw error;
       return data?.role;
-    }
+    },
+    enabled: !!user?.id // Only run query when user ID is available
   });
 
-  // Fetch sales reps data based on role
-  const { data: salesRepsData } = useQuery({
+  // Fetch sales reps data based on role when role is available
+  const { data: salesRepsData, isLoading: isDataLoading } = useQuery({
     queryKey: ['salesReps', user?.id, userRole],
     queryFn: async () => {
+      if (!user?.id || !userRole) throw new Error('User or role not available');
+
       let query = supabase
         .from('user_roles')
         .select('user_id')
@@ -74,11 +79,15 @@ const AnalyticsPage = () => {
 
       // If manager, only fetch their sales reps
       if (userRole === 'manager') {
-        query = query.eq('manager_id', user?.id);
+        query = query.eq('manager_id', user.id);
       }
 
       const { data: salesReps, error } = await query;
       if (error) throw error;
+
+      if (!salesReps?.length) {
+        return { salesReps: [], profiles: [], scores: [] };
+      }
 
       // Fetch profiles
       const { data: profiles, error: profilesError } = await supabase
@@ -102,8 +111,42 @@ const AnalyticsPage = () => {
         scores: scores || []
       };
     },
-    enabled: !!user && !!userRole
+    enabled: !!user?.id && !!userRole // Only run query when both user and role are available
   });
+
+  const isLoading = isAuthLoading || isRoleLoading || isDataLoading;
+
+  if (isLoading) {
+    return (
+      <CustomAppLayout>
+        <div className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CustomAppLayout>
+    );
+  }
+
+  if (!user || !userRole || !salesRepsData) {
+    return (
+      <CustomAppLayout>
+        <div className="p-6">
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              Unable to load analytics data. Please try refreshing the page.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </CustomAppLayout>
+    );
+  }
 
   const calculateMetrics = () => {
     if (!salesRepsData) return null;
@@ -125,7 +168,9 @@ const AnalyticsPage = () => {
 
     // Calculate overall metrics
     const totalReps = profiles.length;
-    const avgScore = repScores.reduce((sum, rep) => sum + rep.avgScore, 0) / totalReps;
+    const avgScore = totalReps > 0 
+      ? repScores.reduce((sum, rep) => sum + rep.avgScore, 0) / totalReps 
+      : 0;
     const performingWell = repScores.filter(rep => rep.avgScore > 3).length;
     const topPerformer = repScores.reduce((top, rep) => 
       rep.avgScore > top.score ? { name: rep.name, score: rep.avgScore } : top,
@@ -163,7 +208,14 @@ const AnalyticsPage = () => {
   if (!metrics) {
     return (
       <CustomAppLayout>
-        <div className="p-6">Loading...</div>
+        <div className="p-6">
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              Unable to calculate metrics. Please try again later.
+            </AlertDescription>
+          </Alert>
+        </div>
       </CustomAppLayout>
     );
   }
