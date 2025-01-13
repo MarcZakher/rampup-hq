@@ -26,14 +26,12 @@ export default function SalesRepDashboard() {
         <div className="bg-white rounded-lg shadow-md p-6">
           {error ? (
             <div className="text-red-500">Error loading ramping expectations</div>
-          ) : isLoading ? (
-            <div>Loading ramping expectations...</div>
-          ) : !rampingData ? (
-            <div>No ramping expectations found</div>
           ) : (
             <RampingPeriodTable initialData={rampingData} />
           )}
-          <ProgressTrackingTable />
+          <div className="mt-8">
+            <ProgressTrackingTable />
+          </div>
         </div>
       </div>
     </CustomAppLayout>

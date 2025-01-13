@@ -153,7 +153,6 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
     if (!editingData) return;
 
     try {
-      // Convert MonthValue objects to plain objects that match the Json type
       const monthDataToSave = {
         month_1: { value: editingData.month_1.value, note: editingData.month_1.note } as unknown as Json,
         month_2: { value: editingData.month_2.value, note: editingData.month_2.note } as unknown as Json,
@@ -250,11 +249,11 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
                       </div>
                     ) : (
                       <>
-                        {monthData.value}
+                        <div className="font-medium">{monthData.value}</div>
                         {monthData.note && (
-                          <span className="text-sm text-gray-500 block">
+                          <div className="text-sm text-gray-500 mt-1">
                             {monthData.note}
-                          </span>
+                          </div>
                         )}
                       </>
                     )}
