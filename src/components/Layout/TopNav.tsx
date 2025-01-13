@@ -3,58 +3,22 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export function TopNav() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [userName, setUserName] = useState<string>('');
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .single();
-          
-          if (error) {
-            console.error('Error fetching profile:', error);
-            return;
-          }
-          
-          if (profile?.full_name) {
-            setUserName(profile.full_name);
-          } else {
-            setUserName(user.email || 'User');
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
 
   const handleLogout = async () => {
     try {
+      // First clear local storage to ensure we remove any stale session data
       localStorage.clear();
+      
+      // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('Logout error:', error);
+        // If it's a session not found error, we can ignore it since we've already cleared local storage
         if (error.message?.includes('session_not_found')) {
           navigate('/login');
           return;
@@ -67,10 +31,12 @@ export function TopNav() {
         });
       }
       
+      // Always navigate to login page
       navigate('/login');
       
     } catch (error) {
       console.error('Logout error:', error);
+      // Force navigation to login even if there's an error
       navigate('/login');
     }
   };
@@ -87,21 +53,12 @@ export function TopNav() {
           <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <Bell className="h-5 w-5" />
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
-                <User className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{userName || 'Loading...'}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
+            <User className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={handleLogout} className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
+            <LogOut className="h-5 w-5" />
+          </Button>
         </div>
       </div>
     </header>
