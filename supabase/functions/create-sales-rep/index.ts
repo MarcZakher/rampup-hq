@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,10 +16,11 @@ serve(async (req) => {
     // Get auth header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
+      console.error('No authorization header provided')
       throw new Error('No authorization header')
     }
 
-    // Create Supabase client
+    // Create Supabase admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -36,13 +37,14 @@ serve(async (req) => {
 
     // Validate input
     if (!email || !fullName || !managerId) {
+      console.error('Missing required fields:', { email, fullName, managerId })
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    // Verify the requester's JWT and get their role
+    // Create Supabase client for JWT verification
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -54,11 +56,13 @@ serve(async (req) => {
       }
     )
 
+    // Verify the JWT token
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
       authHeader.replace('Bearer ', '')
     )
 
     if (authError || !user) {
+      console.error('Invalid token:', authError)
       throw new Error('Invalid token')
     }
 
@@ -70,6 +74,7 @@ serve(async (req) => {
       .single()
 
     if (rolesError || !userRoles || userRoles.role !== 'manager') {
+      console.error('Unauthorized - must be a manager:', { rolesError, userRoles })
       return new Response(
         JSON.stringify({ error: 'Unauthorized - must be a manager' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
@@ -97,8 +102,11 @@ serve(async (req) => {
     // Update the user_roles table to set the manager_id
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .update({ manager_id: managerId })
-      .eq('user_id', userData.user.id)
+      .insert({
+        user_id: userData.user.id,
+        role: 'sales_rep',
+        manager_id: managerId
+      })
 
     if (roleError) {
       console.error('Error updating user role:', roleError)
