@@ -1,47 +1,57 @@
-import { Home, ClipboardList, BookOpen, LineChart } from 'lucide-react';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
-
-const menuItems = [
-  { title: 'Home', icon: Home, url: '/' },
-  { title: 'Ramping Expectations', icon: ClipboardList, url: '/sales-rep/dashboard' },
-  { title: 'Training Journey', icon: BookOpen, url: '/sales-rep/training' },
-  { title: 'My Analytics', icon: LineChart, url: '/sales-rep/analytics' },
-];
+import { NavLink } from "react-router-dom";
+import { BookOpen, ClipboardList } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function SalesRepSidebar() {
+  const isAdmin = true; // This should be determined by user role
+
   return (
-    <Sidebar>
-      <SidebarContent>
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-primary">RampUP</h1>
+    <div className="pb-12 w-64">
+      <div className="space-y-4 py-4">
+        <div className="px-3 py-2">
+          <div className="space-y-1">
+            <NavLink
+              to="/admin/dashboard"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900",
+                  isActive ? "bg-gray-100 text-gray-900" : ""
+                )
+              }
+            >
+              Dashboard
+            </NavLink>
+            {isAdmin && (
+              <>
+                <NavLink
+                  to="/admin/ramping-expectations"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900",
+                      isActive ? "bg-gray-100 text-gray-900" : ""
+                    )
+                  }
+                >
+                  <ClipboardList className="h-4 w-4" />
+                  Ramping Expectations
+                </NavLink>
+                <NavLink
+                  to="/admin/training-journey"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900",
+                      isActive ? "bg-gray-100 text-gray-900" : ""
+                    )
+                  }
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Edit Training Journey
+                </NavLink>
+              </>
+            )}
+          </div>
         </div>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-3">
-                      <item.icon className="w-5 h-5" />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+      </div>
+    </div>
   );
 }
