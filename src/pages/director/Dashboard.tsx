@@ -4,82 +4,110 @@ import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useEffect, useState } from 'react';
-
-const assessments = {
-  month1: [
-    { name: 'Discovery meeting roleplay pitch', shortName: 'Discovery' },
-    { name: 'SA program', shortName: 'SA' },
-    { name: 'Shadow capture', shortName: 'Shadow' },
-    { name: 'Deliver 3 Proof points', shortName: 'Proof' },
-    { name: 'Account Tiering on territory + Workload & Contact Researches on 2 accs', shortName: 'Tiering' }
-  ],
-  month2: [
-    { name: 'PG plan', shortName: 'PG' },
-    { name: 'SA program', shortName: 'SA' },
-    { name: 'NBM Role play', shortName: 'NBM' },
-    { name: '1st meeting excellence deck', shortName: '1st Meeting' },
-    { name: 'Pitch/Trap setting questions versus main competitors in region: PostGre, DynamoDB..', shortName: 'Pitch' },
-    { name: 'Account plan 1', shortName: 'Account' }
-  ],
-  month3: [
-    { name: 'COM: Review of one LoS through discovery capture sheet', shortName: 'COM' },
-    { name: 'SA program', shortName: 'SA' },
-    { name: 'Champion plan', shortName: 'Champion' },
-    { name: 'Deal review', shortName: 'Deal' },
-    { name: 'TFW prep and execution', shortName: 'TFW' },
-    { name: 'Pitch PS', shortName: 'Pitch PS' }
-  ]
-};
-
-const STORAGE_KEY = 'manager_dashboard_sales_reps';
-
-const calculateAverage = (scores: number[]) => {
-  const validScores = scores.filter(score => score > 0);
-  if (validScores.length === 0) return 0;
-  return Number((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(1));
-};
-
-const getScoreColor = (score: number) => {
-  if (score === 0) return 'bg-white';
-  if (score >= 4) return 'bg-[#90EE90]'; // Light green
-  if (score >= 3) return 'bg-[#FFEB9C]'; // Light yellow
-  if (score >= 2) return 'bg-[#FFC7CE]'; // Light red
-  return 'bg-[#FFC7CE]'; // Light red for lower scores
-};
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 interface SalesRep {
-  id: number;
+  id: string;
   name: string;
   month1: number[];
   month2: number[];
   month3: number[];
 }
 
+const fetchSalesReps = async () => {
+  // First get all users with sales_rep role
+  const { data: salesReps, error: rolesError } = await supabase
+    .from('user_roles')
+    .select(`
+      user_id,
+      profiles:user_id(
+        id,
+        full_name
+      )
+    `)
+    .eq('role', 'sales_rep');
+
+  if (rolesError) {
+    console.error('Error fetching sales reps:', rolesError);
+    throw rolesError;
+  }
+
+  // Then get their assessment scores
+  const salesRepsWithScores = await Promise.all(
+    salesReps.map(async (rep) => {
+      const { data: scores, error: scoresError } = await supabase
+        .from('assessment_scores')
+        .select('*')
+        .eq('sales_rep_id', rep.user_id);
+
+      if (scoresError) {
+        console.error('Error fetching scores:', scoresError);
+        return null;
+      }
+
+      // Transform scores into the expected format
+      const month1 = new Array(5).fill(0);
+      const month2 = new Array(6).fill(0);
+      const month3 = new Array(6).fill(0);
+
+      scores?.forEach((score) => {
+        if (score.month === 'month1' && score.assessment_index < 5) {
+          month1[score.assessment_index] = score.score || 0;
+        } else if (score.month === 'month2' && score.assessment_index < 6) {
+          month2[score.assessment_index] = score.score || 0;
+        } else if (score.month === 'month3' && score.assessment_index < 6) {
+          month3[score.assessment_index] = score.score || 0;
+        }
+      });
+
+      return {
+        id: rep.user_id,
+        name: rep.profiles?.full_name || 'Unknown',
+        month1,
+        month2,
+        month3
+      };
+    })
+  );
+
+  return salesRepsWithScores.filter((rep): rep is SalesRep => rep !== null);
+};
+
 const DirectorDashboard = () => {
-  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+  const { data: salesReps, isLoading } = useQuery({
+    queryKey: ['salesReps'],
+    queryFn: fetchSalesReps
+  });
 
-  useEffect(() => {
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    if (savedReps) {
-      setSalesReps(JSON.parse(savedReps));
-    }
-  }, []);
+  const calculateAverage = (scores: number[]) => {
+    const validScores = scores.filter(score => score > 0);
+    if (validScores.length === 0) return 0;
+    return Number((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(1));
+  };
 
-  const totalReps = salesReps.length;
-  const avgScore = totalReps === 0 ? 0 : (salesReps.reduce((acc, rep) => {
+  const getScoreColor = (score: number) => {
+    if (score === 0) return 'bg-white';
+    if (score >= 4) return 'bg-[#90EE90]';
+    if (score >= 3) return 'bg-[#FFEB9C]';
+    return 'bg-[#FFC7CE]';
+  };
+
+  const totalReps = salesReps?.length || 0;
+  const avgScore = totalReps === 0 ? 0 : (salesReps?.reduce((acc, rep) => {
     const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
     const validScores = allScores.filter(score => score > 0);
     return acc + (validScores.length > 0 ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length : 0);
-  }, 0) / totalReps).toFixed(1);
+  }, 0) || 0 / totalReps).toFixed(1);
 
-  const performingWell = salesReps.filter(rep => {
+  const performingWell = salesReps?.filter(rep => {
     const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
     const validScores = allScores.filter(score => score > 0);
     return validScores.length > 0 && (validScores.reduce((sum, score) => sum + score, 0) / validScores.length) > 3;
-  }).length;
+  }).length || 0;
 
   const getTopRampingRep = () => {
-    if (salesReps.length === 0) return { name: "No reps", score: 0 };
+    if (!salesReps || salesReps.length === 0) return { name: "No reps", score: 0 };
     
     return salesReps.reduce((top, rep) => {
       const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
@@ -89,6 +117,14 @@ const DirectorDashboard = () => {
   };
 
   const topRampingRep = getTopRampingRep();
+
+  if (isLoading) {
+    return (
+      <CustomAppLayout>
+        <div className="p-6">Loading...</div>
+      </CustomAppLayout>
+    );
+  }
 
   return (
     <CustomAppLayout>
@@ -144,7 +180,7 @@ const DirectorDashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {salesReps.map((rep) => (
+                  {salesReps?.map((rep) => (
                     <TableRow key={rep.id}>
                       <TableCell className="font-medium">{rep.name}</TableCell>
                       {rep.month1.map((score, index) => (
@@ -179,7 +215,7 @@ const DirectorDashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {salesReps.map((rep) => (
+                  {salesReps?.map((rep) => (
                     <TableRow key={rep.id}>
                       <TableCell className="font-medium">{rep.name}</TableCell>
                       {rep.month2.map((score, index) => (
@@ -214,7 +250,7 @@ const DirectorDashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {salesReps.map((rep) => (
+                  {salesReps?.map((rep) => (
                     <TableRow key={rep.id}>
                       <TableCell className="font-medium">{rep.name}</TableCell>
                       {rep.month3.map((score, index) => (
