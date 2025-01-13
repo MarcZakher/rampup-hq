@@ -1,7 +1,16 @@
-import { Bell, User } from 'lucide-react';
+import { Bell, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 export function TopNav() {
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
   return (
     <header className="border-b bg-white">
       <div className="flex h-16 items-center px-6 justify-between">
@@ -16,6 +25,14 @@ export function TopNav() {
           </Button>
           <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <User className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSignOut}
+            className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10"
+          >
+            <LogOut className="h-5 w-5" />
           </Button>
         </div>
       </div>
