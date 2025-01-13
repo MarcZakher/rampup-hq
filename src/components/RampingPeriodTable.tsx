@@ -140,18 +140,18 @@ export function RampingPeriodTable() {
   return (
     <div className="w-full">
       <div className="text-2xl font-semibold text-center mb-6">
-        Expectations during the Ramping Period
+        Ramping Expectations
       </div>
-      <Table>
+      <Table className="border border-gray-200 rounded-lg overflow-hidden">
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px] bg-gray-700 text-white">
-              &nbsp;
+          <TableRow className="bg-gray-50">
+            <TableHead className="w-[100px] bg-rampup-primary text-white font-semibold">
+              Metric
             </TableHead>
             {[1, 2, 3, 4, 5, 6].map((month) => (
               <TableHead
                 key={month}
-                className="text-center bg-gradient-to-r from-gray-100 to-gray-300"
+                className="text-center bg-gray-50 font-semibold text-gray-700"
               >
                 Month {month}
               </TableHead>
@@ -161,8 +161,8 @@ export function RampingPeriodTable() {
         </TableHeader>
         <TableBody>
           {rampingData.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell className="font-medium bg-gray-700 text-white">
+            <TableRow key={row.id} className="hover:bg-gray-50">
+              <TableCell className="font-medium bg-rampup-primary text-white">
                 {row.metric}
               </TableCell>
               {[1, 2, 3, 4, 5, 6].map((month) => {
@@ -188,14 +188,14 @@ export function RampingPeriodTable() {
                         />
                       </div>
                     ) : (
-                      <>
-                        {monthData.value}
+                      <div>
+                        <span className="font-semibold text-gray-900">{monthData.value}</span>
                         {monthData.note && (
                           <span className="text-sm text-gray-500 block">
                             {monthData.note}
                           </span>
                         )}
-                      </>
+                      </div>
                     )}
                   </TableCell>
                 );
