@@ -9,6 +9,7 @@ import TrainingJourney from './pages/sales-rep/TrainingJourney';
 import SalesRepAnalytics from './pages/sales-rep/Analytics';
 import CoachingDashboard from './pages/coaching/Dashboard';
 import MeetingDefinitions from './pages/admin/MeetingDefinitions';
+import AdminDashboard from './pages/admin/Dashboard';
 
 function App() {
   return (
@@ -18,7 +19,7 @@ function App() {
         <Route path="/director/dashboard" element={<DirectorDashboard />} />
         <Route path="/director/analytics" element={<AnalyticsPage />} />
         <Route path="/manager/dashboard" element={<ManagerDashboard />} />
-        <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/meeting-definitions" element={<MeetingDefinitions />} />
         <Route path="/sales-rep/dashboard" element={<SalesRepDashboard />} />
         <Route path="/sales-rep/training" element={<TrainingJourney />} />
