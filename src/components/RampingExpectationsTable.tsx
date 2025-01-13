@@ -42,16 +42,18 @@ export function RampingExpectationsTable() {
         throw error;
       }
 
+      console.log("Raw data from Supabase:", data);
+
       // Parse the JSON data into the correct type
       const parsedData: RampingExpectation[] = data.map(item => ({
         id: item.id,
         metric: item.metric,
-        month_1: item.month_1 as MonthValue,
-        month_2: item.month_2 as MonthValue,
-        month_3: item.month_3 as MonthValue,
-        month_4: item.month_4 as MonthValue,
-        month_5: item.month_5 as MonthValue,
-        month_6: item.month_6 as MonthValue,
+        month_1: typeof item.month_1 === 'string' ? JSON.parse(item.month_1) : item.month_1 as MonthValue,
+        month_2: typeof item.month_2 === 'string' ? JSON.parse(item.month_2) : item.month_2 as MonthValue,
+        month_3: typeof item.month_3 === 'string' ? JSON.parse(item.month_3) : item.month_3 as MonthValue,
+        month_4: typeof item.month_4 === 'string' ? JSON.parse(item.month_4) : item.month_4 as MonthValue,
+        month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5 as MonthValue,
+        month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6 as MonthValue,
       }));
 
       console.log("Parsed data:", parsedData);
