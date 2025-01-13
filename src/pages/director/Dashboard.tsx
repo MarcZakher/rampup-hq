@@ -61,11 +61,18 @@ const DirectorDashboard = () => {
 
         if (salesRepsError) throw salesRepsError;
 
+        if (!salesRepsData || salesRepsData.length === 0) {
+          setSalesReps([]);
+          setIsLoading(false);
+          return;
+        }
+
         // Then fetch profiles for these sales reps
+        const salesRepIds = salesRepsData.map(rep => rep.user_id);
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name')
-          .in('id', salesRepsData.map(rep => rep.user_id));
+          .in('id', salesRepIds);
 
         if (profilesError) throw profilesError;
 
@@ -73,7 +80,7 @@ const DirectorDashboard = () => {
         const { data: scoresData, error: scoresError } = await supabase
           .from('assessment_scores')
           .select('*')
-          .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
+          .in('sales_rep_id', salesRepIds);
 
         if (scoresError) throw scoresError;
 
