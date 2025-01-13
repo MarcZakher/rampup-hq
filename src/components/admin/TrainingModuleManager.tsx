@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookPlus, Pencil, Save, X, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TrainingModule {
   id: string;
@@ -17,15 +16,25 @@ interface TrainingModule {
   sort_order: number;
 }
 
-export function TrainingModuleManager() {
+interface TrainingModuleManagerProps {
+  initialData?: TrainingModule[];
+}
+
+export function TrainingModuleManager({ initialData }: TrainingModuleManagerProps) {
   const [modules, setModules] = useState<TrainingModule[]>([]);
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<TrainingModule | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchModules();
-  }, []);
+    if (initialData) {
+      setModules(initialData);
+      setIsLoading(false);
+    } else {
+      fetchModules();
+    }
+  }, [initialData]);
 
   const fetchModules = async () => {
     try {

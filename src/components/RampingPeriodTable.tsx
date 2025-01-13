@@ -32,9 +32,13 @@ interface RampingExpectation {
   month_6: MonthValue;
 }
 
-export function RampingPeriodTable() {
+interface RampingPeriodTableProps {
+  initialData?: RampingExpectation[];
+}
+
+export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
   const [rampingData, setRampingData] = useState<RampingExpectation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<RampingExpectation | null>(null);
   const { toast } = useToast();
@@ -42,8 +46,22 @@ export function RampingPeriodTable() {
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   useEffect(() => {
-    fetchRampingData();
-  }, []);
+    if (initialData) {
+      const parsedData = initialData.map(item => ({
+        ...item,
+        month_1: typeof item.month_1 === 'string' ? JSON.parse(item.month_1) : item.month_1,
+        month_2: typeof item.month_2 === 'string' ? JSON.parse(item.month_2) : item.month_2,
+        month_3: typeof item.month_3 === 'string' ? JSON.parse(item.month_3) : item.month_3,
+        month_4: typeof item.month_4 === 'string' ? JSON.parse(item.month_4) : item.month_4,
+        month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5,
+        month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6,
+      }));
+      setRampingData(parsedData);
+      setIsLoading(false);
+    } else {
+      fetchRampingData();
+    }
+  }, [initialData]);
 
   const fetchRampingData = async () => {
     try {

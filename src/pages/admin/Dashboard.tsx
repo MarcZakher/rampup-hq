@@ -42,7 +42,7 @@ export default function AdminDashboard() {
             {isRampingLoading ? (
               <div>Loading ramping expectations...</div>
             ) : (
-              <RampingPeriodTable />
+              <RampingPeriodTable initialData={rampingData} />
             )}
           </div>
         </div>
@@ -51,7 +51,7 @@ export default function AdminDashboard() {
           {isTrainingLoading ? (
             <div>Loading training modules...</div>
           ) : (
-            <TrainingModuleManager />
+            <TrainingModuleManager initialData={trainingModules} />
           )}
         </div>
       </div>
