@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { CustomAppLayout } from "@/components/Layout/CustomAppLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,11 +14,29 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 type MeetingType = Database["public"]["Enums"]["meeting_type"];
 
 export default function CoachingDashboard() {
+  const navigate = useNavigate();
   const [meetingType, setMeetingType] = useState<MeetingType | "">("");
   const [transcript, setTranscript] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiFeedback, setAiFeedback] = useState("");
   const { toast } = useToast();
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to access the coaching dashboard",
+          variant: "destructive",
+        });
+        navigate("/");
+      }
+    };
+
+    checkAuth();
+  }, [navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +51,10 @@ export default function CoachingDashboard() {
 
     setIsSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        throw new Error("No authenticated user");
+      }
 
       // Get AI feedback
       const { data: aiData, error: aiError } = await supabase.functions.invoke("analyze-meeting", {
@@ -52,7 +73,7 @@ export default function CoachingDashboard() {
       const { error: dbError } = await supabase.from("meeting_analyses").insert({
         meeting_type: meetingType as MeetingType,
         transcript: transcript,
-        sales_rep_id: user.id,
+        sales_rep_id: session.user.id,
         ai_feedback: aiData.analysis
       });
 
