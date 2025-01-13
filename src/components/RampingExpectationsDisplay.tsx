@@ -13,20 +13,15 @@ import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 
-type MonthData = {
-  value: string;
-  note: string;
-};
-
 type ExpectationRow = {
   id: string;
   metric: string;
-  month_1: MonthData;
-  month_2: MonthData;
-  month_3: MonthData;
-  month_4: MonthData;
-  month_5: MonthData;
-  month_6: MonthData;
+  month_1: string;
+  month_2: string;
+  month_3: string;
+  month_4: string;
+  month_5: string;
+  month_6: string;
 };
 
 export function RampingExpectationsDisplay() {
@@ -42,17 +37,7 @@ export function RampingExpectationsDisplay() {
         .select('*');
       
       if (error) throw error;
-      
-      return data.map(row => ({
-        id: row.id,
-        metric: row.metric,
-        month_1: row.month_1 as MonthData,
-        month_2: row.month_2 as MonthData,
-        month_3: row.month_3 as MonthData,
-        month_4: row.month_4 as MonthData,
-        month_5: row.month_5 as MonthData,
-        month_6: row.month_6 as MonthData,
-      })) as ExpectationRow[];
+      return data as ExpectationRow[];
     },
   });
 
@@ -97,10 +82,7 @@ export function RampingExpectationsDisplay() {
   ) => {
     const updatedExpectation = {
       ...expectation,
-      [month]: {
-        ...expectation[month],
-        value: newValue,
-      },
+      [month]: newValue,
     };
     updateMutation.mutate(updatedExpectation);
   }, [updateMutation]);
@@ -149,12 +131,12 @@ export function RampingExpectationsDisplay() {
                   {isEditing ? (
                     <Input
                       type="number"
-                      value={row[month].value}
+                      value={row[month]}
                       onChange={(e) => handleValueChange(row, month, e.target.value)}
                       className="w-20 mx-auto text-center"
                     />
                   ) : (
-                    row[month].value
+                    row[month]
                   )}
                 </TableCell>
               ))}
