@@ -17,7 +17,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [error, setError] = useState<string>('');
-  const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
+  const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -89,7 +89,7 @@ export default function Login() {
             </Alert>
           )}
 
-          {view === 'sign_up' && (
+          {isSignUp && (
             <div className="space-y-2 mb-4">
               <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
               <Select onValueChange={(value) => {
@@ -131,14 +131,7 @@ export default function Login() {
               },
             }}
             providers={[]}
-            view={view}
-            onViewChange={(newView: any) => {
-              setView(newView);
-              if (newView === 'sign_in') {
-                setError('');
-                setSelectedRole('');
-              }
-            }}
+            view={isSignUp ? 'sign_up' : 'sign_in'}
           />
         </div>
       </div>
