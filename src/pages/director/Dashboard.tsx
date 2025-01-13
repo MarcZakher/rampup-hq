@@ -4,6 +4,7 @@ import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const assessments = {
   month1: [
@@ -59,10 +60,60 @@ const DirectorDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
 
   useEffect(() => {
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    if (savedReps) {
-      setSalesReps(JSON.parse(savedReps));
-    }
+    const fetchSalesReps = async () => {
+      try {
+        // First, get all sales reps from user_roles
+        const { data: salesRepRoles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id, profiles:profiles(full_name)')
+          .eq('role', 'sales_rep');
+
+        if (rolesError) throw rolesError;
+
+        if (!salesRepRoles) return;
+
+        // Then get their assessment scores
+        const salesRepsWithScores = await Promise.all(
+          salesRepRoles.map(async (role) => {
+            const { data: scores, error: scoresError } = await supabase
+              .from('assessment_scores')
+              .select('*')
+              .eq('sales_rep_id', role.user_id);
+
+            if (scoresError) throw scoresError;
+
+            // Transform scores into the expected format
+            const month1Scores = Array(5).fill(0);
+            const month2Scores = Array(6).fill(0);
+            const month3Scores = Array(6).fill(0);
+
+            scores?.forEach(score => {
+              if (score.month === 'month1' && score.assessment_index < 5) {
+                month1Scores[score.assessment_index] = Number(score.score);
+              } else if (score.month === 'month2' && score.assessment_index < 6) {
+                month2Scores[score.assessment_index] = Number(score.score);
+              } else if (score.month === 'month3' && score.assessment_index < 6) {
+                month3Scores[score.assessment_index] = Number(score.score);
+              }
+            });
+
+            return {
+              id: role.user_id,
+              name: role.profiles?.full_name || 'Unknown',
+              month1: month1Scores,
+              month2: month2Scores,
+              month3: month3Scores,
+            };
+          })
+        );
+
+        setSalesReps(salesRepsWithScores);
+      } catch (error) {
+        console.error('Error fetching sales reps:', error);
+      }
+    };
+
+    fetchSalesReps();
   }, []);
 
   const totalReps = salesReps.length;
