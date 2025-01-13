@@ -62,18 +62,10 @@ const ManagerDashboard = () => {
 
       console.log('Current user role:', userRoleData);
 
-      // Get all sales reps with their profiles
+      // Get all sales reps with their profiles using two separate queries
       const { data: salesRepsData, error: salesRepsError } = await supabase
         .from('user_roles')
-        .select(`
-          id,
-          user_id,
-          manager_id,
-          profiles:user_id (
-            id,
-            full_name
-          )
-        `)
+        .select('id, user_id, manager_id')
         .eq('role', 'sales_rep')
         .eq(userRoleData.role !== 'director' ? 'manager_id' : 'role', 
             userRoleData.role !== 'director' ? user?.id : 'sales_rep');
@@ -91,6 +83,17 @@ const ManagerDashboard = () => {
         return;
       }
 
+      // Fetch profiles separately
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', salesRepsData.map(rep => rep.user_id));
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
+
       // Then fetch assessment scores for these sales reps
       const { data: scoresData, error: scoresError } = await supabase
         .from('assessment_scores')
@@ -106,7 +109,7 @@ const ManagerDashboard = () => {
 
       // Transform the data into the format expected by the components
       const formattedReps = salesRepsData.map(rep => {
-        const profile = rep.profiles;
+        const profile = profilesData?.find(p => p.id === rep.user_id);
         const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
         
         return {
