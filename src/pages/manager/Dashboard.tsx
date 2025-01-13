@@ -3,6 +3,8 @@ import { AppLayout } from "@/components/Layout/AppLayout";
 import { useToast } from '@/hooks/use-toast';
 import { AddSalesRepForm } from '@/components/manager/AddSalesRepForm';
 import { MonthlyAssessmentCard } from '@/components/manager/MonthlyAssessmentCard';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 /**
  * Assessment configuration for each month
@@ -13,18 +15,18 @@ const assessments = {
     { name: 'SA program', shortName: 'SA' },
     { name: 'Shadow capture', shortName: 'Shadow' },
     { name: 'Deliver 3 Proof points', shortName: 'Proof' },
-    { name: 'Account Tiering on territory + Workload & Contact Researches on 2 accs', shortName: 'Tiering' }
+    { name: 'Account Tiering', shortName: 'Tiering' }
   ],
   month2: [
     { name: 'PG plan', shortName: 'PG' },
     { name: 'SA program', shortName: 'SA' },
     { name: 'NBM Role play', shortName: 'NBM' },
     { name: '1st meeting excellence deck', shortName: '1st Meeting' },
-    { name: 'Pitch/Trap setting questions versus main competitors in region: PostGre, DynamoDB..', shortName: 'Pitch' },
+    { name: 'Pitch/Trap setting questions', shortName: 'Pitch' },
     { name: 'Account plan 1', shortName: 'Account' }
   ],
   month3: [
-    { name: 'COM: Review of one LoS through discovery capture sheet', shortName: 'COM' },
+    { name: 'COM Review', shortName: 'COM' },
     { name: 'SA program', shortName: 'SA' },
     { name: 'Champion plan', shortName: 'Champion' },
     { name: 'Deal review', shortName: 'Deal' },
@@ -33,87 +35,127 @@ const assessments = {
   ]
 };
 
-// Storage key for persisting sales rep data
-const STORAGE_KEY = 'manager_dashboard_sales_reps';
-
-/**
- * Manager Dashboard component for tracking and managing sales representatives' assessments
- */
 const ManagerDashboard = () => {
   const [salesReps, setSalesReps] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Load saved data on component mount
   useEffect(() => {
-    loadSalesReps();
-  }, []);
-
-  // Save data whenever salesReps changes
-  useEffect(() => {
-    saveSalesReps();
-  }, [salesReps]);
-
-  const loadSalesReps = () => {
-    try {
-      const savedReps = localStorage.getItem(STORAGE_KEY);
-      if (savedReps) {
-        const parsedReps = JSON.parse(savedReps);
-        setSalesReps(Array.isArray(parsedReps) ? parsedReps : []);
-      }
-    } catch (error) {
-      console.error('Error loading sales reps:', error);
-      setSalesReps([]);
+    if (user) {
+      fetchSalesReps();
     }
-  };
+  }, [user]);
 
-  const saveSalesReps = () => {
+  const fetchSalesReps = async () => {
     try {
-      if (Array.isArray(salesReps)) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(salesReps));
+      // First get all sales reps managed by this manager
+      const { data: salesRepsData, error: salesRepsError } = await supabase
+        .from('user_roles')
+        .select('user_id, profiles:profiles(id, full_name)')
+        .eq('manager_id', user?.id)
+        .eq('role', 'sales_rep');
+
+      if (salesRepsError) throw salesRepsError;
+
+      if (!salesRepsData || salesRepsData.length === 0) {
+        setSalesReps([]);
+        setIsLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Error saving sales reps:', error);
-    }
-  };
 
-  const addSalesRep = (name: string) => {
-    const newRep = {
-      id: Date.now(),
-      name,
-      month1: new Array(assessments.month1.length).fill(0),
-      month2: new Array(assessments.month2.length).fill(0),
-      month3: new Array(assessments.month3.length).fill(0)
-    };
+      // Then fetch assessment scores for these sales reps
+      const { data: scoresData, error: scoresError } = await supabase
+        .from('assessment_scores')
+        .select('*')
+        .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
 
-    setSalesReps(prevReps => Array.isArray(prevReps) ? [...prevReps, newRep] : [newRep]);
-    toast({
-      title: "Success",
-      description: "Sales representative added successfully"
-    });
-  };
+      if (scoresError) throw scoresError;
 
-  const removeSalesRep = (id: number) => {
-    setSalesReps(prevReps => 
-      Array.isArray(prevReps) ? prevReps.filter(rep => rep.id !== id) : []
-    );
-    toast({
-      title: "Success",
-      description: "Sales representative removed successfully"
-    });
-  };
-
-  const updateScore = (repId: number, month: 'month1' | 'month2' | 'month3', index: number, value: string) => {
-    setSalesReps(prevReps => {
-      if (!Array.isArray(prevReps)) return [];
-      return prevReps.map(rep => {
-        if (rep.id === repId) {
-          const newScores = [...rep[month]];
-          newScores[index] = parseFloat(value);
-          return { ...rep, [month]: newScores };
-        }
-        return rep;
+      // Transform the data into the format expected by the components
+      const formattedReps = salesRepsData.map(rep => {
+        const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
+        
+        return {
+          id: rep.user_id,
+          name: rep.profiles?.full_name || 'Unknown',
+          month1: new Array(assessments.month1.length).fill(0).map((_, index) => {
+            const score = repScores.find(s => s.month === 'month1' && s.assessment_index === index);
+            return score?.score || 0;
+          }),
+          month2: new Array(assessments.month2.length).fill(0).map((_, index) => {
+            const score = repScores.find(s => s.month === 'month2' && s.assessment_index === index);
+            return score?.score || 0;
+          }),
+          month3: new Array(assessments.month3.length).fill(0).map((_, index) => {
+            const score = repScores.find(s => s.month === 'month3' && s.assessment_index === index);
+            return score?.score || 0;
+          })
+        };
       });
+
+      setSalesReps(formattedReps);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching sales reps:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch sales representatives data",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+    }
+  };
+
+  const addSalesRep = async (name: string) => {
+    // This function should be implemented to work with Supabase
+    // For now, we'll show a toast message
+    toast({
+      title: "Not Implemented",
+      description: "Adding sales representatives is not yet implemented",
+      variant: "destructive"
     });
+  };
+
+  const removeSalesRep = async (id: number) => {
+    // This function should be implemented to work with Supabase
+    // For now, we'll show a toast message
+    toast({
+      title: "Not Implemented",
+      description: "Removing sales representatives is not yet implemented",
+      variant: "destructive"
+    });
+  };
+
+  const updateScore = async (repId: number, month: string, index: number, value: string) => {
+    try {
+      const { error } = await supabase
+        .from('assessment_scores')
+        .upsert({
+          sales_rep_id: repId,
+          manager_id: user?.id,
+          month,
+          assessment_index: index,
+          score: parseFloat(value)
+        });
+
+      if (error) throw error;
+
+      // Refresh the data
+      await fetchSalesReps();
+
+      toast({
+        title: "Success",
+        description: "Score updated successfully"
+      });
+    } catch (error) {
+      console.error('Error updating score:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update score",
+        variant: "destructive"
+      });
+    }
   };
 
   const getScoreColor = (score: number) => {
@@ -122,6 +164,14 @@ const ManagerDashboard = () => {
     if (score >= 3) return 'bg-[#FFEB9C]';
     return 'bg-[#FFC7CE]';
   };
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="p-6">Loading...</div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
