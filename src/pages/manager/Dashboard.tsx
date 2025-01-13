@@ -48,10 +48,16 @@ const ManagerDashboard = () => {
     try {
       console.log('Fetching sales reps for manager:', user?.id);
       
-      // First get all sales reps managed by this manager
+      // First get all sales reps managed by this manager with their profiles
       const { data: salesRepsData, error: salesRepsError } = await supabase
         .from('user_roles')
-        .select('*, profiles!user_roles_user_id_fkey(id, full_name)')
+        .select(`
+          user_id,
+          profiles (
+            id,
+            full_name
+          )
+        `)
         .eq('manager_id', user?.id)
         .eq('role', 'sales_rep');
 
@@ -83,7 +89,7 @@ const ManagerDashboard = () => {
 
       // Transform the data into the format expected by the components
       const formattedReps = salesRepsData.map(rep => {
-        const profile = rep.profiles;
+        const profile = rep.profiles?.[0]; // Access the first profile since it's returned as an array
         const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
         
         return {
