@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Settings, List, LineChart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { RampingExpectationsManager } from "@/components/admin/RampingExpectationsManager";
+import { RampingPeriodTable } from "@/components/RampingPeriodTable";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -54,7 +55,17 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        <RampingExpectationsManager />
+        <div className="space-y-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Current Ramping Period Expectations</h2>
+            <RampingPeriodTable />
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Manage Expectations</h2>
+            <RampingExpectationsManager />
+          </div>
+        </div>
       </div>
     </CustomAppLayout>
   );
