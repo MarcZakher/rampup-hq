@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { AuthChangeEvent } from '@supabase/supabase-js';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -53,8 +54,8 @@ export default function Login() {
 
   // Handle auth state changes to catch sign up attempts
   useEffect(() => {
-    const handleAuthChange = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_UP' && !selectedRole) {
+    const handleAuthChange = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session) => {
+      if (event === AuthChangeEvent.SIGNED_UP && !selectedRole) {
         setError('Please select a role before signing up');
         // Sign out the user if they haven't selected a role
         await supabase.auth.signOut();
