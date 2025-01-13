@@ -31,7 +31,8 @@ export function RampingExpectationsTable() {
   const { data: expectations, isLoading } = useQuery({
     queryKey: ["ramping-expectations"],
     queryFn: async () => {
-      console.log("Fetching ramping expectations...");
+      console.log("Starting to fetch ramping expectations...");
+      
       const { data, error } = await supabase
         .from("ramping_expectations")
         .select("*")
@@ -43,10 +44,19 @@ export function RampingExpectationsTable() {
       }
 
       console.log("Raw data from Supabase:", data);
+      console.log("Number of records:", data?.length || 0);
+      
+      if (!data || data.length === 0) {
+        console.log("No data found in ramping_expectations table");
+        return [];
+      }
 
       // Parse the JSON data into the correct type with proper type checking
       const parsedData: RampingExpectation[] = data.map(item => {
+        console.log("Processing item:", item);
+        
         const parseMonthValue = (monthData: any): MonthValue => {
+          console.log("Parsing month data:", monthData);
           if (typeof monthData === 'string') {
             return JSON.parse(monthData);
           }
@@ -71,7 +81,7 @@ export function RampingExpectationsTable() {
         };
       });
 
-      console.log("Parsed data:", parsedData);
+      console.log("Final parsed data:", parsedData);
       return parsedData;
     },
   });
@@ -141,4 +151,4 @@ export function RampingExpectationsTable() {
       </Table>
     </div>
   );
-}
+};
