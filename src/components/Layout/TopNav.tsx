@@ -18,17 +18,26 @@ export function TopNav() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-        
-        if (profile?.full_name) {
-          setUserName(profile.full_name);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+          
+          if (error) {
+            console.error('Error fetching profile:', error);
+            return;
+          }
+          
+          if (profile?.full_name) {
+            setUserName(profile.full_name);
+          }
         }
+      } catch (error) {
+        console.error('Error fetching user:', error);
       }
     };
 
