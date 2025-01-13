@@ -97,7 +97,6 @@ export function RampingExpectationsTable() {
 
   const handleSave = async () => {
     try {
-      // Convert metrics to the format expected by the database
       const updates = metrics.map(metric => ({
         metric: metric.name,
         month_1: { value: metric.values[0], note: "" },
@@ -108,7 +107,6 @@ export function RampingExpectationsTable() {
         month_6: { value: metric.values[5], note: "" },
       }));
 
-      // Update each metric in the database
       for (const update of updates) {
         const { error } = await supabase
           .from("ramping_expectations")
@@ -187,6 +185,8 @@ export function RampingExpectationsTable() {
               </TableRow>
             ))}
           </TableBody>
-        </div>
+        </Table>
+      </div>
+    </div>
   );
 }
