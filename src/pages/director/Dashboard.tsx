@@ -16,21 +16,13 @@ interface SalesRep {
   month3: number[];
 }
 
-interface SalesRepQueryResult {
-  user_id: string | null;
-  profile: {
-    id: string;
-    full_name: string | null;
-  } | null;
-}
-
 const fetchSalesReps = async () => {
-  // First get all users with sales_rep role and their profiles
+  // First get all users with sales_rep role
   const { data: salesRepsData, error: rolesError } = await supabase
     .from('user_roles')
     .select(`
       user_id,
-      profile:profiles(
+      profiles (
         id,
         full_name
       )
@@ -76,9 +68,11 @@ const fetchSalesReps = async () => {
         }
       });
 
+      const profile = Array.isArray(rep.profiles) ? rep.profiles[0] : rep.profiles;
+
       return {
         id: rep.user_id,
-        name: rep.profile?.full_name || 'Unknown',
+        name: profile?.full_name || 'Unknown',
         month1,
         month2,
         month3
