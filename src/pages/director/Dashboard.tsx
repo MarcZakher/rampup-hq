@@ -4,8 +4,6 @@ import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { SalesRep } from '@/lib/types/analytics';
 
 const assessments = {
   month1: [
@@ -33,6 +31,8 @@ const assessments = {
   ]
 };
 
+const STORAGE_KEY = 'manager_dashboard_sales_reps';
+
 const calculateAverage = (scores: number[]) => {
   const validScores = scores.filter(score => score > 0);
   if (validScores.length === 0) return 0;
@@ -47,84 +47,22 @@ const getScoreColor = (score: number) => {
   return 'bg-[#FFC7CE]'; // Light red for lower scores
 };
 
+interface SalesRep {
+  id: number;
+  name: string;
+  month1: number[];
+  month2: number[];
+  month3: number[];
+}
+
 const DirectorDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
 
   useEffect(() => {
-    const fetchSalesReps = async () => {
-      try {
-        console.log('Fetching sales reps data...');
-        
-        // First, get all sales reps roles
-        const { data: salesRepRoles, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('user_id')
-          .eq('role', 'sales_rep');
-
-        if (rolesError) {
-          console.error('Error fetching sales rep roles:', rolesError);
-          throw rolesError;
-        }
-
-        if (!salesRepRoles || salesRepRoles.length === 0) {
-          console.log('No sales reps found');
-          return;
-        }
-
-        console.log('Found sales rep roles:', salesRepRoles);
-
-        // Get profiles and scores for each sales rep
-        const salesRepsData = await Promise.all(
-          salesRepRoles.map(async (role) => {
-            // Get profile
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('full_name')
-              .eq('id', role.user_id)
-              .maybeSingle();
-
-            // Get assessment scores
-            const { data: scores } = await supabase
-              .from('assessment_scores')
-              .select('*')
-              .eq('sales_rep_id', role.user_id);
-
-            console.log(`Fetched scores for ${role.user_id}:`, scores);
-
-            // Initialize score arrays
-            const month1Scores = Array(5).fill(0);
-            const month2Scores = Array(6).fill(0);
-            const month3Scores = Array(6).fill(0);
-
-            // Populate scores if they exist
-            scores?.forEach(score => {
-              if (score.month === 'month1' && score.assessment_index < 5) {
-                month1Scores[score.assessment_index] = Number(score.score) || 0;
-              } else if (score.month === 'month2' && score.assessment_index < 6) {
-                month2Scores[score.assessment_index] = Number(score.score) || 0;
-              } else if (score.month === 'month3' && score.assessment_index < 6) {
-                month3Scores[score.assessment_index] = Number(score.score) || 0;
-              }
-            });
-
-            return {
-              id: role.user_id,
-              name: profile?.full_name || 'Unknown',
-              month1: month1Scores,
-              month2: month2Scores,
-              month3: month3Scores,
-            };
-          })
-        );
-
-        console.log('Processed sales reps data:', salesRepsData);
-        setSalesReps(salesRepsData);
-      } catch (error) {
-        console.error('Error fetching sales reps:', error);
-      }
-    };
-
-    fetchSalesReps();
+    const savedReps = localStorage.getItem(STORAGE_KEY);
+    if (savedReps) {
+      setSalesReps(JSON.parse(savedReps));
+    }
   }, []);
 
   const totalReps = salesReps.length;

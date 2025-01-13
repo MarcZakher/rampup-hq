@@ -12,62 +12,28 @@ import TrainingJourney from './pages/sales-rep/TrainingJourney';
 import SalesRepAnalytics from './pages/sales-rep/Analytics';
 import CoachingDashboard from './pages/coaching/Dashboard';
 import MeetingDefinitions from './pages/admin/MeetingDefinitions';
-import { useToast } from './hooks/use-toast';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
-    // Check initial session
-    const checkSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Session check error:', error);
-          toast({
-            title: "Authentication Error",
-            description: "Please sign in again",
-            variant: "destructive"
-          });
-          setIsAuthenticated(false);
-        } else {
-          setIsAuthenticated(!!session);
-        }
-      } catch (err) {
-        console.error('Session check error:', err);
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN') {
-        setIsAuthenticated(true);
-      } else if (event === 'SIGNED_OUT') {
-        setIsAuthenticated(false);
-      } else if (event === 'TOKEN_REFRESHED') {
-        setIsAuthenticated(!!session);
-      }
-      setIsLoading(false);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [toast]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (isAuthenticated === null) {
+    return <div>Loading...</div>;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" />;
   }
 
   return <>{children}</>;
