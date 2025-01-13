@@ -49,7 +49,6 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
       try {
         return JSON.parse(value);
       } catch (e) {
-        console.error('Error parsing month value:', value, e);
         return { value: '', note: '' };
       }
     }
@@ -59,7 +58,6 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
   useEffect(() => {
     if (initialData) {
       try {
-        console.log('Processing initial data:', initialData);
         const parsedData = initialData.map(item => ({
           id: item.id,
           metric: item.metric,
@@ -70,7 +68,6 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
           month_5: parseMonthValue(item.month_5),
           month_6: parseMonthValue(item.month_6),
         }));
-        console.log('Parsed data:', parsedData);
         setRampingData(parsedData);
       } catch (error) {
         console.error('Error parsing data:', error);
@@ -95,8 +92,6 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
 
       if (error) throw error;
 
-      console.log('Fetched data from Supabase:', data);
-      
       const parsedData = data.map(item => ({
         id: item.id,
         metric: item.metric,
@@ -108,7 +103,6 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
         month_6: parseMonthValue(item.month_6),
       }));
 
-      console.log('Parsed fetched data:', parsedData);
       setRampingData(parsedData);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -190,11 +184,11 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="w-full text-center py-4">Loading ramping expectations...</div>;
   }
 
-  if (rampingData.length === 0) {
-    return <div>No ramping expectations found</div>;
+  if (!rampingData || rampingData.length === 0) {
+    return <div className="w-full text-center py-4">No ramping expectations available</div>;
   }
 
   return (

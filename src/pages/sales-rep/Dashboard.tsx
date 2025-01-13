@@ -14,7 +14,6 @@ export default function SalesRepDashboard() {
         .order("metric");
       
       if (error) throw error;
-      console.log('Ramping data fetched in Sales Rep Dashboard:', data);
       return data;
     }
   });
@@ -24,11 +23,7 @@ export default function SalesRepDashboard() {
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-8">Sales Representative Dashboard</h1>
         <div className="bg-white rounded-lg shadow-md p-6">
-          {error ? (
-            <div className="text-red-500">Error loading ramping expectations</div>
-          ) : (
-            <RampingPeriodTable initialData={rampingData} />
-          )}
+          <RampingPeriodTable initialData={rampingData} />
           <div className="mt-8">
             <ProgressTrackingTable />
           </div>
