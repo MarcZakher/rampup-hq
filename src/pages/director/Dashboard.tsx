@@ -58,9 +58,7 @@ const DirectorDashboard = () => {
           .from('user_roles')
           .select(`
             user_id,
-            profiles!inner (
-              full_name
-            )
+            profiles:profiles(full_name)
           `)
           .eq('role', 'sales_rep');
 
