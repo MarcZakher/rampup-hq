@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useEffect, useState } from 'react';
+import { getSalesReps, calculateAverage } from '@/lib/utils/analytics';
+import { useToast } from '@/hooks/use-toast';
 
 const assessments = {
   month1: [
@@ -31,39 +33,30 @@ const assessments = {
   ]
 };
 
-const STORAGE_KEY = 'manager_dashboard_sales_reps';
-
-const calculateAverage = (scores: number[]) => {
-  const validScores = scores.filter(score => score > 0);
-  if (validScores.length === 0) return 0;
-  return Number((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(1));
-};
-
-const getScoreColor = (score: number) => {
-  if (score === 0) return 'bg-white';
-  if (score >= 4) return 'bg-[#90EE90]'; // Light green
-  if (score >= 3) return 'bg-[#FFEB9C]'; // Light yellow
-  if (score >= 2) return 'bg-[#FFC7CE]'; // Light red
-  return 'bg-[#FFC7CE]'; // Light red for lower scores
-};
-
-interface SalesRep {
-  id: number;
-  name: string;
-  month1: number[];
-  month2: number[];
-  month3: number[];
-}
-
 const DirectorDashboard = () => {
-  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+  const [salesReps, setSalesReps] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    if (savedReps) {
-      setSalesReps(JSON.parse(savedReps));
-    }
-  }, []);
+    const fetchData = async () => {
+      try {
+        const data = await getSalesReps();
+        setSalesReps(data);
+      } catch (error) {
+        console.error('Error fetching sales reps:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load sales representatives data",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
 
   const totalReps = salesReps.length;
   const avgScore = totalReps === 0 ? 0 : (salesReps.reduce((acc, rep) => {
@@ -88,7 +81,22 @@ const DirectorDashboard = () => {
     }, { name: "", score: 0 });
   };
 
+  const getScoreColor = (score: number) => {
+    if (score === 0) return 'bg-white';
+    if (score >= 4) return 'bg-[#90EE90]';
+    if (score >= 3) return 'bg-[#FFEB9C]';
+    return 'bg-[#FFC7CE]';
+  };
+
   const topRampingRep = getTopRampingRep();
+
+  if (isLoading) {
+    return (
+      <CustomAppLayout>
+        <div className="p-6">Loading...</div>
+      </CustomAppLayout>
+    );
+  }
 
   return (
     <CustomAppLayout>
@@ -121,116 +129,49 @@ const DirectorDashboard = () => {
           <StatCard
             title="Top Ramping Rep"
             value={topRampingRep.name}
-            description={`Score: ${topRampingRep.score}/5`}
+            description={`Score: ${topRampingRep.score.toFixed(1)}/5`}
             icon={<Trophy className="h-4 w-4 text-muted-foreground" />}
           />
         </div>
 
         <div className="space-y-6">
-          {/* Month 1 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Month 1 Assessments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    {assessments.month1.map((assessment, index) => (
-                      <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
-                    ))}
-                    <TableHead>Average</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {salesReps.map((rep) => (
-                    <TableRow key={rep.id}>
-                      <TableCell className="font-medium">{rep.name}</TableCell>
-                      {rep.month1.map((score, index) => (
-                        <TableCell key={index} className={getScoreColor(score)}>
-                          {score || '-'}
-                        </TableCell>
+          {['month1', 'month2', 'month3'].map((month, monthIndex) => (
+            <Card key={month}>
+              <CardHeader>
+                <CardTitle>Month {monthIndex + 1} Assessments</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      {assessments[month as keyof typeof assessments].map((assessment, index) => (
+                        <TableHead key={index} title={assessment.name}>
+                          {assessment.shortName}
+                        </TableHead>
                       ))}
-                      <TableCell className={getScoreColor(calculateAverage(rep.month1))}>
-                        {calculateAverage(rep.month1)}
-                      </TableCell>
+                      <TableHead>Average</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          {/* Month 2 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Month 2 Assessments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    {assessments.month2.map((assessment, index) => (
-                      <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
-                    ))}
-                    <TableHead>Average</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {salesReps.map((rep) => (
-                    <TableRow key={rep.id}>
-                      <TableCell className="font-medium">{rep.name}</TableCell>
-                      {rep.month2.map((score, index) => (
-                        <TableCell key={index} className={getScoreColor(score)}>
-                          {score || '-'}
+                  </TableHeader>
+                  <TableBody>
+                    {salesReps.map((rep) => (
+                      <TableRow key={rep.id}>
+                        <TableCell className="font-medium">{rep.name}</TableCell>
+                        {rep[month].map((score: number, index: number) => (
+                          <TableCell key={index} className={getScoreColor(score)}>
+                            {score || '-'}
+                          </TableCell>
+                        ))}
+                        <TableCell className={getScoreColor(calculateAverage(rep[month]))}>
+                          {calculateAverage(rep[month]).toFixed(1)}
                         </TableCell>
-                      ))}
-                      <TableCell className={getScoreColor(calculateAverage(rep.month2))}>
-                        {calculateAverage(rep.month2)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          {/* Month 3 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Month 3 Assessments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    {assessments.month3.map((assessment, index) => (
-                      <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
+                      </TableRow>
                     ))}
-                    <TableHead>Average</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {salesReps.map((rep) => (
-                    <TableRow key={rep.id}>
-                      <TableCell className="font-medium">{rep.name}</TableCell>
-                      {rep.month3.map((score, index) => (
-                        <TableCell key={index} className={getScoreColor(score)}>
-                          {score || '-'}
-                        </TableCell>
-                      ))}
-                      <TableCell className={getScoreColor(calculateAverage(rep.month3))}>
-                        {calculateAverage(rep.month3)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </CustomAppLayout>
