@@ -6,9 +6,6 @@ import { MonthlyAssessmentCard } from '@/components/manager/MonthlyAssessmentCar
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
-/**
- * Assessment configuration for each month
- */
 const assessments = {
   month1: [
     { name: 'Discovery meeting roleplay pitch', shortName: 'Discovery' },
@@ -54,7 +51,7 @@ const ManagerDashboard = () => {
         .from('user_roles')
         .select(`
           user_id,
-          profiles!user_roles_user_id_fkey (
+          profiles (
             id,
             full_name
           )
