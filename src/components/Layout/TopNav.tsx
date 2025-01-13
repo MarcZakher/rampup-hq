@@ -36,6 +36,8 @@ export function TopNav() {
           
           if (profile?.full_name) {
             setUserName(profile.full_name);
+          } else {
+            setUserName(user.email || 'User');
           }
         }
       } catch (error) {
