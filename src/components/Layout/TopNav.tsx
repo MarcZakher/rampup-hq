@@ -3,6 +3,16 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from '@/hooks/use-auth';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 /**
  * TopNav component that displays the top navigation bar
@@ -11,27 +21,21 @@ import { useToast } from '@/hooks/use-toast';
 export function TopNav() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleLogout = async () => {
     try {
-      // First attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('Logout error:', error);
-        // If it's a refresh token error, we can safely ignore it and proceed with cleanup
-        if (!error.message?.includes('refresh_token_not_found')) {
-          toast({
-            variant: "destructive",
-            title: "Error logging out",
-            description: "Please try again"
-          });
-          return;
-        }
+        toast({
+          variant: "destructive",
+          title: "Error logging out",
+          description: "Please try again"
+        });
+        return;
       }
-      
-      // Clear any local storage data
-      localStorage.clear();
       
       // Show success message
       toast({
@@ -39,8 +43,8 @@ export function TopNav() {
         description: "You have been signed out of your account"
       });
       
-      // Force a page reload to clear any stale state
-      window.location.href = '/login';
+      // Navigate to login page
+      navigate('/login');
       
     } catch (error) {
       console.error('Logout error:', error);
@@ -49,9 +53,16 @@ export function TopNav() {
         title: "Error logging out",
         description: "An unexpected error occurred"
       });
-      // Force navigation to login even if there's an error
-      window.location.href = '/login';
     }
+  };
+
+  // Get user initials for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase();
   };
 
   return (
@@ -71,23 +82,42 @@ export function TopNav() {
           >
             <Bell className="h-5 w-5" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10"
-            aria-label="User profile"
-          >
-            <User className="h-5 w-5" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleLogout} 
-            className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10"
-            aria-label="Log out"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative h-10 w-10 rounded-full"
+                aria-label="User profile"
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-rampup-primary/10 text-rampup-primary">
+                    {user?.user_metadata?.full_name ? 
+                      getInitials(user.user_metadata.full_name) : 
+                      user?.email?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    {user?.user_metadata?.full_name || 'User'}
+                  </p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
