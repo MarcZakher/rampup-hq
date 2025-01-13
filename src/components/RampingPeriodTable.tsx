@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -37,6 +38,8 @@ export function RampingPeriodTable() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<RampingExpectation | null>(null);
   const { toast } = useToast();
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     fetchRampingData();
@@ -75,8 +78,9 @@ export function RampingPeriodTable() {
   };
 
   const startEditing = (expectation: RampingExpectation) => {
+    if (!isAdminRoute) return;
     setEditingId(expectation.id);
-    setEditingData({ ...expectation } as RampingExpectation);
+    setEditingData(JSON.parse(JSON.stringify(expectation)));
   };
 
   const cancelEditing = () => {
@@ -88,10 +92,11 @@ export function RampingPeriodTable() {
     if (!editingData) return;
     
     const monthKey = `month_${month}` as keyof RampingExpectation;
-    const updatedMonthValue = {
-      ...editingData[monthKey],
+    const currentMonthValue = editingData[monthKey] as MonthValue;
+    const updatedMonthValue: MonthValue = {
+      ...currentMonthValue,
       [field]: value,
-    } as MonthValue;
+    };
 
     setEditingData({
       ...editingData,
@@ -159,7 +164,7 @@ export function RampingPeriodTable() {
                 Month {month}
               </TableHead>
             ))}
-            <TableHead className="w-[100px]">Actions</TableHead>
+            {isAdminRoute && <TableHead className="w-[100px]">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -176,7 +181,7 @@ export function RampingPeriodTable() {
 
                 return (
                   <TableCell key={month} className="text-center p-2">
-                    {editingId === row.id ? (
+                    {editingId === row.id && isAdminRoute ? (
                       <div className="space-y-2">
                         <Input
                           value={monthData.value}
@@ -203,34 +208,36 @@ export function RampingPeriodTable() {
                   </TableCell>
                 );
               })}
-              <TableCell>
-                {editingId === row.id ? (
-                  <div className="flex gap-2">
+              {isAdminRoute && (
+                <TableCell>
+                  {editingId === row.id ? (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={saveChanges}
+                      >
+                        <Save className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={cancelEditing}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={saveChanges}
+                      onClick={() => startEditing(row)}
                     >
-                      <Save className="h-4 w-4" />
+                      <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={cancelEditing}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => startEditing(row)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                )}
-              </TableCell>
+                  )}
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
