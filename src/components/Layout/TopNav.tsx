@@ -22,21 +22,20 @@ export function TopNav() {
 
   const handleLogout = async () => {
     try {
+      // First clear any local storage
+      localStorage.clear();
+      
+      // Then attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
+      
       if (error) {
         console.error('Logout error:', error);
-        toast({
-          title: "Error logging out",
-          description: error.message,
-          variant: "destructive",
-          duration: 3000,
-        });
+        // Even if there's an error, we'll redirect to login
+        // since the session might be invalid anyway
+        navigate('/login', { replace: true });
         return;
       }
 
-      // Clear any local storage or state if needed
-      localStorage.clear();
-      
       toast({
         title: "Logged out successfully",
         duration: 2000,
@@ -46,12 +45,8 @@ export function TopNav() {
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Error during logout:', error);
-      toast({
-        title: "Error logging out",
-        description: "Please try again",
-        variant: "destructive",
-        duration: 3000,
-      });
+      // Even if there's an error, redirect to login
+      navigate('/login', { replace: true });
     }
   };
 
