@@ -24,7 +24,7 @@ interface RampingExpectation {
   month_6: MonthValue;
 }
 
-const fetchRampingExpectations = async () => {
+const fetchRampingExpectations = async (): Promise<RampingExpectation[]> => {
   console.log("Fetching ramping expectations...");
   const { data, error } = await supabase
     .from("ramping_expectations")
@@ -37,6 +37,11 @@ const fetchRampingExpectations = async () => {
   }
 
   console.log("Raw data from Supabase:", data);
+
+  if (!data || data.length === 0) {
+    console.log("No data returned from Supabase");
+    return [];
+  }
 
   const mappedData = data.map((item) => ({
     metric: item.metric,
@@ -71,6 +76,7 @@ export function RampingPeriodTable() {
   }
 
   if (error) {
+    console.error("Error details:", error);
     return (
       <div className="w-full text-center py-8 text-red-500">
         Error loading ramping expectations
@@ -108,7 +114,7 @@ export function RampingPeriodTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {expectations?.map((row, index) => (
+          {expectations.map((row, index) => (
             <TableRow key={index} className="hover:bg-gray-50">
               <TableCell className="font-medium bg-gray-700 text-white">
                 {row.metric}
