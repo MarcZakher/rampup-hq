@@ -120,6 +120,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ramping_expectations: {
+        Row: {
+          created_at: string
+          id: string
+          metric: Database["public"]["Enums"]["metric_type"]
+          month_1: number
+          month_2: number
+          month_3: number
+          month_4: number
+          month_5: number
+          month_6: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric: Database["public"]["Enums"]["metric_type"]
+          month_1: number
+          month_2: number
+          month_3: number
+          month_4: number
+          month_5: number
+          month_6: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric?: Database["public"]["Enums"]["metric_type"]
+          month_1?: number
+          month_2?: number
+          month_3?: number
+          month_4?: number
+          month_5?: number
+          month_6?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       training_modules: {
         Row: {
           created_at: string
@@ -189,6 +228,7 @@ export type Database = {
     }
     Enums: {
       meeting_type: "discovery" | "new_business"
+      metric_type: "dm" | "nbm" | "scope_plus" | "new_logo"
       training_period: "month1" | "month2" | "month3" | "month4"
       user_role: "sales_rep" | "manager" | "director"
     }
