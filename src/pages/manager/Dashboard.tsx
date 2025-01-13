@@ -53,27 +53,16 @@ const ManagerDashboard = () => {
     try {
       console.log('Fetching sales reps for manager:', user.id);
       
-      // First, get the current user's role
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (roleError) {
-        console.error('Error fetching user role:', roleError);
-        throw roleError;
-      }
-
-      const isDirector = roleData?.role === 'director';
-      console.log('User role:', roleData?.role);
-
-      // Fetch sales reps
+      // First, get all sales reps (for director) or only those managed by this user (for manager)
       const { data: salesRepsData, error: salesRepsError } = await supabase
         .from('user_roles')
-        .select('user_id')
-        .eq('role', 'sales_rep')
-        .eq(isDirector ? 'role' : 'manager_id', isDirector ? 'sales_rep' : user.id);
+        .select(`
+          user_id,
+          profiles!inner (
+            full_name
+          )
+        `)
+        .eq('role', 'sales_rep');
 
       if (salesRepsError) {
         console.error('Error fetching sales reps:', salesRepsError);
@@ -90,17 +79,6 @@ const ManagerDashboard = () => {
       const salesRepIds = salesRepsData.map(rep => rep.user_id);
       console.log('Sales rep IDs:', salesRepIds);
 
-      // Get profiles in a separate query
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', salesRepIds);
-
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        throw profilesError;
-      }
-
       // Get scores in a separate query
       const { data: scoresData, error: scoresError } = await supabase
         .from('assessment_scores')
@@ -114,12 +92,11 @@ const ManagerDashboard = () => {
 
       // Combine all the data
       const formattedReps = salesRepsData.map(rep => {
-        const profile = profilesData?.find(p => p.id === rep.user_id);
         const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
         
         return {
           id: rep.user_id,
-          name: profile?.full_name || 'Unknown',
+          name: rep.profiles.full_name || 'Unknown',
           month1: new Array(assessments.month1.length).fill(0).map((_, index) => {
             const score = repScores.find(s => s.month === 'month1' && s.assessment_index === index);
             return score?.score || 0;
