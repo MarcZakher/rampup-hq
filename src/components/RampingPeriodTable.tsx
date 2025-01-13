@@ -9,6 +9,9 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Pencil, Save, X } from "lucide-react";
 
 interface MonthValue {
   value: string;
@@ -29,6 +32,8 @@ interface RampingExpectation {
 export function RampingPeriodTable() {
   const [rampingData, setRampingData] = useState<RampingExpectation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingData, setEditingData] = useState<RampingExpectation | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,7 +49,6 @@ export function RampingPeriodTable() {
 
       if (error) throw error;
       
-      // Parse the JSON data into the correct type
       const parsedData: RampingExpectation[] = data.map(item => ({
         id: item.id,
         metric: item.metric,
@@ -65,6 +69,66 @@ export function RampingPeriodTable() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const startEditing = (expectation: RampingExpectation) => {
+    setEditingId(expectation.id);
+    setEditingData({ ...expectation });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingData(null);
+  };
+
+  const handleValueChange = (month: number, field: 'value' | 'note', value: string) => {
+    if (!editingData) return;
+    
+    const monthKey = `month_${month}` as keyof RampingExpectation;
+    setEditingData({
+      ...editingData,
+      [monthKey]: {
+        ...editingData[monthKey],
+        [field]: value,
+      },
+    });
+  };
+
+  const saveChanges = async () => {
+    if (!editingData) return;
+
+    try {
+      const { error } = await supabase
+        .from("ramping_expectations")
+        .update({
+          month_1: editingData.month_1,
+          month_2: editingData.month_2,
+          month_3: editingData.month_3,
+          month_4: editingData.month_4,
+          month_5: editingData.month_5,
+          month_6: editingData.month_6,
+        })
+        .eq("id", editingData.id);
+
+      if (error) throw error;
+
+      setRampingData(rampingData.map(item => 
+        item.id === editingData.id ? editingData : item
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Changes saved successfully",
+      });
+      
+      cancelEditing();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save changes",
+        variant: "destructive",
+      });
     }
   };
 
@@ -91,6 +155,7 @@ export function RampingPeriodTable() {
                 Month {month}
               </TableHead>
             ))}
+            <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -101,18 +166,67 @@ export function RampingPeriodTable() {
               </TableCell>
               {[1, 2, 3, 4, 5, 6].map((month) => {
                 const monthKey = `month_${month}` as keyof RampingExpectation;
-                const monthData = row[monthKey] as MonthValue;
+                const monthData = editingId === row.id && editingData 
+                  ? editingData[monthKey] as MonthValue
+                  : row[monthKey] as MonthValue;
+
                 return (
-                  <TableCell key={month} className="text-center">
-                    {monthData.value}
-                    {monthData.note && (
-                      <span className="text-sm text-gray-500 block">
-                        {monthData.note}
-                      </span>
+                  <TableCell key={month} className="text-center p-2">
+                    {editingId === row.id ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={monthData.value}
+                          onChange={(e) => handleValueChange(month, 'value', e.target.value)}
+                          className="w-full text-center"
+                        />
+                        <Input
+                          value={monthData.note}
+                          onChange={(e) => handleValueChange(month, 'note', e.target.value)}
+                          className="w-full text-center text-sm text-gray-500"
+                          placeholder="Add note"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        {monthData.value}
+                        {monthData.note && (
+                          <span className="text-sm text-gray-500 block">
+                            {monthData.note}
+                          </span>
+                        )}
+                      </>
                     )}
                   </TableCell>
                 );
               })}
+              <TableCell>
+                {editingId === row.id ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={saveChanges}
+                    >
+                      <Save className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={cancelEditing}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => startEditing(row)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
