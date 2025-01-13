@@ -228,7 +228,6 @@ export type Database = {
     }
     Enums: {
       meeting_type: "discovery" | "new_business"
-      training_period: "month1" | "month2" | "month3" | "month4"
       user_role: "sales_rep" | "manager" | "director"
     }
     CompositeTypes: {
