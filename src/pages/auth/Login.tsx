@@ -3,11 +3,10 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
 
   useEffect(() => {
     const checkUser = async () => {
@@ -32,13 +31,7 @@ export default function Login() {
           <Auth
             supabaseClient={supabase}
             appearance={{ theme: ThemeSupa }}
-            view={view}
             providers={[]}
-            onViewChange={(newView) => {
-              if (newView === 'sign_in' || newView === 'sign_up') {
-                setView(newView);
-              }
-            }}
           />
         </CardContent>
       </Card>
