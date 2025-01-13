@@ -16,7 +16,6 @@ interface SalesRep {
   month3: number[];
 }
 
-// Define the shape of our joined query result
 interface SalesRepQueryResult {
   user_id: string;
   profiles: {
@@ -26,12 +25,12 @@ interface SalesRepQueryResult {
 }
 
 const fetchSalesReps = async () => {
-  // First get all users with sales_rep role
-  const { data: salesReps, error: rolesError } = await supabase
+  // First get all users with sales_rep role and their profiles
+  const { data: salesRepsData, error: rolesError } = await supabase
     .from('user_roles')
     .select(`
       user_id,
-      profiles:user_id(
+      profiles!user_roles_user_id_fkey (
         id,
         full_name
       )
@@ -43,9 +42,15 @@ const fetchSalesReps = async () => {
     throw rolesError;
   }
 
+  // Transform the data to match our expected type
+  const salesReps = (salesRepsData || []).map(rep => ({
+    user_id: rep.user_id,
+    profiles: rep.profiles
+  })) as SalesRepQueryResult[];
+
   // Then get their assessment scores
   const salesRepsWithScores = await Promise.all(
-    (salesReps as SalesRepQueryResult[]).map(async (rep) => {
+    salesReps.map(async (rep) => {
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
