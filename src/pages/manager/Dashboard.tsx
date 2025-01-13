@@ -49,34 +49,43 @@ const ManagerDashboard = () => {
       console.log('Fetching sales reps for manager:', user?.id);
       
       // First, get the current user's role
-      const { data: userRole, error: userRoleError } = await supabase
+      const { data: userRoleData, error: userRoleError } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('*')
         .eq('user_id', user?.id)
-        .maybeSingle();
+        .single();
 
       if (userRoleError) {
         console.error('Error fetching user role:', userRoleError);
         throw userRoleError;
       }
 
+      console.log('User role:', userRoleData);
+
       // Fetch sales reps based on role
-      const query = supabase
+      let salesRepsQuery = supabase
         .from('user_roles')
-        .select('user_id')
+        .select(`
+          user_id,
+          profiles!inner(
+            full_name
+          )
+        `)
         .eq('role', 'sales_rep');
 
       // If not director, only show sales reps managed by this user
-      if (userRole?.role !== 'director') {
-        query.eq('manager_id', user?.id);
+      if (userRoleData.role !== 'director') {
+        salesRepsQuery = salesRepsQuery.eq('manager_id', user?.id);
       }
 
-      const { data: salesRepsData, error: salesRepsError } = await query;
+      const { data: salesRepsData, error: salesRepsError } = await salesRepsQuery;
 
       if (salesRepsError) {
         console.error('Error fetching sales reps:', salesRepsError);
         throw salesRepsError;
       }
+
+      console.log('Sales reps data:', salesRepsData);
 
       if (!salesRepsData || salesRepsData.length === 0) {
         setSalesReps([]);
@@ -84,18 +93,7 @@ const ManagerDashboard = () => {
         return;
       }
 
-      // Get profiles for these sales reps
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', salesRepsData.map(rep => rep.user_id));
-
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        throw profilesError;
-      }
-
-      // Get assessment scores
+      // Get assessment scores for all sales reps
       const { data: scoresData, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
@@ -106,14 +104,15 @@ const ManagerDashboard = () => {
         throw scoresError;
       }
 
+      console.log('Scores data:', scoresData);
+
       // Combine the data
       const formattedReps = salesRepsData.map(rep => {
-        const profile = profilesData?.find(p => p.id === rep.user_id);
         const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
         
         return {
           id: rep.user_id,
-          name: profile?.full_name || 'Unknown',
+          name: rep.profiles.full_name || 'Unknown',
           month1: new Array(assessments.month1.length).fill(0).map((_, index) => {
             const score = repScores.find(s => s.month === 'month1' && s.assessment_index === index);
             return score?.score || 0;
