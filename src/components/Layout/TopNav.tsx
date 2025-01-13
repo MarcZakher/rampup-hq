@@ -30,37 +30,52 @@ export function TopNav() {
       
       if (sessionError) {
         console.error('Session error:', sessionError);
-        // If there's a session error, we'll just redirect to login
         navigate('/login');
+        toast({
+          variant: "destructive",
+          title: "Session Error",
+          description: "Your session has expired. Please log in again."
+        });
         return;
       }
 
       // If we have a valid session, attempt to sign out
       if (session) {
-        const { error } = await supabase.auth.signOut();
+        // Try to sign out both locally and globally
+        const { error } = await supabase.auth.signOut({
+          scope: 'local'
+        });
+
         if (error) {
           console.error('Logout error:', error);
+          // If there's an error, we'll still redirect to login
+          navigate('/login');
           toast({
             variant: "destructive",
-            title: "Error logging out",
-            description: "Please try again"
+            title: "Error during logout",
+            description: "You have been redirected to the login page"
           });
           return;
         }
+
+        // Show success message
+        toast({
+          title: "Logged out successfully",
+          description: "You have been signed out of your account"
+        });
+      } else {
+        // No session found, just redirect to login
+        toast({
+          title: "Session Expired",
+          description: "Your session has expired. Please log in again."
+        });
       }
       
-      // Show success message
-      toast({
-        title: "Logged out successfully",
-        description: "You have been signed out of your account"
-      });
-      
-      // Navigate to login page
+      // Always navigate to login at the end
       navigate('/login');
       
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if there's an error, redirect to login for safety
       navigate('/login');
       toast({
         variant: "destructive",
