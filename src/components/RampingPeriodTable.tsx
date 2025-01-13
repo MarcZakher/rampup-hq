@@ -153,14 +153,14 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
     if (!editingData) return;
 
     try {
-      // Convert MonthValue objects to Json type for Supabase
+      // Convert MonthValue objects to plain objects that match the Json type
       const monthDataToSave = {
-        month_1: editingData.month_1 as Json,
-        month_2: editingData.month_2 as Json,
-        month_3: editingData.month_3 as Json,
-        month_4: editingData.month_4 as Json,
-        month_5: editingData.month_5 as Json,
-        month_6: editingData.month_6 as Json,
+        month_1: { value: editingData.month_1.value, note: editingData.month_1.note } as unknown as Json,
+        month_2: { value: editingData.month_2.value, note: editingData.month_2.note } as unknown as Json,
+        month_3: { value: editingData.month_3.value, note: editingData.month_3.note } as unknown as Json,
+        month_4: { value: editingData.month_4.value, note: editingData.month_4.note } as unknown as Json,
+        month_5: { value: editingData.month_5.value, note: editingData.month_5.note } as unknown as Json,
+        month_6: { value: editingData.month_6.value, note: editingData.month_6.note } as unknown as Json,
       };
 
       const { error } = await supabase
