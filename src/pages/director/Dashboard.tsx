@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { ASSESSMENTS } from '@/lib/constants/assessments';
 
 interface SalesRep {
   id: string;
@@ -13,6 +14,15 @@ interface SalesRep {
   month1: number[];
   month2: number[];
   month3: number[];
+}
+
+// Define the shape of our joined query result
+interface SalesRepQueryResult {
+  user_id: string;
+  profiles: {
+    id: string;
+    full_name: string | null;
+  } | null;
 }
 
 const fetchSalesReps = async () => {
@@ -35,7 +45,7 @@ const fetchSalesReps = async () => {
 
   // Then get their assessment scores
   const salesRepsWithScores = await Promise.all(
-    salesReps.map(async (rep) => {
+    (salesReps as SalesRepQueryResult[]).map(async (rep) => {
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
@@ -173,8 +183,8 @@ const DirectorDashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    {assessments.month1.map((assessment, index) => (
-                      <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
+                    {ASSESSMENTS.month1.map((assessment, index) => (
+                      <TableHead key={index} title={assessment}>{`M1-${index + 1}`}</TableHead>
                     ))}
                     <TableHead>Average</TableHead>
                   </TableRow>
@@ -208,8 +218,8 @@ const DirectorDashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    {assessments.month2.map((assessment, index) => (
-                      <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
+                    {ASSESSMENTS.month2.map((assessment, index) => (
+                      <TableHead key={index} title={assessment}>{`M2-${index + 1}`}</TableHead>
                     ))}
                     <TableHead>Average</TableHead>
                   </TableRow>
@@ -243,8 +253,8 @@ const DirectorDashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    {assessments.month3.map((assessment, index) => (
-                      <TableHead key={index} title={assessment.name}>{assessment.shortName}</TableHead>
+                    {ASSESSMENTS.month3.map((assessment, index) => (
+                      <TableHead key={index} title={assessment}>{`M3-${index + 1}`}</TableHead>
                     ))}
                     <TableHead>Average</TableHead>
                   </TableRow>
