@@ -12,70 +12,44 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
-import { AuthError } from '@supabase/supabase-js';
 
 export default function Login() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
 
   useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.user_metadata?.role) {
-        handleAuthRedirect(session.user.user_metadata.role);
-      }
-    });
-
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN') {
-        if (session?.user?.user_metadata?.role) {
-          handleAuthRedirect(session.user.user_metadata.role);
-        } else if (selectedRole) {
-          try {
-            const { data: { user }, error: updateError } = await supabase.auth.updateUser({
-              data: { role: selectedRole }
-            });
-            
-            if (updateError) {
-              setError(updateError.message);
-              return;
-            }
-            
-            if (user?.user_metadata?.role) {
-              handleAuthRedirect(user.user_metadata.role);
-            }
-          } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred during sign in');
-          }
+      if (event === 'SIGNED_IN' && session) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const userRole = user?.user_metadata?.role;
+
+        if (userRole === 'director') {
+          navigate('/director/dashboard');
+        } else if (userRole === 'manager') {
+          navigate('/manager/dashboard');
+        } else if (userRole === 'sales_rep') {
+          navigate('/sales-rep/dashboard');
         }
       }
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate, selectedRole]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        const userRole = session.user.user_metadata.role;
+        if (userRole === 'director') {
+          navigate('/director/dashboard');
+        } else if (userRole === 'manager') {
+          navigate('/manager/dashboard');
+        } else if (userRole === 'sales_rep') {
+          navigate('/sales-rep/dashboard');
+        }
+      }
+    });
 
-  const handleAuthRedirect = (role: string) => {
-    switch (role) {
-      case 'director':
-        navigate('/director/dashboard');
-        break;
-      case 'manager':
-        navigate('/manager/dashboard');
-        break;
-      case 'sales_rep':
-        navigate('/sales-rep/dashboard');
-        break;
-      case 'admin':
-        navigate('/admin/dashboard');
-        break;
-      default:
-        setError('Invalid role assigned');
-    }
-  };
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#9b87f5] via-[#7E69AB] to-[#6E59A5] p-4">
@@ -99,20 +73,21 @@ export default function Login() {
             </Alert>
           )}
 
-          <div className="space-y-2 mb-4">
-            <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
-            <Select onValueChange={setSelectedRole} value={selectedRole}>
-              <SelectTrigger id="role" className="w-full bg-white border-purple-200 focus:ring-purple-200">
-                <SelectValue placeholder="Select your role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sales_rep">Sales Representative</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="director">Director</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {view === 'sign_up' && (
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
+              <Select onValueChange={setSelectedRole} value={selectedRole}>
+                <SelectTrigger id="role" className="w-full bg-white border-purple-200 focus:ring-purple-200">
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sales_rep">Sales Representative</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="director">Director</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <Auth
             supabaseClient={supabase}
@@ -137,7 +112,38 @@ export default function Login() {
               },
             }}
             providers={[]}
-            magicLink={false}
+            onSubmit={async (formData) => {
+              if (view === 'sign_up') {
+                if (!selectedRole) {
+                  setError('Please select a role before signing up');
+                  return false;
+                }
+                setError('');
+                
+                const { error: signUpError } = await supabase.auth.signUp({
+                  email: formData.email,
+                  password: formData.password,
+                  options: {
+                    data: {
+                      role: selectedRole,
+                    },
+                  },
+                });
+
+                if (signUpError) {
+                  setError(signUpError.message);
+                  return false;
+                }
+              }
+              return true;
+            }}
+            onViewChange={(newView) => {
+              setView(newView);
+              if (newView === 'sign_in') {
+                setError('');
+                setSelectedRole('');
+              }
+            }}
           />
         </div>
       </div>
