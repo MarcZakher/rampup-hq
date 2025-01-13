@@ -25,8 +25,19 @@ export function TopNav() {
 
   const handleLogout = async () => {
     try {
-      // Sign out using the signOut method
-      const { error } = await supabase.auth.signOut();
+      // Check current session first
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // If no session exists, just redirect to login
+        navigate('/login');
+        return;
+      }
+
+      // Attempt to sign out
+      const { error } = await supabase.auth.signOut({
+        scope: 'local'  // Only clear the current tab's session
+      });
       
       if (error) {
         throw error;
