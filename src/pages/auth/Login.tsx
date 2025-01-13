@@ -112,38 +112,8 @@ export default function Login() {
               },
             }}
             providers={[]}
-            onSubmit={async (formData) => {
-              if (view === 'sign_up') {
-                if (!selectedRole) {
-                  setError('Please select a role before signing up');
-                  return false;
-                }
-                setError('');
-                
-                const { error: signUpError } = await supabase.auth.signUp({
-                  email: formData.email,
-                  password: formData.password,
-                  options: {
-                    data: {
-                      role: selectedRole,
-                    },
-                  },
-                });
-
-                if (signUpError) {
-                  setError(signUpError.message);
-                  return false;
-                }
-              }
-              return true;
-            }}
-            onViewChange={(newView) => {
-              setView(newView);
-              if (newView === 'sign_in') {
-                setError('');
-                setSelectedRole('');
-              }
-            }}
+            view={view}
+            onViewChange={setView}
           />
         </div>
       </div>

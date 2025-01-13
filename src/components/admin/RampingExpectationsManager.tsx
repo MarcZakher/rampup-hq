@@ -90,16 +90,19 @@ export function RampingExpectationsManager() {
 
   const handleSave = async (expectation: RampingExpectation) => {
     try {
+      // Convert MonthValue objects to plain objects for Supabase
+      const supabaseData = {
+        month_1: { value: expectation.month_1.value, note: expectation.month_1.note },
+        month_2: { value: expectation.month_2.value, note: expectation.month_2.note },
+        month_3: { value: expectation.month_3.value, note: expectation.month_3.note },
+        month_4: { value: expectation.month_4.value, note: expectation.month_4.note },
+        month_5: { value: expectation.month_5.value, note: expectation.month_5.note },
+        month_6: { value: expectation.month_6.value, note: expectation.month_6.note },
+      };
+
       const { error } = await supabase
         .from("ramping_expectations")
-        .update({
-          month_1: expectation.month_1,
-          month_2: expectation.month_2,
-          month_3: expectation.month_3,
-          month_4: expectation.month_4,
-          month_5: expectation.month_5,
-          month_6: expectation.month_6,
-        })
+        .update(supabaseData)
         .eq("id", expectation.id);
 
       if (error) throw error;
