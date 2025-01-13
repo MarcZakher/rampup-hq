@@ -31,12 +31,12 @@ export function RampingExpectationsTable() {
         const formattedMetrics = data.map(row => ({
           name: row.metric,
           values: [
-            row.month_1.value,
-            row.month_2.value,
-            row.month_3.value,
-            row.month_4.value,
-            row.month_5.value,
-            row.month_6.value,
+            row.month_1.value.toString(),
+            row.month_2.value.toString(),
+            row.month_3.value.toString(),
+            row.month_4.value.toString(),
+            row.month_5.value.toString(),
+            row.month_6.value.toString(),
           ]
         }));
         setMetrics(formattedMetrics);
