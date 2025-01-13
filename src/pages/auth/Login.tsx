@@ -4,16 +4,12 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from '@/components/ui/label';
-import { AuthError } from '@supabase/supabase-js';
+import { RoleSelector } from '@/components/auth/RoleSelector';
 
+/**
+ * Login page component
+ * Handles user authentication and role selection
+ */
 export default function Login() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState<string>('');
@@ -101,20 +97,10 @@ export default function Login() {
             </Alert>
           )}
 
-          <div className="space-y-2 mb-4">
-            <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
-            <Select onValueChange={setSelectedRole} value={selectedRole}>
-              <SelectTrigger id="role" className="w-full bg-white border-purple-200 focus:ring-purple-200">
-                <SelectValue placeholder="Select your role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sales_rep">Sales Representative</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="director">Director</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <RoleSelector 
+            selectedRole={selectedRole}
+            onRoleChange={setSelectedRole}
+          />
 
           <Auth
             supabaseClient={supabase}
