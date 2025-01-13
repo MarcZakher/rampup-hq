@@ -51,13 +51,7 @@ const ManagerDashboard = () => {
       // First get all sales reps managed by this manager
       const { data: salesRepsData, error: salesRepsError } = await supabase
         .from('user_roles')
-        .select(`
-          user_id,
-          profiles:user_id (
-            id,
-            full_name
-          )
-        `)
+        .select('*, profiles!user_roles_user_id_fkey(id, full_name)')
         .eq('manager_id', user?.id)
         .eq('role', 'sales_rep');
 
