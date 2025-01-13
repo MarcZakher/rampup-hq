@@ -120,6 +120,81 @@ export type Database = {
         }
         Relationships: []
       }
+      ramping_expectations: {
+        Row: {
+          created_at: string
+          id: string
+          metric: string
+          month_1: Json
+          month_2: Json
+          month_3: Json
+          month_4: Json
+          month_5: Json
+          month_6: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric: string
+          month_1: Json
+          month_2: Json
+          month_3: Json
+          month_4: Json
+          month_5: Json
+          month_6: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric?: string
+          month_1?: Json
+          month_2?: Json
+          month_3?: Json
+          month_4?: Json
+          month_5?: Json
+          month_6?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      training_modules: {
+        Row: {
+          created_at: string
+          description: string
+          duration: string
+          id: string
+          period_id: string
+          platform: string | null
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          duration: string
+          id?: string
+          period_id: string
+          platform?: string | null
+          sort_order: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          duration?: string
+          id?: string
+          period_id?: string
+          platform?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

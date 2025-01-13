@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -6,58 +7,63 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-const rampingData = [
-  {
-    metric: "DMs",
-    values: [
-      { value: "5", note: "(booked)" },
-      { value: "10", note: "" },
-      { value: "15", note: "" },
-      { value: "20", note: "" },
-      { value: "20", note: "" },
-      { value: "20", note: "" },
-    ],
-  },
-  {
-    metric: "NBMs",
-    values: [
-      { value: "0", note: "" },
-      { value: "1", note: "" },
-      { value: "1", note: "" },
-      { value: "1", note: "" },
-      { value: "2", note: "" },
-      { value: "2", note: "" },
-    ],
-  },
-  {
-    metric: "Scope+",
-    values: [
-      { value: "0", note: "" },
-      { value: "0", note: "" },
-      { value: "1", note: "" },
-      { value: "1", note: "" },
-      { value: "1", note: "" },
-      { value: "1", note: "" },
-    ],
-  },
-  {
-    metric: "NL",
-    values: [
-      { value: "0", note: "" },
-      { value: "0", note: "" },
-      { value: "0", note: "" },
-      { value: "0", note: "" },
-      { value: "0", note: "" },
-      { value: "1", note: "" },
-    ],
-  },
-];
+interface MonthValue {
+  value: string;
+  note: string;
+}
+
+interface RampingExpectation {
+  id: string;
+  metric: string;
+  month_1: MonthValue;
+  month_2: MonthValue;
+  month_3: MonthValue;
+  month_4: MonthValue;
+  month_5: MonthValue;
+  month_6: MonthValue;
+}
 
 export function RampingPeriodTable() {
+  const [rampingData, setRampingData] = useState<RampingExpectation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchRampingData();
+  }, []);
+
+  const fetchRampingData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("ramping_expectations")
+        .select("*")
+        .order("metric");
+
+      if (error) throw error;
+      setRampingData(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch ramping expectations",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="w-full">
-      <div className="text-2xl font-semibold text-center mb-6">Expectations during the Ramping Period</div>
+      <div className="text-2xl font-semibold text-center mb-6">
+        Expectations during the Ramping Period
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -67,7 +73,7 @@ export function RampingPeriodTable() {
             {[1, 2, 3, 4, 5, 6].map((month) => (
               <TableHead
                 key={month}
-                className={`text-center bg-gradient-to-r from-gray-100 to-gray-300`}
+                className="text-center bg-gradient-to-r from-gray-100 to-gray-300"
               >
                 Month {month}
               </TableHead>
@@ -76,18 +82,24 @@ export function RampingPeriodTable() {
         </TableHeader>
         <TableBody>
           {rampingData.map((row) => (
-            <TableRow key={row.metric}>
+            <TableRow key={row.id}>
               <TableCell className="font-medium bg-gray-700 text-white">
                 {row.metric}
               </TableCell>
-              {row.values.map((cell, index) => (
-                <TableCell key={index} className="text-center">
-                  {cell.value}
-                  {cell.note && (
-                    <span className="text-sm text-gray-500">{cell.note}</span>
-                  )}
-                </TableCell>
-              ))}
+              {[1, 2, 3, 4, 5, 6].map((month) => {
+                const monthKey = `month_${month}` as keyof RampingExpectation;
+                const monthData = row[monthKey] as MonthValue;
+                return (
+                  <TableCell key={month} className="text-center">
+                    {monthData.value}
+                    {monthData.note && (
+                      <span className="text-sm text-gray-500">
+                        {monthData.note}
+                      </span>
+                    )}
+                  </TableCell>
+                );
+              })}
             </TableRow>
           ))}
         </TableBody>
