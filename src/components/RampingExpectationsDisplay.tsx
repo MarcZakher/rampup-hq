@@ -34,7 +34,7 @@ export function RampingExpectationsDisplay() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: expectations } = useQuery({
+  const { data: expectations, isLoading } = useQuery({
     queryKey: ['ramping-expectations'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -43,8 +43,7 @@ export function RampingExpectationsDisplay() {
       
       if (error) throw error;
       
-      // Transform the data to match our ExpectationRow type
-      return (data as any[]).map(row => ({
+      return data.map(row => ({
         id: row.id,
         metric: row.metric,
         month_1: row.month_1 as MonthData,
@@ -93,21 +92,25 @@ export function RampingExpectationsDisplay() {
 
   const handleValueChange = useCallback((
     expectation: ExpectationRow,
-    month: keyof ExpectationRow,
+    month: keyof Pick<ExpectationRow, 'month_1' | 'month_2' | 'month_3' | 'month_4' | 'month_5' | 'month_6'>,
     newValue: string
   ) => {
     const updatedExpectation = {
       ...expectation,
       [month]: {
-        ...expectation[month as keyof Pick<ExpectationRow, 'month_1' | 'month_2' | 'month_3' | 'month_4' | 'month_5' | 'month_6'>],
+        ...expectation[month],
         value: newValue,
       },
     };
     updateMutation.mutate(updatedExpectation);
   }, [updateMutation]);
 
-  if (!expectations?.length) {
+  if (isLoading) {
     return <div>Loading expectations...</div>;
+  }
+
+  if (!expectations?.length) {
+    return <div>No expectations found.</div>;
   }
 
   return (
