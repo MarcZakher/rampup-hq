@@ -91,7 +91,7 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px] bg-gray-700 text-white">
+            <TableHead className="w-[100px] bg-primary text-primary-foreground">
               &nbsp;
             </TableHead>
             {[1, 2, 3, 4, 5, 6].map((month) => (
@@ -107,7 +107,7 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
         <TableBody>
           {rampingData.map((row) => (
             <TableRow key={row.id}>
-              <TableCell className="font-medium bg-gray-700 text-white">
+              <TableCell className="font-medium bg-primary text-primary-foreground">
                 {row.metric}
               </TableCell>
               {[1, 2, 3, 4, 5, 6].map((month) => {
