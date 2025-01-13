@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -10,10 +9,6 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Pencil, Save, X } from "lucide-react";
-import { Json } from "@/integrations/supabase/types";
 
 interface MonthValue {
   value: string;
@@ -40,11 +35,7 @@ interface RampingPeriodTableProps {
 export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, error: externalError }: RampingPeriodTableProps) {
   const [rampingData, setRampingData] = useState<RampingExpectation[]>([]);
   const [isLoading, setIsLoading] = useState(!initialData);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState<RampingExpectation | null>(null);
   const { toast } = useToast();
-  const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin');
 
   const parseMonthValue = (value: any): MonthValue => {
     if (typeof value === 'string') {
@@ -118,73 +109,6 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
     }
   };
 
-  const startEditing = (expectation: RampingExpectation) => {
-    if (!isAdminRoute) return;
-    setEditingId(expectation.id);
-    setEditingData(JSON.parse(JSON.stringify(expectation)));
-  };
-
-  const cancelEditing = () => {
-    setEditingId(null);
-    setEditingData(null);
-  };
-
-  const handleValueChange = (month: number, field: 'value' | 'note', value: string) => {
-    if (!editingData) return;
-    
-    const monthKey = `month_${month}` as keyof RampingExpectation;
-    const currentMonthValue = editingData[monthKey] as MonthValue;
-    const updatedMonthValue: MonthValue = {
-      ...currentMonthValue,
-      [field]: value,
-    };
-
-    setEditingData({
-      ...editingData,
-      [monthKey]: updatedMonthValue,
-    });
-  };
-
-  const saveChanges = async () => {
-    if (!editingData) return;
-
-    try {
-      const monthDataToSave = {
-        month_1: editingData.month_1 as unknown as Json,
-        month_2: editingData.month_2 as unknown as Json,
-        month_3: editingData.month_3 as unknown as Json,
-        month_4: editingData.month_4 as unknown as Json,
-        month_5: editingData.month_5 as unknown as Json,
-        month_6: editingData.month_6 as unknown as Json,
-      };
-
-      const { error } = await supabase
-        .from("ramping_expectations")
-        .update(monthDataToSave)
-        .eq("id", editingData.id);
-
-      if (error) throw error;
-
-      setRampingData(rampingData.map(item => 
-        item.id === editingData.id ? editingData : item
-      ));
-      
-      toast({
-        title: "Success",
-        description: "Changes saved successfully",
-      });
-      
-      cancelEditing();
-    } catch (error) {
-      console.error('Error saving changes:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save changes",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (externalIsLoading || isLoading) {
     return <div className="w-full text-center py-4">Loading ramping expectations...</div>;
   }
@@ -216,7 +140,6 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
                 Month {month}
               </TableHead>
             ))}
-            {isAdminRoute && <TableHead className="w-[100px]">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -227,69 +150,19 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
               </TableCell>
               {[1, 2, 3, 4, 5, 6].map((month) => {
                 const monthKey = `month_${month}` as keyof RampingExpectation;
-                const monthData = editingId === row.id && editingData 
-                  ? editingData[monthKey] as MonthValue
-                  : row[monthKey] as MonthValue;
+                const monthData = row[monthKey] as MonthValue;
 
                 return (
                   <TableCell key={month} className="text-center p-2">
-                    {editingId === row.id && isAdminRoute ? (
-                      <div className="space-y-2">
-                        <Input
-                          value={monthData.value}
-                          onChange={(e) => handleValueChange(month, 'value', e.target.value)}
-                          className="w-full text-center"
-                        />
-                        <Input
-                          value={monthData.note}
-                          onChange={(e) => handleValueChange(month, 'note', e.target.value)}
-                          className="w-full text-center text-sm text-gray-500"
-                          placeholder="Add note"
-                        />
+                    <div className="font-medium">{monthData.value}</div>
+                    {monthData.note && (
+                      <div className="text-sm text-gray-500 mt-1">
+                        {monthData.note}
                       </div>
-                    ) : (
-                      <>
-                        <div className="font-medium">{monthData.value}</div>
-                        {monthData.note && (
-                          <div className="text-sm text-gray-500 mt-1">
-                            {monthData.note}
-                          </div>
-                        )}
-                      </>
                     )}
                   </TableCell>
                 );
               })}
-              {isAdminRoute && (
-                <TableCell>
-                  {editingId === row.id ? (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={saveChanges}
-                      >
-                        <Save className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={cancelEditing}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startEditing(row)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
-                </TableCell>
-              )}
             </TableRow>
           ))}
         </TableBody>
