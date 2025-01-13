@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SalesRep {
   id: number;
@@ -128,22 +129,74 @@ const ManagerDashboard = () => {
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
 
-  // Load saved data on component mount
+  // Load data from Supabase on component mount
   useEffect(() => {
-    try {
-      const savedReps = localStorage.getItem(STORAGE_KEY);
-      if (savedReps) {
-        const parsedReps = JSON.parse(savedReps);
-        // Ensure we have a valid array
-        setSalesReps(Array.isArray(parsedReps) ? parsedReps : initialSalesReps);
-      } else {
-        setSalesReps(initialSalesReps);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialSalesReps));
+    const loadSalesReps = async () => {
+      try {
+        // First get all sales reps under the current manager
+        const { data: salesRepsData, error: salesRepsError } = await supabase
+          .from('user_roles')
+          .select(`
+            user_id,
+            profiles:user_id (
+              full_name
+            )
+          `)
+          .eq('role', 'sales_rep');
+
+        if (salesRepsError) {
+          console.error('Error fetching sales reps:', salesRepsError);
+          return;
+        }
+
+        if (!salesRepsData) {
+          console.log('No sales reps found');
+          return;
+        }
+
+        // Then get their assessment scores
+        const { data: scoresData, error: scoresError } = await supabase
+          .from('assessment_scores')
+          .select('*')
+          .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
+
+        if (scoresError) {
+          console.error('Error fetching scores:', scoresError);
+          return;
+        }
+
+        // Transform the data into the expected format
+        const formattedReps = salesRepsData.map((rep, index) => {
+          const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
+          
+          return {
+            id: index + 1,
+            name: rep.profiles?.full_name || 'Unknown',
+            month1: new Array(5).fill(0).map((_, i) => 
+              repScores.find(s => s.month === 'month1' && s.assessment_index === i)?.score || 0
+            ),
+            month2: new Array(6).fill(0).map((_, i) => 
+              repScores.find(s => s.month === 'month2' && s.assessment_index === i)?.score || 0
+            ),
+            month3: new Array(6).fill(0).map((_, i) => 
+              repScores.find(s => s.month === 'month3' && s.assessment_index === i)?.score || 0
+            )
+          };
+        });
+
+        setSalesReps(formattedReps);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(formattedReps));
+      } catch (error) {
+        console.error('Error in loadSalesReps:', error);
+        // Fallback to localStorage if API fails
+        const savedReps = localStorage.getItem(STORAGE_KEY);
+        if (savedReps) {
+          setSalesReps(JSON.parse(savedReps));
+        }
       }
-    } catch (error) {
-      console.error('Error loading sales reps:', error);
-      setSalesReps(initialSalesReps);
-    }
+    };
+
+    loadSalesReps();
   }, []);
 
   // Save data whenever salesReps changes
