@@ -1,9 +1,10 @@
-import { Bell, User, LogOut } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export function TopNav() {
   const navigate = useNavigate();
@@ -29,17 +30,22 @@ export function TopNav() {
     fetchUserProfile();
   }, []);
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   const handleLogout = async () => {
     try {
-      // First clear local storage to ensure we remove any stale session data
       localStorage.clear();
-      
-      // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('Logout error:', error);
-        // If it's a session not found error, we can ignore it since we've already cleared local storage
         if (error.message?.includes('session_not_found')) {
           navigate('/login');
           return;
@@ -52,12 +58,10 @@ export function TopNav() {
         });
       }
       
-      // Always navigate to login page
       navigate('/login');
       
     } catch (error) {
       console.error('Logout error:', error);
-      // Force navigation to login even if there's an error
       navigate('/login');
     }
   };
@@ -75,9 +79,11 @@ export function TopNav() {
           <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <Bell className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
-            <User className="h-5 w-5" />
-          </Button>
+          <Avatar className="h-8 w-8 bg-rampup-primary/10">
+            <AvatarFallback className="text-rampup-primary text-sm">
+              {username ? getInitials(username) : '??'}
+            </AvatarFallback>
+          </Avatar>
           <Button variant="ghost" size="icon" onClick={handleLogout} className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <LogOut className="h-5 w-5" />
           </Button>
