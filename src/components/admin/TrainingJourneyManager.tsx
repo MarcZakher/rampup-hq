@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -39,6 +39,7 @@ export function TrainingJourneyManager() {
   const [modules, setModules] = useState<any[]>([]);
   const [editingModule, setEditingModule] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<TrainingPeriod>("month_1");
+  const [isLoading, setIsLoading] = useState(true);
 
   const form = useForm<TrainingModuleForm>({
     defaultValues: {
@@ -52,50 +53,77 @@ export function TrainingJourneyManager() {
   });
 
   const loadModules = async () => {
-    const { data, error } = await supabase
-      .from("training_journey_modules")
-      .select("*")
-      .order("sort_order", { ascending: true });
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from("training_journey_modules")
+        .select("*")
+        .order("sort_order", { ascending: true });
 
-    if (error) {
+      if (error) {
+        console.error("Error loading modules:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load training modules. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setModules(data || []);
+    } catch (err) {
+      console.error("Error in loadModules:", err);
       toast({
         title: "Error",
-        description: "Failed to load training modules",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    setModules(data || []);
   };
 
+  useEffect(() => {
+    loadModules();
+  }, []);
+
   const onSubmit = async (values: TrainingModuleForm) => {
-    const operation = editingModule
-      ? supabase
-          .from("training_journey_modules")
-          .update(values)
-          .eq("id", editingModule.id)
-      : supabase.from("training_journey_modules").insert(values);
+    try {
+      const operation = editingModule
+        ? supabase
+            .from("training_journey_modules")
+            .update(values)
+            .eq("id", editingModule.id)
+        : supabase.from("training_journey_modules").insert(values);
 
-    const { error } = await operation;
+      const { error } = await operation;
 
-    if (error) {
+      if (error) {
+        console.error("Error saving module:", error);
+        toast({
+          title: "Error",
+          description: "Failed to save training module. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: `Training module ${editingModule ? "updated" : "created"} successfully`,
+      });
+
+      form.reset();
+      setEditingModule(null);
+      loadModules();
+    } catch (err) {
+      console.error("Error in onSubmit:", err);
       toast({
         title: "Error",
-        description: "Failed to save training module",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-      return;
     }
-
-    toast({
-      title: "Success",
-      description: `Training module ${editingModule ? "updated" : "created"} successfully`,
-    });
-
-    form.reset();
-    setEditingModule(null);
-    loadModules();
   };
 
   const handleEdit = (module: any) => {
@@ -112,30 +140,48 @@ export function TrainingJourneyManager() {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from("training_journey_modules")
-      .delete()
-      .eq("id", id);
+    try {
+      const { error } = await supabase
+        .from("training_journey_modules")
+        .delete()
+        .eq("id", id);
 
-    if (error) {
+      if (error) {
+        console.error("Error deleting module:", error);
+        toast({
+          title: "Error",
+          description: "Failed to delete training module. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Training module deleted successfully",
+      });
+
+      loadModules();
+    } catch (err) {
+      console.error("Error in handleDelete:", err);
       toast({
         title: "Error",
-        description: "Failed to delete training module",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-      return;
     }
-
-    toast({
-      title: "Success",
-      description: "Training module deleted successfully",
-    });
-
-    loadModules();
   };
 
   const filteredModules = (period: TrainingPeriod) =>
     modules.filter((module) => module.period === period);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p>Loading training modules...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
