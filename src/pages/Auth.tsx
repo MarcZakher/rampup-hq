@@ -115,9 +115,6 @@ const Auth = () => {
                   color: '#7E69AB',
                   textDecoration: 'none',
                   fontWeight: '500',
-                  '&:hover': {
-                    color: '#9b87f5',
-                  },
                 },
                 container: {
                   borderRadius: '0.75rem',
