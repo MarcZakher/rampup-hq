@@ -15,18 +15,27 @@ export function RampingExpectationsTable() {
   const { data: expectations, isLoading } = useQuery({
     queryKey: ["ramping-expectations"],
     queryFn: async () => {
+      console.log("Fetching ramping expectations...");
       const { data, error } = await supabase
         .from("ramping_expectations")
         .select("*")
         .order("metric");
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching ramping expectations:", error);
+        throw error;
+      }
+      console.log("Fetched data:", data);
       return data;
     },
   });
 
   if (isLoading) {
     return <div>Loading expectations...</div>;
+  }
+
+  if (!expectations || expectations.length === 0) {
+    return <div>No expectations data available.</div>;
   }
 
   const metricLabels: Record<string, string> = {
@@ -43,7 +52,7 @@ export function RampingExpectationsTable() {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px] bg-primary text-primary-foreground">
-              &nbsp;
+              Metric
             </TableHead>
             {[1, 2, 3, 4, 5, 6].map((month) => (
               <TableHead
@@ -66,12 +75,12 @@ export function RampingExpectationsTable() {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger className="inline-flex items-center">
-                        {month.value}
-                        {month.note && (
+                        {month?.value}
+                        {month?.note && (
                           <InfoIcon className="ml-1 h-4 w-4 text-gray-400" />
                         )}
                       </TooltipTrigger>
-                      {month.note && (
+                      {month?.note && (
                         <TooltipContent>
                           <p>{month.note}</p>
                         </TooltipContent>
