@@ -3,9 +3,8 @@ import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { ASSESSMENTS } from '@/lib/constants/assessments';
 
 interface SalesRep {
@@ -18,35 +17,39 @@ interface SalesRep {
 
 const fetchSalesReps = async () => {
   // First get all users with sales_rep role
-  const { data: salesRepsData, error: rolesError } = await supabase
+  const { data: salesRepsRoles, error: rolesError } = await supabase
     .from('user_roles')
-    .select(`
-      user_id,
-      profiles (
-        id,
-        full_name
-      )
-    `)
+    .select('user_id')
     .eq('role', 'sales_rep');
 
   if (rolesError) {
-    console.error('Error fetching sales reps:', rolesError);
+    console.error('Error fetching sales rep roles:', rolesError);
     throw rolesError;
   }
 
-  if (!salesRepsData) {
+  if (!salesRepsRoles?.length) {
     return [];
+  }
+
+  // Get profiles for these sales reps
+  const salesRepIds = salesRepsRoles.map(role => role.user_id).filter(Boolean);
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', salesRepIds);
+
+  if (profilesError) {
+    console.error('Error fetching profiles:', profilesError);
+    throw profilesError;
   }
 
   // Then get their assessment scores
   const salesRepsWithScores = await Promise.all(
-    salesRepsData.map(async (rep) => {
-      if (!rep.user_id) return null;
-
+    profiles.map(async (profile) => {
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
-        .eq('sales_rep_id', rep.user_id);
+        .eq('sales_rep_id', profile.id);
 
       if (scoresError) {
         console.error('Error fetching scores:', scoresError);
@@ -68,11 +71,9 @@ const fetchSalesReps = async () => {
         }
       });
 
-      const profile = Array.isArray(rep.profiles) ? rep.profiles[0] : rep.profiles;
-
       return {
-        id: rep.user_id,
-        name: profile?.full_name || 'Unknown',
+        id: profile.id,
+        name: profile.full_name || 'Unknown',
         month1,
         month2,
         month3
@@ -146,7 +147,7 @@ const DirectorDashboard = () => {
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard
             title="Total Sales Reps"
-            value={totalReps}
+            value={salesReps?.length || 0}
             icon={<Users className="h-4 w-4 text-muted-foreground" />}
           />
 
