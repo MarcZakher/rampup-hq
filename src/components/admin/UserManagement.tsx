@@ -27,21 +27,36 @@ export function UserManagement() {
   const { data: users, isLoading, refetch } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
+      // First, get all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("*, user_roles(role)");
+        .select("*");
 
       if (profilesError) {
         console.error("Error fetching profiles:", profilesError);
         throw profilesError;
       }
 
-      return profiles.map((profile: any) => ({
-        id: profile.id,
-        email: profile.email,
-        full_name: profile.full_name,
-        role: profile.user_roles?.[0]?.role || "sales_rep",
-      })) as User[];
+      // Then, get all user roles
+      const { data: userRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("*");
+
+      if (rolesError) {
+        console.error("Error fetching user roles:", rolesError);
+        throw rolesError;
+      }
+
+      // Combine the data
+      return profiles.map((profile: any) => {
+        const userRole = userRoles.find((role: any) => role.user_id === profile.id);
+        return {
+          id: profile.id,
+          email: profile.email,
+          full_name: profile.full_name,
+          role: userRole?.role || "sales_rep",
+        };
+      }) as User[];
     },
   });
 
