@@ -17,7 +17,6 @@ const Auth = () => {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("sales_rep");
-  const [view, setView] = useState<"sign_in" | "sign_up">("sign_in");
 
   useEffect(() => {
     // Check if user is already logged in
@@ -85,26 +84,24 @@ const Auth = () => {
           </Alert>
         )}
         <div className="mt-8">
-          {view === "sign_up" && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Select your role
-              </label>
-              <Select
-                value={selectedRole}
-                onValueChange={(value) => setSelectedRole(value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sales_rep">Sales Representative</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="director">Director</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Select your role
+            </label>
+            <Select
+              value={selectedRole}
+              onValueChange={(value) => setSelectedRole(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sales_rep">Sales Representative</SelectItem>
+                <SelectItem value="manager">Manager</SelectItem>
+                <SelectItem value="director">Director</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <SupabaseAuth
             supabaseClient={supabase}
             appearance={{
@@ -154,10 +151,9 @@ const Auth = () => {
               },
             }}
             providers={[]}
-            view={view}
-            additionalData={view === "sign_up" ? {
+            additionalData={{
               role: selectedRole
-            } : undefined}
+            }}
           />
         </div>
       </div>
