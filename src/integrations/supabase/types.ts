@@ -120,45 +120,6 @@ export type Database = {
         }
         Relationships: []
       }
-      ramping_expectations: {
-        Row: {
-          created_at: string
-          id: string
-          metric: string
-          month_1: string
-          month_2: string
-          month_3: string
-          month_4: string
-          month_5: string
-          month_6: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          metric: string
-          month_1?: string
-          month_2?: string
-          month_3?: string
-          month_4?: string
-          month_5?: string
-          month_6?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          metric?: string
-          month_1?: string
-          month_2?: string
-          month_3?: string
-          month_4?: string
-          month_5?: string
-          month_6?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       training_modules: {
         Row: {
           created_at: string
