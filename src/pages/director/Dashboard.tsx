@@ -1,192 +1,167 @@
-import { useEffect, useState } from 'react';
+import React from 'react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { DirectorStats } from '@/components/Dashboard/DirectorStats';
-import { AssessmentTable } from '@/components/Dashboard/AssessmentTable';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { TrainingProgress } from '@/components/Dashboard/TrainingProgress';
 import { useAuth } from '@/hooks/use-auth';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
-const assessments = {
-  month1: [
-    { name: 'Discovery meeting roleplay pitch', shortName: 'Discovery' },
-    { name: 'SA program', shortName: 'SA' },
-    { name: 'Shadow capture', shortName: 'Shadow' },
-    { name: 'Deliver 3 Proof points', shortName: 'Proof' },
-    { name: 'Account Tiering', shortName: 'Tiering' }
-  ],
-  month2: [
-    { name: 'PG plan', shortName: 'PG' },
-    { name: 'SA program', shortName: 'SA' },
-    { name: 'NBM Role play', shortName: 'NBM' },
-    { name: '1st meeting excellence deck', shortName: '1st Meeting' },
-    { name: 'Pitch/Trap setting questions', shortName: 'Pitch' },
-    { name: 'Account plan 1', shortName: 'Account' }
-  ],
-  month3: [
-    { name: 'COM Review', shortName: 'COM' },
-    { name: 'SA program', shortName: 'SA' },
-    { name: 'Champion plan', shortName: 'Champion' },
-    { name: 'Deal review', shortName: 'Deal' },
-    { name: 'TFW prep and execution', shortName: 'TFW' },
-    { name: 'Pitch PS', shortName: 'Pitch PS' }
-  ]
-};
+const DashboardPage = () => {
+  const { user, isLoading: isAuthLoading } = useAuth();
+  
+  // Fetch user role only when user is available
+  const { data: userRole, isLoading: isRoleLoading } = useQuery({
+    queryKey: ['userRole', user?.id],
+    queryFn: async () => {
+      if (!user?.id) throw new Error('User ID not available');
+      
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) throw error;
+      return data?.role;
+    },
+    enabled: !!user?.id
+  });
 
-interface SalesRepData {
-  id: string;
-  name: string;
-  month1: number[];
-  month2: number[];
-  month3: number[];
-}
+  // Fetch sales reps data based on role when role is available
+  const { data: salesRepsData, isLoading: isDataLoading } = useQuery({
+    queryKey: ['salesReps', user?.id, userRole],
+    queryFn: async () => {
+      if (!user?.id || !userRole) throw new Error('User or role not available');
 
-const DirectorDashboard = () => {
-  const [salesReps, setSalesReps] = useState<SalesRepData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-  const { user } = useAuth();
+      let query = supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'sales_rep');
 
-  const calculateAverage = (scores: number[]) => {
-    const validScores = scores.filter(score => score > 0);
-    if (validScores.length === 0) return 0;
-    return Number((validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(1));
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // First fetch all sales reps
-        const { data: salesRepsData, error: salesRepsError } = await supabase
-          .from('user_roles')
-          .select('user_id')
-          .eq('role', 'sales_rep');
-
-        if (salesRepsError) throw salesRepsError;
-
-        if (!salesRepsData || salesRepsData.length === 0) {
-          setSalesReps([]);
-          setIsLoading(false);
-          return;
-        }
-
-        // Then fetch profiles for these sales reps
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', salesRepsData.map(rep => rep.user_id));
-
-        if (profilesError) throw profilesError;
-
-        // Then fetch assessment scores for all sales reps
-        const { data: scoresData, error: scoresError } = await supabase
-          .from('assessment_scores')
-          .select('*')
-          .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
-
-        if (scoresError) throw scoresError;
-
-        // Process and organize the data
-        const processedData = salesRepsData.map(rep => {
-          const profile = profilesData?.find(p => p.id === rep.user_id);
-          const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
-
-          return {
-            id: rep.user_id,
-            name: profile?.full_name || 'Unknown',
-            month1: Array(assessments.month1.length).fill(0).map((_, i) => {
-              const score = repScores.find(s => s.month === 'month1' && s.assessment_index === i);
-              return score ? Number(score.score) : 0;
-            }),
-            month2: Array(assessments.month2.length).fill(0).map((_, i) => {
-              const score = repScores.find(s => s.month === 'month2' && s.assessment_index === i);
-              return score ? Number(score.score) : 0;
-            }),
-            month3: Array(assessments.month3.length).fill(0).map((_, i) => {
-              const score = repScores.find(s => s.month === 'month3' && s.assessment_index === i);
-              return score ? Number(score.score) : 0;
-            })
-          };
-        });
-
-        setSalesReps(processedData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load dashboard data",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
+      // If manager, only fetch their sales reps
+      if (userRole === 'manager') {
+        query = query.eq('manager_id', user.id);
       }
-    };
 
-    fetchData();
-  }, [toast]);
+      const { data: salesReps, error } = await query;
+      if (error) throw error;
 
-  const totalReps = salesReps.length;
-  const avgScore = totalReps === 0 ? '0.0' : (salesReps.reduce((acc, rep) => {
-    const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
-    return acc + calculateAverage(allScores);
-  }, 0) / totalReps).toFixed(1);
+      if (!salesReps?.length) {
+        return { salesReps: [], profiles: [], scores: [] };
+      }
 
-  const performingWell = salesReps.filter(rep => {
-    const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
-    return calculateAverage(allScores) > 3;
-  }).length;
+      // Fetch profiles and scores
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', salesReps.map(rep => rep.user_id));
 
-  const topPerformer = salesReps.reduce((top, rep) => {
-    const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
-    const avgScore = calculateAverage(allScores);
-    return avgScore > top.score ? { name: rep.name, score: avgScore } : top;
-  }, { name: "No reps", score: 0 });
+      if (profilesError) throw profilesError;
+
+      const { data: scores, error: scoresError } = await supabase
+        .from('assessment_scores')
+        .select('*')
+        .in('sales_rep_id', salesReps.map(rep => rep.user_id));
+
+      if (scoresError) throw scoresError;
+
+      return {
+        salesReps,
+        profiles: profiles || [],
+        scores: scores || []
+      };
+    },
+    enabled: !!user?.id && !!userRole
+  });
+
+  const isLoading = isAuthLoading || isRoleLoading || isDataLoading;
 
   if (isLoading) {
     return (
       <CustomAppLayout>
-        <div className="p-6">Loading...</div>
+        <div className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="grid grid-cols-1 gap-4">
+              <div className="h-32 bg-gray-200 rounded"></div>
+              <div className="h-64 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
       </CustomAppLayout>
     );
   }
 
+  if (!user || !userRole || !salesRepsData) {
+    return (
+      <CustomAppLayout>
+        <div className="p-6">
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              Unable to load dashboard data. Please try refreshing the page.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </CustomAppLayout>
+    );
+  }
+
+  const calculateMetrics = () => {
+    const { profiles, scores } = salesRepsData;
+    
+    // Calculate average scores per rep
+    const repScores = profiles.map(profile => {
+      const repScores = scores.filter(score => score.sales_rep_id === profile.id);
+      const avgScore = repScores.length > 0
+        ? repScores.reduce((sum, score) => sum + Number(score.score), 0) / repScores.length
+        : 0;
+      
+      return {
+        name: profile.full_name,
+        avgScore: Number(avgScore.toFixed(1))
+      };
+    });
+
+    const totalReps = profiles.length;
+    const avgScore = totalReps > 0 
+      ? (repScores.reduce((sum, rep) => sum + rep.avgScore, 0) / totalReps).toFixed(1)
+      : '0.0';
+    const performingWellCount = repScores.filter(rep => rep.avgScore > 3).length;
+    const topPerformer = repScores.reduce((top, rep) => 
+      rep.avgScore > top.score ? { name: rep.name, score: rep.avgScore } : top,
+      { name: "No reps", score: 0 }
+    );
+
+    return {
+      totalReps,
+      avgScore,
+      performingWellCount,
+      topPerformer
+    };
+  };
+
+  const metrics = calculateMetrics();
+
   return (
     <CustomAppLayout>
-      <div className="space-y-6 p-6">
-        <div>
-          <h1 className="text-3xl font-bold">Director Dashboard</h1>
-          <p className="text-muted-foreground">Sales Team Assessment Scores</p>
-        </div>
-
+      <div className="p-6 space-y-6">
+        <h1 className="text-2xl font-bold mb-6">Director Dashboard</h1>
+        
         <DirectorStats
-          totalReps={totalReps}
-          averageScore={avgScore}
-          performingWellCount={performingWell}
-          topPerformer={topPerformer}
+          totalReps={metrics.totalReps}
+          averageScore={metrics.avgScore}
+          performingWellCount={metrics.performingWellCount}
+          topPerformer={metrics.topPerformer}
         />
 
-        <div className="space-y-6">
-          <AssessmentTable
-            title="Month 1 Assessments"
-            assessments={assessments.month1}
-            salesReps={salesReps.map(rep => ({ id: rep.id, name: rep.name, scores: rep.month1 }))}
-            calculateAverage={calculateAverage}
-          />
-          <AssessmentTable
-            title="Month 2 Assessments"
-            assessments={assessments.month2}
-            salesReps={salesReps.map(rep => ({ id: rep.id, name: rep.name, scores: rep.month2 }))}
-            calculateAverage={calculateAverage}
-          />
-          <AssessmentTable
-            title="Month 3 Assessments"
-            assessments={assessments.month3}
-            salesReps={salesReps.map(rep => ({ id: rep.id, name: rep.name, scores: rep.month3 }))}
-            calculateAverage={calculateAverage}
-          />
+        <div className="grid grid-cols-1 gap-6">
+          <TrainingProgress />
         </div>
       </div>
     </CustomAppLayout>
   );
 };
 
-export default DirectorDashboard;
+export default DashboardPage;
