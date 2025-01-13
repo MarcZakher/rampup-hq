@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 type ExpectationRow = {
   id: string;
@@ -29,19 +29,10 @@ export function RampingExpectationsDisplay() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: expectations, isLoading } = useQuery({
+  const { data: expectations, isLoading, error } = useQuery({
     queryKey: ['ramping-expectations'],
     queryFn: async () => {
       console.log('Fetching ramping expectations...');
-      
-      // First, check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      console.log('Current user:', user);
-      if (authError) {
-        console.error('Auth error:', authError);
-        throw authError;
-      }
-      
       const { data, error } = await supabase
         .from('ramping_expectations')
         .select('*')
@@ -103,12 +94,20 @@ export function RampingExpectationsDisplay() {
     updateMutation.mutate(updatedExpectation);
   }, [updateMutation]);
 
+  if (error) {
+    return (
+      <div className="text-red-500 p-4">
+        Error loading expectations. Please make sure you are logged in.
+      </div>
+    );
+  }
+
   if (isLoading) {
-    return <div>Loading expectations...</div>;
+    return <div className="p-4">Loading expectations...</div>;
   }
 
   if (!expectations?.length) {
-    return <div>No expectations found.</div>;
+    return <div className="p-4">No expectations found.</div>;
   }
 
   return (
