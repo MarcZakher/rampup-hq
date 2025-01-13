@@ -1,8 +1,8 @@
 import { RepPerformance } from '../types/analytics';
 import { getSalesReps, calculateAverage } from '../utils/analytics';
 
-export const getRepPerformance = async (): Promise<RepPerformance[]> => {
-  const salesReps = await getSalesReps();
+export const getRepPerformance = (): RepPerformance[] => {
+  const salesReps = getSalesReps();
 
   return salesReps.map(rep => {
     const month1Avg = calculateAverage(rep.month1);

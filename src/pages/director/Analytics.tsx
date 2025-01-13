@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Users, TrendingUp, Target, Trophy, AlertTriangle } from 'lucide-react';
@@ -27,8 +27,6 @@ import {
   Area
 } from 'recharts';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
-import { useToast } from '@/hooks/use-toast';
-import { MonthlyScore, AssessmentStats, AreaOfFocus } from '@/lib/types/analytics';
 
 const chartConfig = {
   improving: {
@@ -64,55 +62,10 @@ const chartConfig = {
 };
 
 const AnalyticsPage = () => {
-  const { toast } = useToast();
-  const [monthlyScores, setMonthlyScores] = useState<MonthlyScore[]>([]);
-  const [assessmentData, setAssessmentData] = useState<AssessmentStats[]>([]);
-  const [areasOfFocus, setAreasOfFocus] = useState<AreaOfFocus | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [monthlyData, assessmentStats, focusAreas] = await Promise.all([
-          getMonthlyScores(),
-          getAssessmentData(),
-          getAreasOfFocus()
-        ]);
-
-        setMonthlyScores(monthlyData);
-        setAssessmentData(assessmentStats);
-        setAreasOfFocus(focusAreas);
-      } catch (error) {
-        console.error('Error fetching analytics data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load analytics data. Please try again later.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [toast]);
-
-  if (isLoading) {
-    return (
-      <CustomAppLayout>
-        <div className="p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </CustomAppLayout>
-    );
-  }
+  const monthlyScores = getMonthlyScores();
+  const assessmentData = getAssessmentData();
+  const areasOfFocus = getAreasOfFocus();
+  const teamProgress = getTeamProgress();
 
   const summaryMetrics = [
     {
@@ -235,7 +188,7 @@ const AnalyticsPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {areasOfFocus?.repsNeedingAttention.map((rep, index) => (
+                {areasOfFocus.repsNeedingAttention.map((rep, index) => (
                   <div key={index} className="space-y-2">
                     <h3 className="text-lg font-semibold">{rep.name}</h3>
                     <p className="text-sm text-muted-foreground">
@@ -267,7 +220,7 @@ const AnalyticsPage = () => {
               <div className="h-[300px]">
                 <ChartContainer config={chartConfig}>
                   <BarChart 
-                    data={areasOfFocus?.commonChallenges || []} 
+                    data={areasOfFocus.commonChallenges} 
                     layout="vertical"
                   >
                     <CartesianGrid strokeDasharray="3 3" />

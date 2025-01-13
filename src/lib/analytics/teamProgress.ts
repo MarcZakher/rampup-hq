@@ -1,8 +1,8 @@
 import { TeamProgress } from '../types/analytics';
 import { getSalesReps, calculateAverage } from '../utils/analytics';
 
-export const getTeamProgress = async (): Promise<TeamProgress> => {
-  const salesReps = await getSalesReps();
+export const getTeamProgress = (): TeamProgress => {
+  const salesReps = getSalesReps();
 
   const totalScores = salesReps.flatMap(rep => [
     ...rep.month1,

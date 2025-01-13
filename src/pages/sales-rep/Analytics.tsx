@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
 import { CustomAppLayout } from "@/components/Layout/CustomAppLayout";
 import { TrainingProgress } from "@/components/Dashboard/TrainingProgress";
 import { getSalesReps } from "@/lib/utils/analytics";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ASSESSMENTS } from "@/lib/constants/assessments";
-import { useToast } from "@/hooks/use-toast";
 
 // Mock logged-in user - in a real app, this would come from auth
 const MOCK_LOGGED_IN_USER = "Amina Boualem";
@@ -25,65 +24,51 @@ export default function SalesRepAnalytics() {
   const [monthlyProgress, setMonthlyProgress] = useState<MonthProgress[]>([]);
   const [assessmentScores, setAssessmentScores] = useState<AssessmentScore[]>([]);
   const [assessmentsToRetake, setAssessmentsToRetake] = useState<AssessmentScore[]>([]);
-  const { toast } = useToast();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Get the logged-in sales rep's data
-        const salesReps = await getSalesReps();
-        const currentRep = salesReps.find(rep => rep.name === MOCK_LOGGED_IN_USER);
+    // Get the logged-in sales rep's data
+    const salesReps = getSalesReps();
+    const currentRep = salesReps.find(rep => rep.name === MOCK_LOGGED_IN_USER);
 
-        if (currentRep) {
-          // Calculate completion percentages based on non-zero scores
-          const month1Completion = (currentRep.month1.filter(score => score > 0).length / currentRep.month1.length) * 100;
-          const month2Completion = (currentRep.month2.filter(score => score > 0).length / currentRep.month2.length) * 100;
-          const month3Completion = (currentRep.month3.filter(score => score > 0).length / currentRep.month3.length) * 100;
+    if (currentRep) {
+      // Calculate completion percentages based on non-zero scores
+      const month1Completion = (currentRep.month1.filter(score => score > 0).length / currentRep.month1.length) * 100;
+      const month2Completion = (currentRep.month2.filter(score => score > 0).length / currentRep.month2.length) * 100;
+      const month3Completion = (currentRep.month3.filter(score => score > 0).length / currentRep.month3.length) * 100;
 
-          setMonthlyProgress([
-            { month: "Month 1", completion: Math.round(month1Completion) },
-            { month: "Month 2", completion: Math.round(month2Completion) },
-            { month: "Month 3", completion: Math.round(month3Completion) },
-            { month: "Month 4", completion: 0 }
-          ]);
+      setMonthlyProgress([
+        { month: "Month 1", completion: Math.round(month1Completion) },
+        { month: "Month 2", completion: Math.round(month2Completion) },
+        { month: "Month 3", completion: Math.round(month3Completion) },
+        { month: "Month 4", completion: 0 }
+      ]);
 
-          // Prepare assessment scores
-          const scores: AssessmentScore[] = [
-            ...currentRep.month1.map((score, index) => ({
-              name: ASSESSMENTS.month1[index],
-              score,
-              month: 1
-            })),
-            ...currentRep.month2.map((score, index) => ({
-              name: ASSESSMENTS.month2[index],
-              score,
-              month: 2
-            })),
-            ...currentRep.month3.map((score, index) => ({
-              name: ASSESSMENTS.month3[index],
-              score,
-              month: 3
-            }))
-          ].filter(score => score.score > 0); // Only show completed assessments
+      // Prepare assessment scores
+      const scores: AssessmentScore[] = [
+        ...currentRep.month1.map((score, index) => ({
+          name: ASSESSMENTS.month1[index],
+          score,
+          month: 1
+        })),
+        ...currentRep.month2.map((score, index) => ({
+          name: ASSESSMENTS.month2[index],
+          score,
+          month: 2
+        })),
+        ...currentRep.month3.map((score, index) => ({
+          name: ASSESSMENTS.month3[index],
+          score,
+          month: 3
+        }))
+      ].filter(score => score.score > 0); // Only show completed assessments
 
-          setAssessmentScores(scores);
+      setAssessmentScores(scores);
 
-          // Filter assessments that need to be retaken (score < 3)
-          const retakeAssessments = scores.filter(score => score.score < 3);
-          setAssessmentsToRetake(retakeAssessments);
-        }
-      } catch (error) {
-        console.error('Error fetching sales rep data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load sales representative data",
-          variant: "destructive"
-        });
-      }
-    };
-
-    fetchData();
-  }, [toast]);
+      // Filter assessments that need to be retaken (score < 3)
+      const retakeAssessments = scores.filter(score => score.score < 3);
+      setAssessmentsToRetake(retakeAssessments);
+    }
+  }, []);
 
   const getScoreColor = (score: number) => {
     if (score >= 4) return 'text-green-600';

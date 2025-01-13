@@ -2,13 +2,13 @@ import { AssessmentStats } from '../types/analytics';
 import { getSalesReps } from '../utils/analytics';
 import { ASSESSMENTS } from '../constants/assessments';
 
-export const getAssessmentData = async (): Promise<AssessmentStats[]> => {
-  const salesReps = await getSalesReps();
+export const getAssessmentData = (): AssessmentStats[] => {
+  const salesReps = getSalesReps();
 
   const getAssessmentStats = (monthKey: 'month1' | 'month2' | 'month3', index: number) => {
     const scores = salesReps.map(rep => rep[monthKey][index]).filter(score => score > 0);
     const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-    const successRate = scores.length > 0 ? (scores.filter(score => score >= 3).length / scores.length) * 100 : 0;
+    const successRate = (scores.filter(score => score >= 3).length / scores.length) * 100;
     return { avgScore, successRate };
   };
 

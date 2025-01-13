@@ -1,8 +1,8 @@
 import { ScoreDistribution } from '../types/analytics';
 import { getSalesReps, calculateAverage } from '../utils/analytics';
 
-export const getScoreDistribution = async (): Promise<ScoreDistribution[]> => {
-  const salesReps = await getSalesReps();
+export const getScoreDistribution = (): ScoreDistribution[] => {
+  const salesReps = getSalesReps();
 
   const ranges = [
     { range: '4.5-5.0', min: 4.5, max: 5.0 },
