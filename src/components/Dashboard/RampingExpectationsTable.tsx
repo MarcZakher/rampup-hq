@@ -11,6 +11,7 @@ interface MonthValue {
 }
 
 interface RampingExpectation {
+  id: string;
   metric: string;
   month_1: MonthValue;
   month_2: MonthValue;
@@ -25,6 +26,19 @@ interface MetricRow {
   values: string[];
 }
 
+interface DatabaseRampingExpectation {
+  id: string;
+  metric: string;
+  month_1: string | MonthValue;
+  month_2: string | MonthValue;
+  month_3: string | MonthValue;
+  month_4: string | MonthValue;
+  month_5: string | MonthValue;
+  month_6: string | MonthValue;
+  created_at: string;
+  updated_at: string;
+}
+
 export function RampingExpectationsTable() {
   const [metrics, setMetrics] = useState<MetricRow[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -33,6 +47,17 @@ export function RampingExpectationsTable() {
   useEffect(() => {
     fetchRampingExpectations();
   }, []);
+
+  const parseMonthValue = (value: string | MonthValue): MonthValue => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        return { value: '', note: '' };
+      }
+    }
+    return value;
+  };
 
   const fetchRampingExpectations = async () => {
     try {
@@ -43,15 +68,15 @@ export function RampingExpectationsTable() {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const formattedMetrics = data.map((row: RampingExpectation) => ({
+        const formattedMetrics = data.map((row: DatabaseRampingExpectation) => ({
           name: row.metric,
           values: [
-            (row.month_1 as MonthValue).value,
-            (row.month_2 as MonthValue).value,
-            (row.month_3 as MonthValue).value,
-            (row.month_4 as MonthValue).value,
-            (row.month_5 as MonthValue).value,
-            (row.month_6 as MonthValue).value,
+            parseMonthValue(row.month_1).value,
+            parseMonthValue(row.month_2).value,
+            parseMonthValue(row.month_3).value,
+            parseMonthValue(row.month_4).value,
+            parseMonthValue(row.month_5).value,
+            parseMonthValue(row.month_6).value,
           ]
         }));
         setMetrics(formattedMetrics);
