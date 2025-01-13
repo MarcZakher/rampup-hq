@@ -85,6 +85,26 @@ const Auth = () => {
           </Alert>
         )}
         <div className="mt-8">
+          {view === "sign_up" && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select your role
+              </label>
+              <Select
+                value={selectedRole}
+                onValueChange={(value) => setSelectedRole(value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sales_rep">Sales Representative</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="director">Director</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <SupabaseAuth
             supabaseClient={supabase}
             appearance={{
@@ -135,34 +155,10 @@ const Auth = () => {
             }}
             providers={[]}
             view={view}
-            onViewChange={(newView) => {
-              setView(newView as "sign_in" | "sign_up");
-            }}
             additionalData={view === "sign_up" ? {
               role: selectedRole
             } : undefined}
-          >
-            {view === "sign_up" && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select your role
-                </label>
-                <Select
-                  value={selectedRole}
-                  onValueChange={(value) => setSelectedRole(value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sales_rep">Sales Representative</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="director">Director</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </SupabaseAuth>
+          />
         </div>
       </div>
     </div>
