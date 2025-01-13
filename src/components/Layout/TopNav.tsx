@@ -10,23 +10,26 @@ export function TopNav() {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        if (error.message.includes('session_not_found')) {
-          // Session already expired, just redirect to login
-          navigate('/login');
-          return;
-        }
-        throw error;
+      // First check if we have a session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // No active session, just redirect to login
+        navigate('/login');
+        return;
       }
+
+      // Try to sign out
+      await supabase.auth.signOut();
+      
       toast({
         title: "Logged out successfully",
         duration: 2000,
       });
+      
       navigate('/login');
     } catch (error) {
-      console.error('Error logging out:', error);
-      // If we get here, there was an error but we should still redirect to login
+      console.error('Error during logout:', error);
       toast({
         title: "Session expired",
         description: "Please log in again",
