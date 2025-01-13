@@ -42,7 +42,18 @@ export function RampingExpectationsDisplay() {
         .select('*');
       
       if (error) throw error;
-      return data as ExpectationRow[];
+      
+      // Transform the data to match our ExpectationRow type
+      return (data as any[]).map(row => ({
+        id: row.id,
+        metric: row.metric,
+        month_1: row.month_1 as MonthData,
+        month_2: row.month_2 as MonthData,
+        month_3: row.month_3 as MonthData,
+        month_4: row.month_4 as MonthData,
+        month_5: row.month_5 as MonthData,
+        month_6: row.month_6 as MonthData,
+      })) as ExpectationRow[];
     },
   });
 
@@ -88,7 +99,7 @@ export function RampingExpectationsDisplay() {
     const updatedExpectation = {
       ...expectation,
       [month]: {
-        ...expectation[month],
+        ...expectation[month as keyof Pick<ExpectationRow, 'month_1' | 'month_2' | 'month_3' | 'month_4' | 'month_5' | 'month_6'>],
         value: newValue,
       },
     };
