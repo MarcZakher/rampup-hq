@@ -5,10 +5,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { AuthError, AuthApiError } from '@supabase/supabase-js';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Auth = () => {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState("");
+  const [selectedRole, setSelectedRole] = useState<string>("sales_rep");
 
   useEffect(() => {
     // Check if user is already logged in
@@ -76,6 +84,24 @@ const Auth = () => {
           </Alert>
         )}
         <div className="mt-8">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Select your role
+            </label>
+            <Select
+              value={selectedRole}
+              onValueChange={(value) => setSelectedRole(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sales_rep">Sales Representative</SelectItem>
+                <SelectItem value="manager">Manager</SelectItem>
+                <SelectItem value="director">Director</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <SupabaseAuth
             supabaseClient={supabase}
             appearance={{
@@ -125,6 +151,9 @@ const Auth = () => {
               },
             }}
             providers={[]}
+            additionalData={{
+              role: selectedRole
+            }}
           />
         </div>
       </div>
