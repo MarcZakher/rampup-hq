@@ -16,7 +16,7 @@ serve(async (req) => {
     // Get auth header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      console.error('No authorization header provided')
+      console.error('No authorization header')
       throw new Error('No authorization header')
     }
 
@@ -32,10 +32,11 @@ serve(async (req) => {
       }
     )
 
+    // Get the JWT token from the Authorization header
+    const token = authHeader.replace('Bearer ', '')
+    
     // Verify the JWT token using admin client
-    const { data: { user: requestingUser }, error: verifyError } = await supabaseAdmin.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
+    const { data: { user: requestingUser }, error: verifyError } = await supabaseAdmin.auth.getUser(token)
 
     if (verifyError || !requestingUser) {
       console.error('Token verification failed:', verifyError)
