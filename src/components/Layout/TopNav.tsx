@@ -25,16 +25,28 @@ export function TopNav() {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      // First check if we have a valid session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (error) {
-        console.error('Logout error:', error);
-        toast({
-          variant: "destructive",
-          title: "Error logging out",
-          description: "Please try again"
-        });
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        // If there's a session error, we'll just redirect to login
+        navigate('/login');
         return;
+      }
+
+      // If we have a valid session, attempt to sign out
+      if (session) {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.error('Logout error:', error);
+          toast({
+            variant: "destructive",
+            title: "Error logging out",
+            description: "Please try again"
+          });
+          return;
+        }
       }
       
       // Show success message
@@ -48,10 +60,12 @@ export function TopNav() {
       
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if there's an error, redirect to login for safety
+      navigate('/login');
       toast({
         variant: "destructive",
-        title: "Error logging out",
-        description: "An unexpected error occurred"
+        title: "Error during logout",
+        description: "You have been redirected to the login page"
       });
     }
   };
