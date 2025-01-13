@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,49 @@ import { useToast } from "@/hooks/use-toast";
 
 export function RampingExpectationsTable() {
   const [metrics, setMetrics] = useState([
-    { name: "DMs", values: ["5 (booked)", 10, 15, 20, 20, 20] },
-    { name: "NBMs", values: [0, 1, 1, 1, 2, 2] },
-    { name: "Scope+", values: [0, 0, 1, 1, 1, 1] },
-    { name: "NL", values: [0, 0, 0, 0, 0, 1] },
+    { name: "DMs", values: ["5", "10", "15", "20", "20", "20"] },
+    { name: "NBMs", values: ["0", "1", "1", "1", "2", "2"] },
+    { name: "Scope+", values: ["0", "0", "1", "1", "1", "1"] },
+    { name: "NL", values: ["0", "0", "0", "0", "0", "1"] },
   ]);
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchRampingExpectations();
+  }, []);
+
+  const fetchRampingExpectations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("ramping_expectations")
+        .select("*");
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const formattedMetrics = data.map(row => ({
+          name: row.metric,
+          values: [
+            row.month_1.value,
+            row.month_2.value,
+            row.month_3.value,
+            row.month_4.value,
+            row.month_5.value,
+            row.month_6.value,
+          ]
+        }));
+        setMetrics(formattedMetrics);
+      }
+    } catch (error) {
+      console.error("Error fetching ramping expectations:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load ramping expectations",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleValueChange = (metricIndex: number, monthIndex: number, value: string) => {
     const newMetrics = [...metrics];
