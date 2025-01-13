@@ -20,7 +20,7 @@ export default function Login() {
   const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         const { data: { user } } = await supabase.auth.getUser();
         const userRole = user?.user_metadata?.role;
@@ -47,9 +47,16 @@ export default function Login() {
         }
       }
     });
-
-    return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Handle role selection before sign up
+  const handleViewChange = (newView: 'sign_in' | 'sign_up') => {
+    setView(newView);
+    setError('');
+    if (newView === 'sign_in') {
+      setSelectedRole('');
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#9b87f5] via-[#7E69AB] to-[#6E59A5] p-4">
@@ -112,27 +119,8 @@ export default function Login() {
               },
             }}
             providers={[]}
-            localization={{
-              variables: {
-                sign_up: {
-                  email_label: "Email",
-                  password_label: "Password",
-                  button_label: "Sign Up",
-                },
-              },
-            }}
-            onSubmit={async (e) => {
-              if (view === 'sign_up' && !selectedRole) {
-                e.preventDefault();
-                setError('Please select a role before signing up');
-                return;
-              }
-            }}
             view={view}
-            onViewChange={(newView) => {
-              setView(newView as 'sign_in' | 'sign_up');
-              setError('');
-            }}
+            onViewChange={handleViewChange}
           />
         </div>
       </div>
