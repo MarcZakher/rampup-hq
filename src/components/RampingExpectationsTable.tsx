@@ -11,6 +11,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InfoIcon } from "lucide-react";
 
+interface MonthValue {
+  value: string;
+  note: string;
+}
+
+interface RampingExpectation {
+  id: string;
+  metric: string;
+  month_1: MonthValue;
+  month_2: MonthValue;
+  month_3: MonthValue;
+  month_4: MonthValue;
+  month_5: MonthValue;
+  month_6: MonthValue;
+}
+
 export function RampingExpectationsTable() {
   const { data: expectations, isLoading } = useQuery({
     queryKey: ["ramping-expectations"],
@@ -25,8 +41,21 @@ export function RampingExpectationsTable() {
         console.error("Error fetching ramping expectations:", error);
         throw error;
       }
-      console.log("Fetched data:", data);
-      return data;
+
+      // Parse the JSON data into the correct type
+      const parsedData: RampingExpectation[] = data.map(item => ({
+        id: item.id,
+        metric: item.metric,
+        month_1: typeof item.month_1 === 'string' ? JSON.parse(item.month_1) : item.month_1,
+        month_2: typeof item.month_2 === 'string' ? JSON.parse(item.month_2) : item.month_2,
+        month_3: typeof item.month_3 === 'string' ? JSON.parse(item.month_3) : item.month_3,
+        month_4: typeof item.month_4 === 'string' ? JSON.parse(item.month_4) : item.month_4,
+        month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5,
+        month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6,
+      }));
+
+      console.log("Fetched and parsed data:", parsedData);
+      return parsedData;
     },
   });
 
@@ -75,12 +104,12 @@ export function RampingExpectationsTable() {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger className="inline-flex items-center">
-                        {month?.value}
-                        {month?.note && (
+                        {month.value}
+                        {month.note && (
                           <InfoIcon className="ml-1 h-4 w-4 text-gray-400" />
                         )}
                       </TooltipTrigger>
-                      {month?.note && (
+                      {month.note && (
                         <TooltipContent>
                           <p>{month.note}</p>
                         </TooltipContent>
