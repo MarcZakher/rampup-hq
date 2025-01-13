@@ -8,24 +8,25 @@ import {
   getAreasOfFocus,
   getTeamProgress 
 } from '@/lib/mockAnalyticsData';
-import { supabase } from '@/integrations/supabase/client';
-import { AIRecommendations } from '@/components/Analytics/AIRecommendations';
-import { useQuery } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Area,
-  AreaChart,
-  Bar,
+import { 
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle 
+} from '@/components/ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { 
   BarChart,
-  CartesianGrid,
+  Bar,
   XAxis,
   YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area
 } from 'recharts';
-import {
-  ChartContainer,
-  ChartTooltip,
-} from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 
 const chartConfig = {
   improving: {
@@ -65,29 +66,6 @@ const AnalyticsPage = () => {
   const assessmentData = getAssessmentData();
   const areasOfFocus = getAreasOfFocus();
   const teamProgress = getTeamProgress();
-
-  const { data: aiRecommendations, isLoading, error } = useQuery({
-    queryKey: ['aiRecommendations', monthlyScores, assessmentData, areasOfFocus, teamProgress],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('analyze-performance', {
-          body: {
-            monthlyScores,
-            assessmentData,
-            areasOfFocus,
-            teamProgress
-          }
-        });
-
-        if (error) throw error;
-        return data.recommendations;
-      } catch (err) {
-        console.error('Error fetching AI recommendations:', err);
-        toast.error('Failed to fetch AI recommendations');
-        throw err;
-      }
-    }
-  });
 
   const summaryMetrics = [
     {
@@ -133,13 +111,6 @@ const AnalyticsPage = () => {
             />
           ))}
         </div>
-
-        {/* AI Recommendations */}
-        <AIRecommendations 
-          recommendations={aiRecommendations}
-          isLoading={isLoading}
-          error={error?.message || null}
-        />
 
         {/* Two Column Layout for Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
