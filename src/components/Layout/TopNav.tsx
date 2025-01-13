@@ -4,6 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
+/**
+ * TopNav component that displays the top navigation bar
+ * Includes notification, user profile, and logout buttons
+ */
 export function TopNav() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -29,11 +33,22 @@ export function TopNav() {
       // Clear any local storage data
       localStorage.clear();
       
+      // Show success message
+      toast({
+        title: "Logged out successfully",
+        description: "You have been signed out of your account"
+      });
+      
       // Force a page reload to clear any stale state
       window.location.href = '/login';
       
     } catch (error) {
       console.error('Logout error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error logging out",
+        description: "An unexpected error occurred"
+      });
       // Force navigation to login even if there's an error
       window.location.href = '/login';
     }
@@ -52,6 +67,7 @@ export function TopNav() {
             variant="ghost" 
             size="icon" 
             className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10"
+            aria-label="Notifications"
           >
             <Bell className="h-5 w-5" />
           </Button>
@@ -59,6 +75,7 @@ export function TopNav() {
             variant="ghost" 
             size="icon" 
             className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10"
+            aria-label="User profile"
           >
             <User className="h-5 w-5" />
           </Button>
@@ -67,6 +84,7 @@ export function TopNav() {
             size="icon" 
             onClick={handleLogout} 
             className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10"
+            aria-label="Log out"
           >
             <LogOut className="h-5 w-5" />
           </Button>
