@@ -53,31 +53,36 @@ const DirectorDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // First fetch all sales reps with their profiles
+        // First fetch all sales reps
         const { data: salesRepsData, error: salesRepsError } = await supabase
           .from('user_roles')
-          .select(`
-            user_id,
-            profiles:profiles(full_name)
-          `)
+          .select('user_id')
           .eq('role', 'sales_rep');
 
         if (salesRepsError) throw salesRepsError;
+
+        // Then fetch profiles for these sales reps
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', salesRepsData.map(rep => rep.user_id));
+
+        if (profilesError) throw profilesError;
 
         // Then fetch assessment scores for all sales reps
         const { data: scoresData, error: scoresError } = await supabase
           .from('assessment_scores')
           .select('*')
-          .in('sales_rep_id', salesRepsData?.map(rep => rep.user_id) || []);
+          .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
 
         if (scoresError) throw scoresError;
 
         // Process and organize the data
-        const processedData = salesRepsData?.map(rep => {
-          const repScores = scoresData.filter(score => score.sales_rep_id === rep.user_id);
+        const processedData = profilesData.map(profile => {
+          const repScores = scoresData.filter(score => score.sales_rep_id === profile.id);
           return {
-            id: rep.user_id,
-            name: rep.profiles?.full_name || 'Unknown',
+            id: profile.id,
+            name: profile.full_name || 'Unknown',
             month1: Array(assessments.month1.length).fill(0).map((_, i) => {
               const score = repScores.find(s => s.month === '1' && s.assessment_index === i);
               return score ? Number(score.score) : 0;
@@ -91,7 +96,7 @@ const DirectorDashboard = () => {
               return score ? Number(score.score) : 0;
             })
           };
-        }) || [];
+        });
 
         setSalesReps(processedData);
       } catch (error) {
