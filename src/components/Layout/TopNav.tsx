@@ -1,45 +1,7 @@
-import { Bell, User, LogOut } from 'lucide-react';
+import { Bell, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/components/ui/use-toast';
 
 export function TopNav() {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const handleLogout = async () => {
-    try {
-      // First check if we have a session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        // No active session, just redirect to login
-        navigate('/login');
-        return;
-      }
-
-      // Try to sign out
-      await supabase.auth.signOut();
-      
-      toast({
-        title: "Logged out successfully",
-        duration: 2000,
-      });
-      
-      navigate('/login');
-    } catch (error) {
-      console.error('Error during logout:', error);
-      toast({
-        title: "Session expired",
-        description: "Please log in again",
-        variant: "destructive",
-        duration: 3000,
-      });
-      navigate('/login');
-    }
-  };
-
   return (
     <header className="border-b bg-white">
       <div className="flex h-16 items-center px-6 justify-between">
@@ -54,14 +16,6 @@ export function TopNav() {
           </Button>
           <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <User className="h-5 w-5" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleLogout}
-            className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10"
-          >
-            <LogOut className="h-5 w-5" />
           </Button>
         </div>
       </div>
