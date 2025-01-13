@@ -58,7 +58,7 @@ const DirectorDashboard = () => {
         // First fetch all sales reps by querying user_roles directly
         const { data: salesRepsData, error: salesRepsError } = await supabase
           .from('user_roles')
-          .select('user_id')
+          .select('user_id, role')
           .eq('role', 'sales_rep');
 
         if (salesRepsError) throw salesRepsError;
@@ -69,36 +69,39 @@ const DirectorDashboard = () => {
           return;
         }
 
-        // Then fetch profiles for these sales reps
+        // Get all sales rep IDs
+        const salesRepIds = salesRepsData.map(rep => rep.user_id).filter(Boolean);
+
+        // Fetch profiles for these sales reps
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name')
-          .in('id', salesRepsData.map(rep => rep.user_id));
+          .in('id', salesRepIds);
 
         if (profilesError) throw profilesError;
 
-        // Then fetch all assessment scores
+        // Fetch all assessment scores
         const { data: scoresData, error: scoresError } = await supabase
           .from('assessment_scores')
           .select('*')
-          .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
+          .in('sales_rep_id', salesRepIds);
 
         if (scoresError) throw scoresError;
 
         // Process and organize the data
-        const processedData = salesRepsData.map(rep => {
-          const profile = profilesData?.find(p => p.id === rep.user_id);
-          const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
+        const processedData = salesRepIds.map(repId => {
+          const profile = profilesData?.find(p => p.id === repId);
+          const repScores = scoresData?.filter(score => score.sales_rep_id === repId) || [];
 
           const getMonthScores = (month: string, length: number) => {
             return Array(length).fill(0).map((_, i) => {
               const score = repScores.find(s => s.month === month && s.assessment_index === i);
-              return score ? Number(score.score) : 0;
+              return score?.score ? Number(score.score) : 0;
             });
           };
 
           return {
-            id: rep.user_id,
+            id: repId,
             name: profile?.full_name || 'Unknown',
             month1: getMonthScores('month1', assessments.month1.length),
             month2: getMonthScores('month2', assessments.month2.length),
