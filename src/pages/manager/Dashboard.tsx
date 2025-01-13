@@ -1,20 +1,12 @@
 import { useState, useEffect } from 'react';
-import { AppLayout } from '@/components/Layout/AppLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AppLayout } from "@/components/Layout/AppLayout";
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, UserPlus } from 'lucide-react';
+import { AddSalesRepForm } from '@/components/manager/AddSalesRepForm';
+import { MonthlyAssessmentCard } from '@/components/manager/MonthlyAssessmentCard';
 
-interface SalesRep {
-  id: number;
-  name: string;
-  month1: number[];
-  month2: number[];
-  month3: number[];
-}
-
+/**
+ * Assessment configuration for each month
+ */
 const assessments = {
   month1: [
     { name: 'Discovery meeting roleplay pitch', shortName: 'Discovery' },
@@ -41,113 +33,40 @@ const assessments = {
   ]
 };
 
-const initialSalesReps: SalesRep[] = [
-  {
-    id: 1,
-    name: "Charlie Hobbs",
-    month1: [1.8, 2, 0, 3, 3],
-    month2: [3, 2, 2, 2, 2, 2.5],
-    month3: [2.5, 2, 0, 2.5, 0, 0]
-  },
-  {
-    id: 2,
-    name: "Amina Boualem",
-    month1: [4.0, 3, 3, 4, 3.5],
-    month2: [3, 3, 3, 3, 3.5, 0],
-    month3: [2.5, 4, 3, 2, 3.5, 3]
-  },
-  {
-    id: 3,
-    name: "Tayfun Kurtbas",
-    month1: [2.3, 3, 3, 3, 3],
-    month2: [3, 3, 2, 2, 3, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 4,
-    name: "Katrien VanHeusden",
-    month1: [2.0, 0, 0, 3, 2.5],
-    month2: [2, 3, 2, 3, 2, 0],
-    month3: [2, 2, 1, 0, 0, 0]
-  },
-  {
-    id: 5,
-    name: "Derynne Wittes",
-    month1: [2.2, 0, 3, 3, 4.5],
-    month2: [0, 0, 3, 3.5, 0, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 6,
-    name: "Ziad Ayman",
-    month1: [3.0, 0, 3, 3.25, 3.5],
-    month2: [3.5, 0, 0, 4, 3.5, 4],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 7,
-    name: "Karl Chayeb",
-    month1: [3.5, 0, 3, 3.5, 3],
-    month2: [3, 0, 3, 3.5, 0, 3.5],
-    month3: [4, 0, 0, 3, 4, 0]
-  },
-  {
-    id: 8,
-    name: "Jose Konopnicki",
-    month1: [4.0, 0, 3, 3.075, 3.5],
-    month2: [3, 0, 4, 4, 4, 4],
-    month3: [4, 0, 0, 3.5, 3.5, 0]
-  },
-  {
-    id: 9,
-    name: "Emma Hellqvist",
-    month1: [3.0, 0, 0, 4, 4],
-    month2: [3, 0, 3.5, 3, 3, 4],
-    month3: [0, 0, 0, 4.5, 0, 0]
-  },
-  {
-    id: 10,
-    name: "Jake Curtis",
-    month1: [0.0, 0, 0, 4, 0],
-    month2: [0, 0, 0, 0, 0, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 11,
-    name: "Riccardo Profiti",
-    month1: [3.5, 4, 2.5, 3.875, 3],
-    month2: [3, 4, 3, 3.5, 2.25, 0],
-    month3: [3, 0, 0, 4, 3.75, 0]
-  }
-];
-
+// Storage key for persisting sales rep data
 const STORAGE_KEY = 'manager_dashboard_sales_reps';
 
+/**
+ * Manager Dashboard component for tracking and managing sales representatives' assessments
+ */
 const ManagerDashboard = () => {
-  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
-  const [newRepName, setNewRepName] = useState('');
+  const [salesReps, setSalesReps] = useState<any[]>([]);
   const { toast } = useToast();
 
   // Load saved data on component mount
   useEffect(() => {
-    try {
-      const savedReps = localStorage.getItem(STORAGE_KEY);
-      if (savedReps) {
-        const parsedReps = JSON.parse(savedReps);
-        // Ensure we have a valid array
-        setSalesReps(Array.isArray(parsedReps) ? parsedReps : initialSalesReps);
-      } else {
-        setSalesReps(initialSalesReps);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialSalesReps));
-      }
-    } catch (error) {
-      console.error('Error loading sales reps:', error);
-      setSalesReps(initialSalesReps);
-    }
+    loadSalesReps();
   }, []);
 
   // Save data whenever salesReps changes
   useEffect(() => {
+    saveSalesReps();
+  }, [salesReps]);
+
+  const loadSalesReps = () => {
+    try {
+      const savedReps = localStorage.getItem(STORAGE_KEY);
+      if (savedReps) {
+        const parsedReps = JSON.parse(savedReps);
+        setSalesReps(Array.isArray(parsedReps) ? parsedReps : []);
+      }
+    } catch (error) {
+      console.error('Error loading sales reps:', error);
+      setSalesReps([]);
+    }
+  };
+
+  const saveSalesReps = () => {
     try {
       if (Array.isArray(salesReps)) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(salesReps));
@@ -155,28 +74,18 @@ const ManagerDashboard = () => {
     } catch (error) {
       console.error('Error saving sales reps:', error);
     }
-  }, [salesReps]);
+  };
 
-  const addSalesRep = () => {
-    if (!newRepName.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a name for the sales representative",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const newRep: SalesRep = {
+  const addSalesRep = (name: string) => {
+    const newRep = {
       id: Date.now(),
-      name: newRepName,
+      name,
       month1: new Array(assessments.month1.length).fill(0),
       month2: new Array(assessments.month2.length).fill(0),
       month3: new Array(assessments.month3.length).fill(0)
     };
 
     setSalesReps(prevReps => Array.isArray(prevReps) ? [...prevReps, newRep] : [newRep]);
-    setNewRepName('');
     toast({
       title: "Success",
       description: "Sales representative added successfully"
@@ -194,22 +103,12 @@ const ManagerDashboard = () => {
   };
 
   const updateScore = (repId: number, month: 'month1' | 'month2' | 'month3', index: number, value: string) => {
-    const score = parseFloat(value);
-    if (isNaN(score) || score < 0 || score > 5) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid score between 0 and 5",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setSalesReps(prevReps => {
       if (!Array.isArray(prevReps)) return [];
       return prevReps.map(rep => {
         if (rep.id === repId) {
           const newScores = [...rep[month]];
-          newScores[index] = score;
+          newScores[index] = parseFloat(value);
           return { ...rep, [month]: newScores };
         }
         return rep;
@@ -224,79 +123,26 @@ const ManagerDashboard = () => {
     return 'bg-[#FFC7CE]';
   };
 
-  // Ensure we have valid data before rendering
-  const monthsToRender = ['month1', 'month2', 'month3'] as const;
-
   return (
     <AppLayout>
       <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Manager Dashboard</h1>
-          <div className="flex gap-4 items-center">
-            <Input
-              placeholder="Enter sales rep name"
-              value={newRepName}
-              onChange={(e) => setNewRepName(e.target.value)}
-              className="w-64"
-            />
-            <Button onClick={addSalesRep}>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Sales Rep
-            </Button>
-          </div>
+          <AddSalesRepForm onAddSalesRep={addSalesRep} />
         </div>
 
         <div className="space-y-6">
-          {monthsToRender.map((month, monthIndex) => (
-            <Card key={month}>
-              <CardHeader>
-                <CardTitle>Month {monthIndex + 1} Assessments</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      {(assessments[month] || []).map((assessment, index) => (
-                        <TableHead key={index} title={assessment.name}>
-                          {assessment.shortName}
-                        </TableHead>
-                      ))}
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(Array.isArray(salesReps) ? salesReps : []).map((rep) => (
-                      <TableRow key={rep.id}>
-                        <TableCell className="font-medium">{rep.name}</TableCell>
-                        {(Array.isArray(rep[month]) ? rep[month] : []).map((score, scoreIndex) => (
-                          <TableCell key={scoreIndex} className={getScoreColor(score)}>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="5"
-                              step="0.5"
-                              value={score || ''}
-                              onChange={(e) => updateScore(rep.id, month, scoreIndex, e.target.value)}
-                              className="w-16 text-center"
-                            />
-                          </TableCell>
-                        ))}
-                        <TableCell>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => removeSalesRep(rep.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+          {Object.entries(assessments).map(([month, monthAssessments], index) => (
+            <MonthlyAssessmentCard
+              key={month}
+              monthNumber={index + 1}
+              assessments={monthAssessments}
+              salesReps={salesReps}
+              monthKey={month}
+              onUpdateScore={updateScore}
+              onRemoveSalesRep={removeSalesRep}
+              getScoreColor={getScoreColor}
+            />
           ))}
         </div>
       </div>
