@@ -18,7 +18,6 @@ export default function Login() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [error, setError] = useState<string>('');
-  const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
 
   useEffect(() => {
     // Check initial session
@@ -33,7 +32,7 @@ export default function Login() {
       if (event === 'SIGNED_IN') {
         if (session?.user?.user_metadata?.role) {
           handleAuthRedirect(session.user.user_metadata.role);
-        } else if (selectedRole && view === 'sign_up') {
+        } else if (selectedRole) {
           try {
             const { data: { user }, error: updateError } = await supabase.auth.updateUser({
               data: { role: selectedRole }
@@ -57,7 +56,7 @@ export default function Login() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, selectedRole, view]);
+  }, [navigate, selectedRole]);
 
   const handleAuthRedirect = (role: string) => {
     switch (role) {
@@ -100,27 +99,23 @@ export default function Login() {
             </Alert>
           )}
 
-          {view === 'sign_up' && (
-            <div className="space-y-2 mb-4">
-              <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
-              <Select onValueChange={setSelectedRole} value={selectedRole}>
-                <SelectTrigger id="role" className="w-full bg-white border-purple-200 focus:ring-purple-200">
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sales_rep">Sales Representative</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="director">Director</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="space-y-2 mb-4">
+            <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
+            <Select onValueChange={setSelectedRole} value={selectedRole}>
+              <SelectTrigger id="role" className="w-full bg-white border-purple-200 focus:ring-purple-200">
+                <SelectValue placeholder="Select your role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sales_rep">Sales Representative</SelectItem>
+                <SelectItem value="manager">Manager</SelectItem>
+                <SelectItem value="director">Director</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <Auth
             supabaseClient={supabase}
-            view={view}
-            onViewChange={setView}
             appearance={{
               theme: ThemeSupa,
               variables: {
