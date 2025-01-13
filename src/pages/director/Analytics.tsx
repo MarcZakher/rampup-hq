@@ -19,23 +19,32 @@ const AnalyticsPage = () => {
     queryFn: async () => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      // Fetch assessment scores and join with profiles
+      // First fetch all profiles to create a lookup map
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name');
+
+      if (profilesError) throw profilesError;
+
+      const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+      // Then fetch assessment scores
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
-        .select(`
-          *,
-          profiles!assessment_scores_sales_rep_id_fkey(
-            id,
-            full_name
-          )
-        `);
+        .select('*');
 
       if (scoresError) throw scoresError;
 
+      // Enrich scores with profile data
+      const enrichedScores = scores.map(score => ({
+        ...score,
+        profile: profileMap.get(score.sales_rep_id)
+      }));
+
       // Process data for different charts
-      const commonChallenges = processCommonChallenges(scores);
-      const areasNeedingAttention = await processAreasNeedingAttention(scores);
-      const assessmentMetrics = processAssessmentMetrics(scores);
+      const commonChallenges = processCommonChallenges(enrichedScores);
+      const areasNeedingAttention = processAreasNeedingAttention(enrichedScores);
+      const assessmentMetrics = processAssessmentMetrics(enrichedScores);
 
       return {
         commonChallenges,
@@ -94,9 +103,7 @@ const processCommonChallenges = (scores: any[]) => {
   
   scores.forEach(score => {
     if (score.score < 3) {
-      const month = score.month;
-      const assessmentIndex = score.assessment_index;
-      const assessmentName = ASSESSMENTS[month][assessmentIndex];
+      const assessmentName = ASSESSMENTS[score.month][score.assessment_index];
       challengeCounts[assessmentName] = (challengeCounts[assessmentName] || 0) + 1;
     }
   });
@@ -107,7 +114,7 @@ const processCommonChallenges = (scores: any[]) => {
     .slice(0, 5);
 };
 
-const processAreasNeedingAttention = async (scores: any[]) => {
+const processAreasNeedingAttention = (scores: any[]) => {
   const repScores: { [key: string]: any[] } = {};
   
   scores.forEach(score => {
@@ -123,7 +130,7 @@ const processAreasNeedingAttention = async (scores: any[]) => {
       const lowScores = scores.filter(score => score.score < 3);
       if (lowScores.length < 2) return null;
 
-      const repName = scores[0].profiles.full_name;
+      const repName = scores[0].profile?.full_name || 'Unknown Rep';
 
       return {
         name: repName,
