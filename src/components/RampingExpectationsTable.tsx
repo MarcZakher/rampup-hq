@@ -8,6 +8,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { InfoIcon } from "lucide-react";
 
 export function RampingExpectationsTable() {
   const { data: expectations, isLoading } = useQuery({
@@ -59,12 +61,25 @@ export function RampingExpectationsTable() {
               <TableCell className="font-medium bg-primary text-primary-foreground">
                 {metricLabels[row.metric]}
               </TableCell>
-              <TableCell className="text-center">{row.month_1}</TableCell>
-              <TableCell className="text-center">{row.month_2}</TableCell>
-              <TableCell className="text-center">{row.month_3}</TableCell>
-              <TableCell className="text-center">{row.month_4}</TableCell>
-              <TableCell className="text-center">{row.month_5}</TableCell>
-              <TableCell className="text-center">{row.month_6}</TableCell>
+              {[row.month_1, row.month_2, row.month_3, row.month_4, row.month_5, row.month_6].map((month, index) => (
+                <TableCell key={index} className="text-center">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="inline-flex items-center">
+                        {month.value}
+                        {month.note && (
+                          <InfoIcon className="ml-1 h-4 w-4 text-gray-400" />
+                        )}
+                      </TooltipTrigger>
+                      {month.note && (
+                        <TooltipContent>
+                          <p>{month.note}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+              ))}
             </TableRow>
           ))}
         </TableBody>

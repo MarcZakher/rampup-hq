@@ -122,79 +122,42 @@ export type Database = {
       }
       ramping_expectations: {
         Row: {
-          created_at: string
-          id: string
-          metric: Database["public"]["Enums"]["metric_type"]
-          month_1: number
-          month_2: number
-          month_3: number
-          month_4: number
-          month_5: number
-          month_6: number
-          updated_at: string
-        }
+          id: string;
+          metric: "dm" | "nbm" | "scope_plus" | "new_logo";
+          month_1: MonthData;
+          month_2: MonthData;
+          month_3: MonthData;
+          month_4: MonthData;
+          month_5: MonthData;
+          month_6: MonthData;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          metric: Database["public"]["Enums"]["metric_type"]
-          month_1: number
-          month_2: number
-          month_3: number
-          month_4: number
-          month_5: number
-          month_6: number
-          updated_at?: string
-        }
+          id?: string;
+          metric: "dm" | "nbm" | "scope_plus" | "new_logo";
+          month_1: MonthData;
+          month_2: MonthData;
+          month_3: MonthData;
+          month_4: MonthData;
+          month_5: MonthData;
+          month_6: MonthData;
+          created_at?: string;
+          updated_at?: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          metric?: Database["public"]["Enums"]["metric_type"]
-          month_1?: number
-          month_2?: number
-          month_3?: number
-          month_4?: number
-          month_5?: number
-          month_6?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      training_modules: {
-        Row: {
-          created_at: string
-          description: string
-          duration: string
-          id: string
-          period_id: string
-          platform: string | null
-          sort_order: number
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          duration: string
-          id?: string
-          period_id: string
-          platform?: string | null
-          sort_order: number
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          duration?: string
-          id?: string
-          period_id?: string
-          platform?: string | null
-          sort_order?: number
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          id?: string;
+          metric?: "dm" | "nbm" | "scope_plus" | "new_logo";
+          month_1?: MonthData;
+          month_2?: MonthData;
+          month_3?: MonthData;
+          month_4?: MonthData;
+          month_5?: MonthData;
+          month_6?: MonthData;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       user_roles: {
         Row: {
           created_at: string
@@ -238,6 +201,11 @@ export type Database = {
   }
 }
 
+export interface MonthData {
+  value: number;
+  note: string;
+}
+
 type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
@@ -259,10 +227,10 @@ export type Tables<
         PublicSchema["Views"])
     ? (PublicSchema["Tables"] &
         PublicSchema["Views"])[PublicTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
+      Row: infer R
+    }
+    ? R
+    : never
     : never
 
 export type TablesInsert<
@@ -282,8 +250,8 @@ export type TablesInsert<
     ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
-      ? I
-      : never
+    ? I
+    : never
     : never
 
 export type TablesUpdate<
@@ -303,8 +271,8 @@ export type TablesUpdate<
     ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
       }
-      ? U
-      : never
+    ? U
+    : never
     : never
 
 export type Enums<
