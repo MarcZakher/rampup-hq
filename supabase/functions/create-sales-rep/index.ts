@@ -17,7 +17,10 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       console.error('No authorization header')
-      throw new Error('No authorization header')
+      return new Response(
+        JSON.stringify({ error: 'No authorization header' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      )
     }
 
     // Create Supabase admin client
@@ -40,7 +43,10 @@ serve(async (req) => {
 
     if (verifyError || !requestingUser) {
       console.error('Token verification failed:', verifyError)
-      throw new Error('Invalid token')
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      )
     }
 
     // Get the request body

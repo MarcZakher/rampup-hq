@@ -38,7 +38,7 @@ export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
       }
 
       // Call the edge function with the authorization header
-      const { data, error } = await supabase.functions.invoke('create-sales-rep', {
+      const response = await supabase.functions.invoke('create-sales-rep', {
         body: {
           email: newRepEmail,
           fullName: newRepName,
@@ -49,11 +49,13 @@ export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
         }
       });
 
-      if (error) throw error;
+      if (response.error) {
+        throw response.error;
+      }
 
       toast({
         title: "Success",
-        description: data?.message || "Sales representative added successfully"
+        description: response.data?.message || "Sales representative added successfully"
       });
 
       onAddSalesRep(newRepName);

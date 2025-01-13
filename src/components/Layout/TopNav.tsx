@@ -14,10 +14,6 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-/**
- * TopNav component that displays the top navigation bar
- * Includes notification, user profile, and logout buttons
- */
 export function TopNav() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -25,36 +21,27 @@ export function TopNav() {
 
   const handleLogout = async () => {
     try {
-      // Check current session first
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        // If no session exists, just redirect to login
-        navigate('/login');
-        return;
-      }
-
-      // Attempt to sign out
-      const { error } = await supabase.auth.signOut({
-        scope: 'local'  // Only clear the current tab's session
-      });
+      const { error } = await supabase.auth.signOut();
       
       if (error) {
-        throw error;
+        console.error('Logout error:', error);
+        toast({
+          variant: "destructive",
+          title: "Error during logout",
+          description: error.message
+        });
+      } else {
+        toast({
+          title: "Logged out successfully",
+          description: "You have been signed out of your account"
+        });
       }
       
-      // Show success message
-      toast({
-        title: "Logged out successfully",
-        description: "You have been signed out of your account"
-      });
-      
-      // Navigate to login page
+      // Always navigate to login page, even if there was an error
       navigate('/login');
       
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if there's an error, redirect to login
       navigate('/login');
       toast({
         variant: "destructive",
