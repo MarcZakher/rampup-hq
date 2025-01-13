@@ -10,6 +10,7 @@ export function TopNav() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [username, setUsername] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -20,12 +21,13 @@ export function TopNav() {
         if (user) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name')
+            .select('full_name, email')
             .eq('id', user.id)
             .single();
           
-          if (profile?.full_name) {
-            setUsername(profile.full_name);
+          if (profile) {
+            setUsername(profile.full_name || '');
+            setEmail(profile.email || '');
           }
         }
       } catch (error) {
@@ -46,6 +48,16 @@ export function TopNav() {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const getDisplayInitial = () => {
+    if (username) {
+      return getInitials(username);
+    }
+    if (email) {
+      return email[0].toUpperCase();
+    }
+    return '?';
   };
 
   const handleLogout = async () => {
@@ -90,7 +102,7 @@ export function TopNav() {
           </Button>
           <Avatar className="h-8 w-8 bg-rampup-primary/10">
             <AvatarFallback className="text-rampup-primary text-sm">
-              {isLoading ? '...' : username ? getInitials(username) : '?'}
+              {isLoading ? '...' : getDisplayInitial()}
             </AvatarFallback>
           </Avatar>
           <Button variant="ghost" size="icon" onClick={handleLogout} className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
