@@ -44,17 +44,32 @@ export function RampingExpectationsTable() {
 
       console.log("Raw data from Supabase:", data);
 
-      // Parse the JSON data into the correct type
-      const parsedData: RampingExpectation[] = data.map(item => ({
-        id: item.id,
-        metric: item.metric,
-        month_1: typeof item.month_1 === 'string' ? JSON.parse(item.month_1) : item.month_1 as MonthValue,
-        month_2: typeof item.month_2 === 'string' ? JSON.parse(item.month_2) : item.month_2 as MonthValue,
-        month_3: typeof item.month_3 === 'string' ? JSON.parse(item.month_3) : item.month_3 as MonthValue,
-        month_4: typeof item.month_4 === 'string' ? JSON.parse(item.month_4) : item.month_4 as MonthValue,
-        month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5 as MonthValue,
-        month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6 as MonthValue,
-      }));
+      // Parse the JSON data into the correct type with proper type checking
+      const parsedData: RampingExpectation[] = data.map(item => {
+        const parseMonthValue = (monthData: any): MonthValue => {
+          if (typeof monthData === 'string') {
+            return JSON.parse(monthData);
+          }
+          if (typeof monthData === 'object' && monthData !== null) {
+            return {
+              value: String(monthData.value || ''),
+              note: String(monthData.note || '')
+            };
+          }
+          return { value: '', note: '' };
+        };
+
+        return {
+          id: item.id,
+          metric: item.metric,
+          month_1: parseMonthValue(item.month_1),
+          month_2: parseMonthValue(item.month_2),
+          month_3: parseMonthValue(item.month_3),
+          month_4: parseMonthValue(item.month_4),
+          month_5: parseMonthValue(item.month_5),
+          month_6: parseMonthValue(item.month_6),
+        };
+      });
 
       console.log("Parsed data:", parsedData);
       return parsedData;
