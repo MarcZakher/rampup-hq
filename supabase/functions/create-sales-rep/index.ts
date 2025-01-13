@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,10 +13,22 @@ serve(async (req) => {
   }
 
   try {
+    // Get auth header
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new Error('No authorization header')
+    }
+
     // Create Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     )
 
     // Get the request body
@@ -30,11 +42,31 @@ serve(async (req) => {
       )
     }
 
+    // Verify the requester's JWT and get their role
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    )
+
+    if (authError || !user) {
+      throw new Error('Invalid token')
+    }
+
     // Verify the requester is a manager
     const { data: userRoles, error: rolesError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', managerId)
+      .eq('user_id', user.id)
       .single()
 
     if (rolesError || !userRoles || userRoles.role !== 'manager') {
@@ -84,7 +116,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in create-sales-rep function:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
