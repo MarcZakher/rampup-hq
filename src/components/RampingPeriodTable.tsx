@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil, Save, X } from "lucide-react";
 import { Json } from "@/integrations/supabase/types";
+import { useQuery } from "@tanstack/react-query";
 
 interface MonthValue {
   [key: string]: string;
@@ -32,50 +33,37 @@ interface RampingExpectation {
   month_6: MonthValue;
 }
 
+const fetchRampingData = async () => {
+  const { data, error } = await supabase
+    .from("ramping_expectations")
+    .select("*")
+    .order("metric");
+
+  if (error) throw error;
+  
+  return data.map(item => ({
+    id: item.id,
+    metric: item.metric,
+    month_1: typeof item.month_1 === 'string' ? JSON.parse(item.month_1) : item.month_1,
+    month_2: typeof item.month_2 === 'string' ? JSON.parse(item.month_2) : item.month_2,
+    month_3: typeof item.month_3 === 'string' ? JSON.parse(item.month_3) : item.month_3,
+    month_4: typeof item.month_4 === 'string' ? JSON.parse(item.month_4) : item.month_4,
+    month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5,
+    month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6,
+  }));
+};
+
 export function RampingPeriodTable() {
-  const [rampingData, setRampingData] = useState<RampingExpectation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<RampingExpectation | null>(null);
   const { toast } = useToast();
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
 
-  useEffect(() => {
-    fetchRampingData();
-  }, []);
-
-  const fetchRampingData = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("ramping_expectations")
-        .select("*")
-        .order("metric");
-
-      if (error) throw error;
-      
-      const parsedData: RampingExpectation[] = data.map(item => ({
-        id: item.id,
-        metric: item.metric,
-        month_1: typeof item.month_1 === 'string' ? JSON.parse(item.month_1) : item.month_1,
-        month_2: typeof item.month_2 === 'string' ? JSON.parse(item.month_2) : item.month_2,
-        month_3: typeof item.month_3 === 'string' ? JSON.parse(item.month_3) : item.month_3,
-        month_4: typeof item.month_4 === 'string' ? JSON.parse(item.month_4) : item.month_4,
-        month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5,
-        month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6,
-      }));
-
-      setRampingData(parsedData);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch ramping expectations",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: rampingData, isLoading, error } = useQuery({
+    queryKey: ['ramping-expectations'],
+    queryFn: fetchRampingData,
+  });
 
   const startEditing = (expectation: RampingExpectation) => {
     if (!isAdminRoute) return;
@@ -121,10 +109,6 @@ export function RampingPeriodTable() {
         .eq("id", editingData.id);
 
       if (error) throw error;
-
-      setRampingData(rampingData.map(item => 
-        item.id === editingData.id ? editingData : item
-      ));
       
       toast({
         title: "Success",
@@ -143,6 +127,14 @@ export function RampingPeriodTable() {
 
   if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading ramping expectations</div>;
+  }
+
+  if (!rampingData || rampingData.length === 0) {
+    return <div>No ramping expectations available</div>;
   }
 
   return (

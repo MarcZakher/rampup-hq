@@ -124,7 +124,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          metric: string
+          metric: Database["public"]["Enums"]["metric_type"]
           month_1: Json
           month_2: Json
           month_3: Json
@@ -136,19 +136,19 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          metric: string
-          month_1: Json
-          month_2: Json
-          month_3: Json
-          month_4: Json
-          month_5: Json
-          month_6: Json
+          metric: Database["public"]["Enums"]["metric_type"]
+          month_1?: Json
+          month_2?: Json
+          month_3?: Json
+          month_4?: Json
+          month_5?: Json
+          month_6?: Json
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
-          metric?: string
+          metric?: Database["public"]["Enums"]["metric_type"]
           month_1?: Json
           month_2?: Json
           month_3?: Json
@@ -228,6 +228,8 @@ export type Database = {
     }
     Enums: {
       meeting_type: "discovery" | "new_business"
+      metric_type: "DMs" | "NBMs" | "Scope+" | "NL"
+      training_period: "month1" | "month2" | "month3" | "month4"
       user_role: "sales_rep" | "manager" | "director"
     }
     CompositeTypes: {
