@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { SalesRep } from '@/lib/types/analytics';
 
 const assessments = {
   month1: [
@@ -32,8 +33,6 @@ const assessments = {
   ]
 };
 
-const STORAGE_KEY = 'manager_dashboard_sales_reps';
-
 const calculateAverage = (scores: number[]) => {
   const validScores = scores.filter(score => score > 0);
   if (validScores.length === 0) return 0;
@@ -48,14 +47,6 @@ const getScoreColor = (score: number) => {
   return 'bg-[#FFC7CE]'; // Light red for lower scores
 };
 
-interface SalesRep {
-  id: number;
-  name: string;
-  month1: number[];
-  month2: number[];
-  month3: number[];
-}
-
 const DirectorDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
 
@@ -65,16 +56,24 @@ const DirectorDashboard = () => {
         // First, get all sales reps from user_roles
         const { data: salesRepRoles, error: rolesError } = await supabase
           .from('user_roles')
-          .select('user_id, profiles:profiles(full_name)')
+          .select('user_id')
           .eq('role', 'sales_rep');
 
         if (rolesError) throw rolesError;
-
         if (!salesRepRoles) return;
 
-        // Then get their assessment scores
-        const salesRepsWithScores = await Promise.all(
+        // Then get the profiles for these sales reps
+        const salesRepsWithProfiles = await Promise.all(
           salesRepRoles.map(async (role) => {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', role.user_id)
+              .single();
+
+            if (profileError) throw profileError;
+
+            // Get assessment scores for this sales rep
             const { data: scores, error: scoresError } = await supabase
               .from('assessment_scores')
               .select('*')
@@ -99,7 +98,7 @@ const DirectorDashboard = () => {
 
             return {
               id: role.user_id,
-              name: role.profiles?.full_name || 'Unknown',
+              name: profile?.full_name || 'Unknown',
               month1: month1Scores,
               month2: month2Scores,
               month3: month3Scores,
@@ -107,7 +106,7 @@ const DirectorDashboard = () => {
           })
         );
 
-        setSalesReps(salesRepsWithScores);
+        setSalesReps(salesRepsWithProfiles);
       } catch (error) {
         console.error('Error fetching sales reps:', error);
       }
