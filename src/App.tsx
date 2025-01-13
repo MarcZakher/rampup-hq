@@ -10,6 +10,8 @@ import SalesRepAnalytics from './pages/sales-rep/Analytics';
 import CoachingDashboard from './pages/coaching/Dashboard';
 import MeetingDefinitions from './pages/admin/MeetingDefinitions';
 import AdminDashboard from './pages/admin/Dashboard';
+import AdminRampingExpectations from './pages/admin/RampingExpectations';
+import AdminTrainingJourney from './pages/admin/TrainingJourney';
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
         <Route path="/manager/dashboard" element={<ManagerDashboard />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/meeting-definitions" element={<MeetingDefinitions />} />
+        <Route path="/admin/ramping-expectations" element={<AdminRampingExpectations />} />
+        <Route path="/admin/training-journey" element={<AdminTrainingJourney />} />
         <Route path="/sales-rep/dashboard" element={<SalesRepDashboard />} />
         <Route path="/sales-rep/training" element={<TrainingJourney />} />
         <Route path="/sales-rep/analytics" element={<SalesRepAnalytics />} />
