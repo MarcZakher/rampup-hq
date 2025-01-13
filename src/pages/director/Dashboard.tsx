@@ -4,6 +4,7 @@ import { DirectorStats } from '@/components/Dashboard/DirectorStats';
 import { AssessmentTable } from '@/components/Dashboard/AssessmentTable';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 const assessments = {
   month1: [
@@ -43,6 +44,7 @@ const DirectorDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRepData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const calculateAverage = (scores: number[]) => {
     const validScores = scores.filter(score => score > 0);
@@ -68,11 +70,10 @@ const DirectorDashboard = () => {
         }
 
         // Then fetch profiles for these sales reps
-        const salesRepIds = salesRepsData.map(rep => rep.user_id);
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name')
-          .in('id', salesRepIds);
+          .in('id', salesRepsData.map(rep => rep.user_id));
 
         if (profilesError) throw profilesError;
 
@@ -80,26 +81,28 @@ const DirectorDashboard = () => {
         const { data: scoresData, error: scoresError } = await supabase
           .from('assessment_scores')
           .select('*')
-          .in('sales_rep_id', salesRepIds);
+          .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
 
         if (scoresError) throw scoresError;
 
         // Process and organize the data
-        const processedData = profilesData.map(profile => {
-          const repScores = scoresData.filter(score => score.sales_rep_id === profile.id);
+        const processedData = salesRepsData.map(rep => {
+          const profile = profilesData?.find(p => p.id === rep.user_id);
+          const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
+
           return {
-            id: profile.id,
-            name: profile.full_name || 'Unknown',
+            id: rep.user_id,
+            name: profile?.full_name || 'Unknown',
             month1: Array(assessments.month1.length).fill(0).map((_, i) => {
-              const score = repScores.find(s => s.month === '1' && s.assessment_index === i);
+              const score = repScores.find(s => s.month === 'month1' && s.assessment_index === i);
               return score ? Number(score.score) : 0;
             }),
             month2: Array(assessments.month2.length).fill(0).map((_, i) => {
-              const score = repScores.find(s => s.month === '2' && s.assessment_index === i);
+              const score = repScores.find(s => s.month === 'month2' && s.assessment_index === i);
               return score ? Number(score.score) : 0;
             }),
             month3: Array(assessments.month3.length).fill(0).map((_, i) => {
-              const score = repScores.find(s => s.month === '3' && s.assessment_index === i);
+              const score = repScores.find(s => s.month === 'month3' && s.assessment_index === i);
               return score ? Number(score.score) : 0;
             })
           };
