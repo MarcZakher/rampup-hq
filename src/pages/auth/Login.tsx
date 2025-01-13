@@ -1,24 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from '@/components/ui/label';
-import { AuthError } from '@supabase/supabase-js';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [selectedRole, setSelectedRole] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
 
   useEffect(() => {
     // Check initial session
@@ -30,34 +18,15 @@ export default function Login() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN') {
-        if (session?.user?.user_metadata?.role) {
-          handleAuthRedirect(session.user.user_metadata.role);
-        } else if (selectedRole && view === 'sign_up') {
-          try {
-            const { data: { user }, error: updateError } = await supabase.auth.updateUser({
-              data: { role: selectedRole }
-            });
-            
-            if (updateError) {
-              setError(updateError.message);
-              return;
-            }
-            
-            if (user?.user_metadata?.role) {
-              handleAuthRedirect(user.user_metadata.role);
-            }
-          } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred during sign in');
-          }
-        }
+      if (event === 'SIGNED_IN' && session?.user?.user_metadata?.role) {
+        handleAuthRedirect(session.user.user_metadata.role);
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, selectedRole, view]);
+  }, [navigate]);
 
   const handleAuthRedirect = (role: string) => {
     switch (role) {
@@ -74,7 +43,7 @@ export default function Login() {
         navigate('/admin/dashboard');
         break;
       default:
-        setError('Invalid role assigned');
+        console.error('Invalid role assigned');
     }
   };
 
@@ -94,33 +63,8 @@ export default function Login() {
             </p>
           </div>
 
-          {error && (
-            <Alert variant="destructive" className="mb-4 bg-red-50 border-red-200">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {view === 'sign_up' && (
-            <div className="space-y-2 mb-4">
-              <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
-              <Select onValueChange={setSelectedRole} value={selectedRole}>
-                <SelectTrigger id="role" className="w-full bg-white border-purple-200 focus:ring-purple-200">
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sales_rep">Sales Representative</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="director">Director</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
           <Auth
             supabaseClient={supabase}
-            view={view}
-            onViewChange={setView}
             appearance={{
               theme: ThemeSupa,
               variables: {
