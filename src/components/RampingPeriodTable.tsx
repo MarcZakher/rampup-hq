@@ -199,101 +199,95 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
 
   return (
     <div className="w-full">
-      <div className="text-2xl font-semibold text-center mb-6">
-        Expectations during the Ramping Period
-      </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px] bg-gray-700 text-white">
-              &nbsp;
-            </TableHead>
-            {[1, 2, 3, 4, 5, 6].map((month) => (
-              <TableHead
-                key={month}
-                className="text-center bg-gradient-to-r from-gray-100 to-gray-300"
-              >
-                Month {month}
-              </TableHead>
-            ))}
-            {isAdminRoute && <TableHead className="w-[100px]">Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rampingData.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell className="font-medium bg-gray-700 text-white">
-                {row.metric}
-              </TableCell>
-              {[1, 2, 3, 4, 5, 6].map((month) => {
-                const monthKey = `month_${month}` as keyof RampingExpectation;
-                const monthData = editingId === row.id && editingData 
-                  ? editingData[monthKey] as MonthValue
-                  : row[monthKey] as MonthValue;
+      <div className="border rounded-lg">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="bg-gray-100 w-32">Metrics</TableHead>
+              {[1, 2, 3, 4, 5, 6].map((month) => (
+                <TableHead key={month} className="bg-gray-100 text-center">
+                  Month {month}
+                </TableHead>
+              ))}
+              {isAdminRoute && <TableHead className="w-[100px] bg-gray-100">Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rampingData.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell className="font-medium bg-gray-800 text-white">
+                  {row.metric}
+                </TableCell>
+                {[1, 2, 3, 4, 5, 6].map((month) => {
+                  const monthKey = `month_${month}` as keyof RampingExpectation;
+                  const monthData = editingId === row.id && editingData 
+                    ? editingData[monthKey] as MonthValue
+                    : row[monthKey] as MonthValue;
 
-                return (
-                  <TableCell key={month} className="text-center p-2">
-                    {editingId === row.id && isAdminRoute ? (
-                      <div className="space-y-2">
-                        <Input
-                          value={monthData.value}
-                          onChange={(e) => handleValueChange(month, 'value', e.target.value)}
-                          className="w-full text-center"
-                        />
-                        <Input
-                          value={monthData.note}
-                          onChange={(e) => handleValueChange(month, 'note', e.target.value)}
-                          className="w-full text-center text-sm text-gray-500"
-                          placeholder="Add note"
-                        />
+                  return (
+                    <TableCell key={month} className="text-center">
+                      {editingId === row.id && isAdminRoute ? (
+                        <div className="space-y-2">
+                          <Input
+                            value={monthData.value}
+                            onChange={(e) => handleValueChange(month, 'value', e.target.value)}
+                            className="w-full text-center"
+                          />
+                          <Input
+                            value={monthData.note}
+                            onChange={(e) => handleValueChange(month, 'note', e.target.value)}
+                            className="w-full text-center text-sm text-gray-500"
+                            placeholder="Add note"
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="font-medium">{monthData.value}</div>
+                          {monthData.note && (
+                            <div className="text-sm text-gray-500 mt-1">
+                              {monthData.note}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </TableCell>
+                  );
+                })}
+                {isAdminRoute && (
+                  <TableCell>
+                    {editingId === row.id ? (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={saveChanges}
+                        >
+                          <Save className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={cancelEditing}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
                     ) : (
-                      <>
-                        <div className="font-medium">{monthData.value}</div>
-                        {monthData.note && (
-                          <div className="text-sm text-gray-500 mt-1">
-                            {monthData.note}
-                          </div>
-                        )}
-                      </>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEditing(row)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                     )}
                   </TableCell>
-                );
-              })}
-              {isAdminRoute && (
-                <TableCell>
-                  {editingId === row.id ? (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={saveChanges}
-                      >
-                        <Save className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={cancelEditing}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startEditing(row)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
-                </TableCell>
-              )}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
