@@ -21,14 +21,32 @@ export function TopNav() {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      // First check if we have a session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (error) {
-        console.error('Logout error:', error);
+      if (sessionError) {
+        console.error('Session check error:', sessionError);
+        navigate('/login');
+        return;
+      }
+
+      if (!session) {
+        // No active session, just redirect to login
+        navigate('/login');
+        return;
+      }
+
+      // We have a valid session, attempt to sign out
+      const { error: signOutError } = await supabase.auth.signOut({
+        scope: 'global' // Sign out from all tabs/windows
+      });
+      
+      if (signOutError) {
+        console.error('Sign out error:', signOutError);
         toast({
           variant: "destructive",
           title: "Error during logout",
-          description: error.message
+          description: signOutError.message
         });
       } else {
         toast({
@@ -37,7 +55,7 @@ export function TopNav() {
         });
       }
       
-      // Always navigate to login page, even if there was an error
+      // Always navigate to login page
       navigate('/login');
       
     } catch (error) {
