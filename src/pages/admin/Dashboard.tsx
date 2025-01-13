@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminDashboard() {
-  // Fetch ramping expectations
   const { data: rampingData, isLoading: isRampingLoading } = useQuery({
     queryKey: ['ramping-expectations'],
     queryFn: async () => {
@@ -19,7 +18,6 @@ export default function AdminDashboard() {
     }
   });
 
-  // Fetch training modules
   const { data: trainingModules, isLoading: isTrainingLoading } = useQuery({
     queryKey: ['training-modules'],
     queryFn: async () => {

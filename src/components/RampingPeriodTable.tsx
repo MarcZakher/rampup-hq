@@ -32,7 +32,7 @@ interface RampingExpectation {
 }
 
 interface RampingPeriodTableProps {
-  initialData?: any[]; // Changed to accept any[] to handle Json type from database
+  initialData?: any[];
 }
 
 export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
@@ -125,16 +125,18 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
     if (!editingData) return;
 
     try {
+      const monthDataToSave = {
+        month_1: editingData.month_1 as unknown as Json,
+        month_2: editingData.month_2 as unknown as Json,
+        month_3: editingData.month_3 as unknown as Json,
+        month_4: editingData.month_4 as unknown as Json,
+        month_5: editingData.month_5 as unknown as Json,
+        month_6: editingData.month_6 as unknown as Json,
+      };
+
       const { error } = await supabase
         .from("ramping_expectations")
-        .update({
-          month_1: editingData.month_1 as Json,
-          month_2: editingData.month_2 as Json,
-          month_3: editingData.month_3 as Json,
-          month_4: editingData.month_4 as Json,
-          month_5: editingData.month_5 as Json,
-          month_6: editingData.month_6 as Json,
-        })
+        .update(monthDataToSave)
         .eq("id", editingData.id);
 
       if (error) throw error;
