@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
+import { ASSESSMENTS } from '@/lib/constants/assessments';
 
 const AnalyticsPage = () => {
   const { user } = useAuth();
@@ -18,16 +19,22 @@ const AnalyticsPage = () => {
     queryFn: async () => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      // Fetch assessment scores
+      // Fetch assessment scores with profiles
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
-        .select('*');
+        .select(`
+          *,
+          sales_rep:sales_rep_id(
+            id,
+            profiles!inner(full_name)
+          )
+        `);
 
       if (scoresError) throw scoresError;
 
       // Process data for different charts
       const commonChallenges = processCommonChallenges(scores);
-      const areasNeedingAttention = processAreasNeedingAttention(scores);
+      const areasNeedingAttention = await processAreasNeedingAttention(scores);
       const assessmentMetrics = processAssessmentMetrics(scores);
 
       return {
@@ -87,8 +94,10 @@ const processCommonChallenges = (scores: any[]) => {
   
   scores.forEach(score => {
     if (score.score < 3) {
-      const assessmentKey = `Assessment ${score.assessment_index + 1}`;
-      challengeCounts[assessmentKey] = (challengeCounts[assessmentKey] || 0) + 1;
+      const month = score.month;
+      const assessmentIndex = score.assessment_index;
+      const assessmentName = ASSESSMENTS[month][assessmentIndex];
+      challengeCounts[assessmentName] = (challengeCounts[assessmentName] || 0) + 1;
     }
   });
 
@@ -98,14 +107,15 @@ const processCommonChallenges = (scores: any[]) => {
     .slice(0, 5);
 };
 
-const processAreasNeedingAttention = (scores: any[]) => {
+const processAreasNeedingAttention = async (scores: any[]) => {
   const repScores: { [key: string]: any[] } = {};
   
   scores.forEach(score => {
-    if (!repScores[score.sales_rep_id]) {
-      repScores[score.sales_rep_id] = [];
+    const repId = score.sales_rep_id;
+    if (!repScores[repId]) {
+      repScores[repId] = [];
     }
-    repScores[score.sales_rep_id].push(score);
+    repScores[repId].push(score);
   });
 
   return Object.entries(repScores)
@@ -113,14 +123,16 @@ const processAreasNeedingAttention = (scores: any[]) => {
       const lowScores = scores.filter(score => score.score < 3);
       if (lowScores.length < 2) return null;
 
+      const repName = scores[0].sales_rep.profiles.full_name;
+
       return {
-        name: `Sales Rep ${repId}`,
+        name: repName,
         lowScoreCount: lowScores.length,
         averageLowScore: Number((lowScores.reduce((sum, score) => sum + score.score, 0) / lowScores.length).toFixed(1)),
         areas: lowScores.map(score => ({
-          assessment: `Assessment ${score.assessment_index + 1}`,
+          assessment: ASSESSMENTS[score.month][score.assessment_index],
           score: score.score,
-          month: score.month
+          month: score.month.replace('month', 'Month ')
         }))
       };
     })
@@ -131,20 +143,20 @@ const processAssessmentMetrics = (scores: any[]) => {
   const metrics: { [key: string]: any } = {};
   
   scores.forEach(score => {
-    const key = `Assessment ${score.assessment_index + 1}`;
-    if (!metrics[key]) {
-      metrics[key] = {
-        name: key,
+    const assessmentName = ASSESSMENTS[score.month][score.assessment_index];
+    if (!metrics[assessmentName]) {
+      metrics[assessmentName] = {
+        name: assessmentName,
         scores: [],
         completions: 0,
         total: 0
       };
     }
     
-    metrics[key].total++;
+    metrics[assessmentName].total++;
     if (score.score > 0) {
-      metrics[key].completions++;
-      metrics[key].scores.push(score.score);
+      metrics[assessmentName].completions++;
+      metrics[assessmentName].scores.push(score.score);
     }
   });
 
