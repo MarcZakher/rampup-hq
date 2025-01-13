@@ -48,9 +48,6 @@ export default function Login() {
           case 'sales_rep':
             navigate('/sales-rep/dashboard');
             break;
-          case 'admin':
-            navigate('/admin/dashboard');
-            break;
           default:
             setError('Invalid role assigned');
         }
