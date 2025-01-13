@@ -33,9 +33,11 @@ interface RampingExpectation {
 
 interface RampingPeriodTableProps {
   initialData?: any[];
+  isLoading?: boolean;
+  error?: Error | null;
 }
 
-export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
+export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, error: externalError }: RampingPeriodTableProps) {
   const [rampingData, setRampingData] = useState<RampingExpectation[]>([]);
   const [isLoading, setIsLoading] = useState(!initialData);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -69,6 +71,7 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
           month_6: parseMonthValue(item.month_6),
         }));
         setRampingData(parsedData);
+        setIsLoading(false);
       } catch (error) {
         console.error('Error parsing data:', error);
         toast({
@@ -77,11 +80,10 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
           variant: "destructive",
         });
       }
-      setIsLoading(false);
-    } else {
+    } else if (!externalIsLoading) {
       fetchRampingData();
     }
-  }, [initialData]);
+  }, [initialData, externalIsLoading]);
 
   const fetchRampingData = async () => {
     try {
@@ -148,12 +150,12 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
 
     try {
       const monthDataToSave = {
-        month_1: { value: editingData.month_1.value, note: editingData.month_1.note } as unknown as Json,
-        month_2: { value: editingData.month_2.value, note: editingData.month_2.note } as unknown as Json,
-        month_3: { value: editingData.month_3.value, note: editingData.month_3.note } as unknown as Json,
-        month_4: { value: editingData.month_4.value, note: editingData.month_4.note } as unknown as Json,
-        month_5: { value: editingData.month_5.value, note: editingData.month_5.note } as unknown as Json,
-        month_6: { value: editingData.month_6.value, note: editingData.month_6.note } as unknown as Json,
+        month_1: editingData.month_1 as unknown as Json,
+        month_2: editingData.month_2 as unknown as Json,
+        month_3: editingData.month_3 as unknown as Json,
+        month_4: editingData.month_4 as unknown as Json,
+        month_5: editingData.month_5 as unknown as Json,
+        month_6: editingData.month_6 as unknown as Json,
       };
 
       const { error } = await supabase
@@ -183,8 +185,12 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
     }
   };
 
-  if (isLoading) {
+  if (externalIsLoading || isLoading) {
     return <div className="w-full text-center py-4">Loading ramping expectations...</div>;
+  }
+
+  if (externalError) {
+    return <div className="w-full text-center py-4 text-red-500">Error loading ramping expectations</div>;
   }
 
   if (!rampingData || rampingData.length === 0) {
