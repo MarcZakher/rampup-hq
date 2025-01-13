@@ -55,7 +55,7 @@ const DirectorDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // First fetch all sales reps
+        // First fetch all sales reps by querying user_roles directly
         const { data: salesRepsData, error: salesRepsError } = await supabase
           .from('user_roles')
           .select('user_id')
@@ -77,7 +77,7 @@ const DirectorDashboard = () => {
 
         if (profilesError) throw profilesError;
 
-        // Then fetch assessment scores for all sales reps
+        // Then fetch all assessment scores
         const { data: scoresData, error: scoresError } = await supabase
           .from('assessment_scores')
           .select('*')
@@ -90,21 +90,19 @@ const DirectorDashboard = () => {
           const profile = profilesData?.find(p => p.id === rep.user_id);
           const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
 
+          const getMonthScores = (month: string, length: number) => {
+            return Array(length).fill(0).map((_, i) => {
+              const score = repScores.find(s => s.month === month && s.assessment_index === i);
+              return score ? Number(score.score) : 0;
+            });
+          };
+
           return {
             id: rep.user_id,
             name: profile?.full_name || 'Unknown',
-            month1: Array(assessments.month1.length).fill(0).map((_, i) => {
-              const score = repScores.find(s => s.month === 'month1' && s.assessment_index === i);
-              return score ? Number(score.score) : 0;
-            }),
-            month2: Array(assessments.month2.length).fill(0).map((_, i) => {
-              const score = repScores.find(s => s.month === 'month2' && s.assessment_index === i);
-              return score ? Number(score.score) : 0;
-            }),
-            month3: Array(assessments.month3.length).fill(0).map((_, i) => {
-              const score = repScores.find(s => s.month === 'month3' && s.assessment_index === i);
-              return score ? Number(score.score) : 0;
-            })
+            month1: getMonthScores('month1', assessments.month1.length),
+            month2: getMonthScores('month2', assessments.month2.length),
+            month3: getMonthScores('month3', assessments.month3.length)
           };
         });
 
