@@ -19,14 +19,14 @@ const AnalyticsPage = () => {
     queryFn: async () => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      // Fetch assessment scores with profiles
+      // Fetch assessment scores and join with profiles
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
         .select(`
           *,
-          sales_rep:sales_rep_id(
+          profiles!assessment_scores_sales_rep_id_fkey(
             id,
-            profiles!inner(full_name)
+            full_name
           )
         `);
 
@@ -123,7 +123,7 @@ const processAreasNeedingAttention = async (scores: any[]) => {
       const lowScores = scores.filter(score => score.score < 3);
       if (lowScores.length < 2) return null;
 
-      const repName = scores[0].sales_rep.profiles.full_name;
+      const repName = scores[0].profiles.full_name;
 
       return {
         name: repName,
