@@ -57,8 +57,12 @@ export function RampingExpectationsTable() {
         return { value: '', note: '' };
       }
     }
-    if (typeof value === 'object' && value !== null && 'value' in value) {
-      return value as MonthValue;
+    if (typeof value === 'object' && value !== null && 'value' in value && 'note' in value) {
+      const typedValue = value as { value: string; note: string };
+      return {
+        value: String(typedValue.value),
+        note: String(typedValue.note)
+      };
     }
     return { value: '', note: '' };
   };
