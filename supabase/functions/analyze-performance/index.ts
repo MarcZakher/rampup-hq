@@ -38,10 +38,16 @@ serve(async (req) => {
       Format recommendations as bullet points.
     `
 
+    const openAIKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openAIKey) {
+      throw new Error('OpenAI API key not configured')
+    }
+
+    console.log('Sending request to OpenAI...')
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openAIKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -57,16 +63,24 @@ serve(async (req) => {
           }
         ],
         temperature: 0.7,
+        max_tokens: 1000,
       }),
     })
 
     if (!openAIResponse.ok) {
       const errorData = await openAIResponse.json()
       console.error('OpenAI API error:', errorData)
-      throw new Error('Failed to get AI recommendations')
+      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`)
     }
 
     const aiResponse = await openAIResponse.json()
+    console.log('OpenAI response received:', aiResponse)
+
+    if (!aiResponse.choices?.[0]?.message?.content) {
+      console.error('Invalid OpenAI response format:', aiResponse)
+      throw new Error('Invalid response from OpenAI')
+    }
+
     const recommendations = aiResponse.choices[0].message.content
 
     return new Response(
@@ -74,7 +88,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in analyze-performance function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
