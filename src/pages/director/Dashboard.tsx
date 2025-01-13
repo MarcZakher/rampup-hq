@@ -17,8 +17,8 @@ interface SalesRep {
 }
 
 interface SalesRepQueryResult {
-  user_id: string;
-  profiles: {
+  user_id: string | null;
+  profile: {
     id: string;
     full_name: string | null;
   } | null;
@@ -30,7 +30,7 @@ const fetchSalesReps = async () => {
     .from('user_roles')
     .select(`
       user_id,
-      profiles!user_roles_user_id_fkey (
+      profile:profiles(
         id,
         full_name
       )
@@ -42,15 +42,15 @@ const fetchSalesReps = async () => {
     throw rolesError;
   }
 
-  // Transform the data to match our expected type
-  const salesReps = (salesRepsData || []).map(rep => ({
-    user_id: rep.user_id,
-    profiles: rep.profiles
-  })) as SalesRepQueryResult[];
+  if (!salesRepsData) {
+    return [];
+  }
 
   // Then get their assessment scores
   const salesRepsWithScores = await Promise.all(
-    salesReps.map(async (rep) => {
+    salesRepsData.map(async (rep) => {
+      if (!rep.user_id) return null;
+
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
@@ -78,7 +78,7 @@ const fetchSalesReps = async () => {
 
       return {
         id: rep.user_id,
-        name: rep.profiles?.full_name || 'Unknown',
+        name: rep.profile?.full_name || 'Unknown',
         month1,
         month2,
         month3
