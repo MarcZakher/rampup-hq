@@ -25,16 +25,20 @@ interface RampingExpectation {
 }
 
 const fetchRampingExpectations = async () => {
+  console.log("Fetching ramping expectations...");
   const { data, error } = await supabase
     .from("ramping_expectations")
     .select("*")
     .order("metric");
 
   if (error) {
+    console.error("Error fetching ramping expectations:", error);
     throw error;
   }
 
-  return data.map((item) => ({
+  console.log("Raw data from Supabase:", data);
+
+  const mappedData = data.map((item) => ({
     metric: item.metric,
     month_1: typeof item.month_1 === 'string' ? JSON.parse(item.month_1) : item.month_1,
     month_2: typeof item.month_2 === 'string' ? JSON.parse(item.month_2) : item.month_2,
@@ -43,6 +47,9 @@ const fetchRampingExpectations = async () => {
     month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5,
     month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6,
   }));
+
+  console.log("Mapped data:", mappedData);
+  return mappedData;
 };
 
 export function RampingPeriodTable() {
@@ -50,6 +57,10 @@ export function RampingPeriodTable() {
     queryKey: ["ramping-expectations"],
     queryFn: fetchRampingExpectations,
   });
+
+  console.log("Component render - expectations:", expectations);
+  console.log("isLoading:", isLoading);
+  console.log("error:", error);
 
   if (isLoading) {
     return (
@@ -63,6 +74,14 @@ export function RampingPeriodTable() {
     return (
       <div className="w-full text-center py-8 text-red-500">
         Error loading ramping expectations
+      </div>
+    );
+  }
+
+  if (!expectations || expectations.length === 0) {
+    return (
+      <div className="w-full text-center py-8">
+        No ramping expectations found
       </div>
     );
   }
