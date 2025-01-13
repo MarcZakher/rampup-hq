@@ -25,8 +25,12 @@ export function TopNav() {
 
   const handleLogout = async () => {
     try {
-      // First clear any existing session data
-      await supabase.auth.clearSession();
+      // Sign out using the signOut method
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
       
       // Show success message
       toast({
@@ -39,8 +43,7 @@ export function TopNav() {
       
     } catch (error) {
       console.error('Logout error:', error);
-      // If there's an error, still clear local storage and redirect
-      supabase.auth.clearSession();
+      // Even if there's an error, redirect to login
       navigate('/login');
       toast({
         variant: "destructive",
