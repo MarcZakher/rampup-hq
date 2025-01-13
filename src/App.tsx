@@ -9,7 +9,6 @@ import SalesRepDashboard from './pages/sales-rep/Dashboard';
 import TrainingJourney from './pages/sales-rep/TrainingJourney';
 import SalesRepAnalytics from './pages/sales-rep/Analytics';
 import CoachingDashboard from './pages/coaching/Dashboard';
-import MeetingDefinitions from './pages/admin/MeetingDefinitions';
 import AdminDashboard from './pages/admin/Dashboard';
 
 // Create a client
@@ -32,7 +31,6 @@ function App() {
           <Route path="/director/analytics" element={<AnalyticsPage />} />
           <Route path="/manager/dashboard" element={<ManagerDashboard />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/meeting-definitions" element={<MeetingDefinitions />} />
           <Route path="/sales-rep/dashboard" element={<SalesRepDashboard />} />
           <Route path="/sales-rep/training" element={<TrainingJourney />} />
           <Route path="/sales-rep/analytics" element={<SalesRepAnalytics />} />
