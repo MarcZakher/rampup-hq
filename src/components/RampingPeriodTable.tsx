@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil, Save, X } from "lucide-react";
+import { Json } from "@/integrations/supabase/types";
 
 interface MonthValue {
   value: string;
