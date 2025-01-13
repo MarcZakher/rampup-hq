@@ -48,8 +48,10 @@ const fetchSalesReps = async () => {
     profiles.map(async (profile) => {
       const { data: scores, error: scoresError } = await supabase
         .from('assessment_scores')
-        .select('*')
-        .eq('sales_rep_id', profile.id);
+        .select('month, assessment_index, score')
+        .eq('sales_rep_id', profile.id)
+        .order('month', { ascending: true })
+        .order('assessment_index', { ascending: true });
 
       if (scoresError) {
         console.error('Error fetching scores:', scoresError);
@@ -57,16 +59,16 @@ const fetchSalesReps = async () => {
       }
 
       // Transform scores into the expected format
-      const month1 = new Array(5).fill(0);
-      const month2 = new Array(6).fill(0);
-      const month3 = new Array(6).fill(0);
+      const month1 = new Array(ASSESSMENTS.month1.length).fill(0);
+      const month2 = new Array(ASSESSMENTS.month2.length).fill(0);
+      const month3 = new Array(ASSESSMENTS.month3.length).fill(0);
 
       scores?.forEach((score) => {
-        if (score.month === 'month1' && score.assessment_index < 5) {
+        if (score.month === 'month1' && score.assessment_index < month1.length) {
           month1[score.assessment_index] = score.score || 0;
-        } else if (score.month === 'month2' && score.assessment_index < 6) {
+        } else if (score.month === 'month2' && score.assessment_index < month2.length) {
           month2[score.assessment_index] = score.score || 0;
-        } else if (score.month === 'month3' && score.assessment_index < 6) {
+        } else if (score.month === 'month3' && score.assessment_index < month3.length) {
           month3[score.assessment_index] = score.score || 0;
         }
       });
@@ -85,7 +87,7 @@ const fetchSalesReps = async () => {
 };
 
 const DirectorDashboard = () => {
-  const { data: salesReps, isLoading } = useQuery({
+  const { data: salesReps, isLoading, error } = useQuery({
     queryKey: ['salesReps'],
     queryFn: fetchSalesReps
   });
@@ -103,12 +105,23 @@ const DirectorDashboard = () => {
     return 'bg-[#FFC7CE]';
   };
 
+  if (error) {
+    console.error('Error loading sales reps:', error);
+    return (
+      <CustomAppLayout>
+        <div className="p-6">
+          <div className="text-red-500">Error loading data. Please try again later.</div>
+        </div>
+      </CustomAppLayout>
+    );
+  }
+
   const totalReps = salesReps?.length || 0;
-  const avgScore = totalReps === 0 ? 0 : (salesReps?.reduce((acc, rep) => {
+  const avgScore = totalReps === 0 ? 0 : Number((salesReps?.reduce((acc, rep) => {
     const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
     const validScores = allScores.filter(score => score > 0);
     return acc + (validScores.length > 0 ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length : 0);
-  }, 0) || 0 / totalReps).toFixed(1);
+  }, 0) || 0 / totalReps).toFixed(1));
 
   const performingWell = salesReps?.filter(rep => {
     const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
@@ -147,7 +160,7 @@ const DirectorDashboard = () => {
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard
             title="Total Sales Reps"
-            value={salesReps?.length || 0}
+            value={totalReps}
             icon={<Users className="h-4 w-4 text-muted-foreground" />}
           />
 
