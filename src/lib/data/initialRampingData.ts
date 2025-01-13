@@ -1,0 +1,38 @@
+export const initialRampingData = [
+  {
+    metric: 'DMs',
+    month_1: { value: '5', note: '' },
+    month_2: { value: '10', note: '' },
+    month_3: { value: '15', note: '' },
+    month_4: { value: '20', note: '' },
+    month_5: { value: '20', note: '' },
+    month_6: { value: '20', note: '' },
+  },
+  {
+    metric: 'NBMs',
+    month_1: { value: '0', note: '' },
+    month_2: { value: '1', note: '' },
+    month_3: { value: '1', note: '' },
+    month_4: { value: '1', note: '' },
+    month_5: { value: '2', note: '' },
+    month_6: { value: '2', note: '' },
+  },
+  {
+    metric: 'Scope+',
+    month_1: { value: '0', note: '' },
+    month_2: { value: '0', note: '' },
+    month_3: { value: '1', note: '' },
+    month_4: { value: '1', note: '' },
+    month_5: { value: '1', note: '' },
+    month_6: { value: '1', note: '' },
+  },
+  {
+    metric: 'NL',
+    month_1: { value: '0', note: '' },
+    month_2: { value: '0', note: '' },
+    month_3: { value: '0', note: '' },
+    month_4: { value: '0', note: '' },
+    month_5: { value: '0', note: '' },
+    month_6: { value: '1', note: '' },
+  },
+];
