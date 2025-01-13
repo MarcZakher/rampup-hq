@@ -7,8 +7,17 @@ export function TopNav() {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error.message);
+        return;
+      }
+      // Only navigate after successful sign out
+      navigate('/auth');
+    } catch (error) {
+      console.error('Unexpected error during sign out:', error);
+    }
   };
 
   return (
