@@ -1,4 +1,4 @@
-import { AppLayout } from "@/components/Layout/AppLayout";
+import { CustomAppLayout } from "@/components/Layout/CustomAppLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Settings, List, LineChart } from "lucide-react";
@@ -9,7 +9,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   return (
-    <AppLayout>
+    <CustomAppLayout>
       <div className="container mx-auto py-6">
         <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
         
@@ -56,6 +56,6 @@ export default function AdminDashboard() {
 
         <RampingExpectationsManager />
       </div>
-    </AppLayout>
+    </CustomAppLayout>
   );
 }
