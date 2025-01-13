@@ -4,53 +4,40 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
-/**
- * TopNav component that displays the top navigation bar
- * Includes notification, user profile, and logout buttons
- */
 export function TopNav() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleLogout = async () => {
     try {
-      // First attempt to sign out from Supabase
+      // First clear local storage to ensure we remove any stale session data
+      localStorage.clear();
+      
+      // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('Logout error:', error);
-        // If it's a refresh token error, we can safely ignore it and proceed with cleanup
-        if (!error.message?.includes('refresh_token_not_found')) {
-          toast({
-            variant: "destructive",
-            title: "Error logging out",
-            description: "Please try again"
-          });
+        // If it's a session not found error, we can ignore it since we've already cleared local storage
+        if (error.message?.includes('session_not_found')) {
+          navigate('/login');
           return;
         }
+        
+        toast({
+          variant: "destructive",
+          title: "Error logging out",
+          description: "Please try again"
+        });
       }
       
-      // Clear any local storage data
-      localStorage.clear();
-      
-      // Show success message
-      toast({
-        title: "Logged out successfully",
-        description: "You have been signed out of your account"
-      });
-      
-      // Force a page reload to clear any stale state
-      window.location.href = '/login';
+      // Always navigate to login page
+      navigate('/login');
       
     } catch (error) {
       console.error('Logout error:', error);
-      toast({
-        variant: "destructive",
-        title: "Error logging out",
-        description: "An unexpected error occurred"
-      });
       // Force navigation to login even if there's an error
-      window.location.href = '/login';
+      navigate('/login');
     }
   };
 
@@ -63,29 +50,13 @@ export function TopNav() {
           </h2>
         </div>
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10"
-            aria-label="Notifications"
-          >
+          <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <Bell className="h-5 w-5" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10"
-            aria-label="User profile"
-          >
+          <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <User className="h-5 w-5" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleLogout} 
-            className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10"
-            aria-label="Log out"
-          >
+          <Button variant="ghost" size="icon" onClick={handleLogout} className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <LogOut className="h-5 w-5" />
           </Button>
         </div>
