@@ -5,13 +5,28 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface MonthValue {
+  value: string;
+  note: string;
+}
+
+interface RampingExpectation {
+  metric: string;
+  month_1: MonthValue;
+  month_2: MonthValue;
+  month_3: MonthValue;
+  month_4: MonthValue;
+  month_5: MonthValue;
+  month_6: MonthValue;
+}
+
+interface MetricRow {
+  name: string;
+  values: string[];
+}
+
 export function RampingExpectationsTable() {
-  const [metrics, setMetrics] = useState([
-    { name: "DMs", values: ["5", "10", "15", "20", "20", "20"] },
-    { name: "NBMs", values: ["0", "1", "1", "1", "2", "2"] },
-    { name: "Scope+", values: ["0", "0", "1", "1", "1", "1"] },
-    { name: "NL", values: ["0", "0", "0", "0", "0", "1"] },
-  ]);
+  const [metrics, setMetrics] = useState<MetricRow[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
 
@@ -28,15 +43,15 @@ export function RampingExpectationsTable() {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const formattedMetrics = data.map(row => ({
+        const formattedMetrics = data.map((row: RampingExpectation) => ({
           name: row.metric,
           values: [
-            row.month_1.value.toString(),
-            row.month_2.value.toString(),
-            row.month_3.value.toString(),
-            row.month_4.value.toString(),
-            row.month_5.value.toString(),
-            row.month_6.value.toString(),
+            (row.month_1 as MonthValue).value,
+            (row.month_2 as MonthValue).value,
+            (row.month_3 as MonthValue).value,
+            (row.month_4 as MonthValue).value,
+            (row.month_5 as MonthValue).value,
+            (row.month_6 as MonthValue).value,
           ]
         }));
         setMetrics(formattedMetrics);
@@ -62,12 +77,12 @@ export function RampingExpectationsTable() {
       // Convert metrics to the format expected by the database
       const updates = metrics.map(metric => ({
         metric: metric.name,
-        month_1: { value: metric.values[0].toString(), note: "" },
-        month_2: { value: metric.values[1].toString(), note: "" },
-        month_3: { value: metric.values[2].toString(), note: "" },
-        month_4: { value: metric.values[3].toString(), note: "" },
-        month_5: { value: metric.values[4].toString(), note: "" },
-        month_6: { value: metric.values[5].toString(), note: "" },
+        month_1: { value: metric.values[0], note: "" },
+        month_2: { value: metric.values[1], note: "" },
+        month_3: { value: metric.values[2], note: "" },
+        month_4: { value: metric.values[3], note: "" },
+        month_5: { value: metric.values[4], note: "" },
+        month_6: { value: metric.values[5], note: "" },
       }));
 
       // Update each metric in the database
