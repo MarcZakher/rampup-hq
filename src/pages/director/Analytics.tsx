@@ -2,31 +2,14 @@ import React from 'react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Users, TrendingUp, Target, Trophy, AlertTriangle } from 'lucide-react';
-import { 
-  getMonthlyScores, 
-  getAssessmentData, 
-  getAreasOfFocus,
-  getTeamProgress 
-} from '@/lib/mockAnalyticsData';
-import { 
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle 
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { 
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 
 const chartConfig = {
   improving: {
@@ -62,37 +45,128 @@ const chartConfig = {
 };
 
 const AnalyticsPage = () => {
-  const monthlyScores = getMonthlyScores();
-  const assessmentData = getAssessmentData();
-  const areasOfFocus = getAreasOfFocus();
-  const teamProgress = getTeamProgress();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const summaryMetrics = [
-    {
-      title: "Team Average Score",
-      value: "4.2/5.0",
-      icon: <Users className="h-4 w-4 text-muted-foreground" />,
-      description: "+0.3 from last month"
-    },
-    {
-      title: "Reps Meeting Target",
-      value: "85%",
-      icon: <Target className="h-4 w-4 text-muted-foreground" />,
-      description: "Score above 3/5"
-    },
-    {
-      title: "Completion Rate",
-      value: "92%",
-      icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
-      description: "Of all assessments"
-    },
-    {
-      title: "Top Performer",
-      value: "John Doe",
-      icon: <Trophy className="h-4 w-4 text-muted-foreground" />,
-      description: "Score: 4.8/5"
+  // Fetch user role
+  const { data: userRole } = useQuery({
+    queryKey: ['userRole', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (error) throw error;
+      return data?.role;
     }
-  ];
+  });
+
+  // Fetch sales reps data based on role
+  const { data: salesRepsData } = useQuery({
+    queryKey: ['salesReps', user?.id, userRole],
+    queryFn: async () => {
+      let query = supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'sales_rep');
+
+      // If manager, only fetch their sales reps
+      if (userRole === 'manager') {
+        query = query.eq('manager_id', user?.id);
+      }
+
+      const { data: salesReps, error } = await query;
+      if (error) throw error;
+
+      // Fetch profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', salesReps.map(rep => rep.user_id));
+
+      if (profilesError) throw profilesError;
+
+      // Fetch scores
+      const { data: scores, error: scoresError } = await supabase
+        .from('assessment_scores')
+        .select('*')
+        .in('sales_rep_id', salesReps.map(rep => rep.user_id));
+
+      if (scoresError) throw scoresError;
+
+      return {
+        salesReps,
+        profiles: profiles || [],
+        scores: scores || []
+      };
+    },
+    enabled: !!user && !!userRole
+  });
+
+  const calculateMetrics = () => {
+    if (!salesRepsData) return null;
+
+    const { profiles, scores } = salesRepsData;
+    
+    // Calculate average scores per rep
+    const repScores = profiles.map(profile => {
+      const repScores = scores.filter(score => score.sales_rep_id === profile.id);
+      const avgScore = repScores.length > 0
+        ? repScores.reduce((sum, score) => sum + Number(score.score), 0) / repScores.length
+        : 0;
+      
+      return {
+        name: profile.full_name,
+        avgScore: Number(avgScore.toFixed(1))
+      };
+    });
+
+    // Calculate overall metrics
+    const totalReps = profiles.length;
+    const avgScore = repScores.reduce((sum, rep) => sum + rep.avgScore, 0) / totalReps;
+    const performingWell = repScores.filter(rep => rep.avgScore > 3).length;
+    const topPerformer = repScores.reduce((top, rep) => 
+      rep.avgScore > top.score ? { name: rep.name, score: rep.avgScore } : top,
+      { name: "No reps", score: 0 }
+    );
+
+    // Calculate monthly data
+    const monthlyData = ['month1', 'month2', 'month3'].map(month => {
+      const monthScores = scores.filter(score => score.month === month);
+      const improving = monthScores.filter(score => Number(score.score) > 3).length;
+      const declining = monthScores.filter(score => Number(score.score) <= 3).length;
+
+      return {
+        month,
+        improving,
+        declining,
+        avgScore: monthScores.length > 0
+          ? (monthScores.reduce((sum, score) => sum + Number(score.score), 0) / monthScores.length).toFixed(1)
+          : '0.0'
+      };
+    });
+
+    return {
+      totalReps,
+      avgScore: avgScore.toFixed(1),
+      performingWell,
+      topPerformer,
+      monthlyData,
+      repScores
+    };
+  };
+
+  const metrics = calculateMetrics();
+
+  if (!metrics) {
+    return (
+      <CustomAppLayout>
+        <div className="p-6">Loading...</div>
+      </CustomAppLayout>
+    );
+  }
 
   return (
     <CustomAppLayout>
@@ -101,18 +175,31 @@ const AnalyticsPage = () => {
         
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {summaryMetrics.map((metric, index) => (
-            <StatCard
-              key={index}
-              title={metric.title}
-              value={metric.value}
-              icon={metric.icon}
-              description={metric.description}
-            />
-          ))}
+          <StatCard
+            title="Total Sales Reps"
+            value={metrics.totalReps}
+            icon={<Users className="h-4 w-4 text-muted-foreground" />}
+          />
+          <StatCard
+            title="Average Score"
+            value={`${metrics.avgScore}/5.0`}
+            icon={<Target className="h-4 w-4 text-muted-foreground" />}
+          />
+          <StatCard
+            title="Performing Well"
+            value={metrics.performingWell}
+            description="Score above 3/5"
+            icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+          />
+          <StatCard
+            title="Top Performer"
+            value={metrics.topPerformer.name}
+            description={`Score: ${metrics.topPerformer.score}/5`}
+            icon={<Trophy className="h-4 w-4 text-muted-foreground" />}
+          />
         </div>
 
-        {/* Two Column Layout for Charts */}
+        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Monthly Progress */}
           <Card className="w-full">
@@ -122,7 +209,7 @@ const AnalyticsPage = () => {
             <CardContent>
               <div className="h-[300px]">
                 <ChartContainer config={chartConfig}>
-                  <AreaChart data={monthlyScores}>
+                  <AreaChart data={metrics.monthlyData}>
                     <defs>
                       <linearGradient id="improving" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10B981" stopOpacity={0.1}/>
@@ -157,77 +244,20 @@ const AnalyticsPage = () => {
             </CardContent>
           </Card>
 
-          {/* Assessment Performance */}
+          {/* Individual Performance */}
           <Card className="w-full">
             <CardHeader>
-              <CardTitle>Assessment Performance</CardTitle>
+              <CardTitle>Individual Performance</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[300px]">
                 <ChartContainer config={chartConfig}>
-                  <BarChart data={assessmentData}>
+                  <BarChart data={metrics.repScores}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
-                    <YAxis />
+                    <YAxis domain={[0, 5]} />
                     <ChartTooltip />
-                    <Bar dataKey="successRate" fill="#8884d8" name="Success Rate %" />
-                    <Bar dataKey="avgScore" fill="#82ca9d" name="Average Score" />
-                  </BarChart>
-                </ChartContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Areas Needing Attention */}
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                Areas Needing Attention
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {areasOfFocus.repsNeedingAttention.map((rep, index) => (
-                  <div key={index} className="space-y-2">
-                    <h3 className="text-lg font-semibold">{rep.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {rep.lowScoreCount} low scores (avg: {rep.averageLowScore})
-                    </p>
-                    <div className="space-y-2">
-                      {rep.areas.map((area, areaIndex) => (
-                        <div key={areaIndex} className="flex justify-between text-sm">
-                          <span className="text-red-500">{area.assessment}</span>
-                          <span>{area.month} - Score: {area.score}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Common Challenges */}
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                Common Challenges
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ChartContainer config={chartConfig}>
-                  <BarChart 
-                    data={areasOfFocus.commonChallenges} 
-                    layout="vertical"
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="assessment" type="category" width={150} />
-                    <ChartTooltip />
-                    <Bar dataKey="count" fill="#fbbf24" />
+                    <Bar dataKey="avgScore" fill="#8884d8" name="Average Score" />
                   </BarChart>
                 </ChartContainer>
               </div>
