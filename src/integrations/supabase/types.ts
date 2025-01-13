@@ -120,42 +120,6 @@ export type Database = {
         }
         Relationships: []
       }
-      training_modules: {
-        Row: {
-          created_at: string
-          description: string
-          duration: string
-          id: string
-          period_id: string
-          platform: string | null
-          sort_order: number
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          duration: string
-          id?: string
-          period_id: string
-          platform?: string | null
-          sort_order: number
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          duration?: string
-          id?: string
-          period_id?: string
-          platform?: string | null
-          sort_order?: number
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string
@@ -189,7 +153,6 @@ export type Database = {
     }
     Enums: {
       meeting_type: "discovery" | "new_business"
-      training_period: "month1" | "month2" | "month3" | "month4"
       user_role: "sales_rep" | "manager" | "director"
     }
     CompositeTypes: {
