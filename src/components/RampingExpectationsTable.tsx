@@ -28,66 +28,80 @@ interface RampingExpectation {
 }
 
 export function RampingExpectationsTable() {
-  const { data: expectations, isLoading } = useQuery({
+  const { data: expectations, isLoading, error } = useQuery({
     queryKey: ["ramping-expectations"],
     queryFn: async () => {
       console.log("Starting to fetch ramping expectations...");
       
-      const { data, error } = await supabase
-        .from("ramping_expectations")
-        .select("*")
-        .order("metric");
-      
-      if (error) {
-        console.error("Error fetching ramping expectations:", error);
+      try {
+        const { data, error } = await supabase
+          .from("ramping_expectations")
+          .select("*")
+          .order("metric");
+        
+        if (error) {
+          console.error("Supabase error:", error);
+          throw error;
+        }
+
+        console.log("Raw data from Supabase:", data);
+        
+        if (!data || data.length === 0) {
+          console.log("No data found in ramping_expectations table");
+          return [];
+        }
+
+        // Parse the JSON data into the correct type with proper type checking
+        const parsedData: RampingExpectation[] = data.map(item => {
+          console.log("Processing item:", item);
+          
+          const parseMonthValue = (monthData: any): MonthValue => {
+            try {
+              if (typeof monthData === 'string') {
+                return JSON.parse(monthData);
+              }
+              if (typeof monthData === 'object' && monthData !== null) {
+                return {
+                  value: String(monthData.value || ''),
+                  note: String(monthData.note || '')
+                };
+              }
+              console.error("Invalid month data format:", monthData);
+              return { value: '', note: '' };
+            } catch (e) {
+              console.error("Error parsing month data:", e);
+              return { value: '', note: '' };
+            }
+          };
+
+          return {
+            id: item.id,
+            metric: item.metric,
+            month_1: parseMonthValue(item.month_1),
+            month_2: parseMonthValue(item.month_2),
+            month_3: parseMonthValue(item.month_3),
+            month_4: parseMonthValue(item.month_4),
+            month_5: parseMonthValue(item.month_5),
+            month_6: parseMonthValue(item.month_6),
+          };
+        });
+
+        console.log("Final parsed data:", parsedData);
+        return parsedData;
+      } catch (error) {
+        console.error("Error in query function:", error);
         throw error;
       }
-
-      console.log("Raw data from Supabase:", data);
-      console.log("Number of records:", data?.length || 0);
-      
-      if (!data || data.length === 0) {
-        console.log("No data found in ramping_expectations table");
-        return [];
-      }
-
-      // Parse the JSON data into the correct type with proper type checking
-      const parsedData: RampingExpectation[] = data.map(item => {
-        console.log("Processing item:", item);
-        
-        const parseMonthValue = (monthData: any): MonthValue => {
-          console.log("Parsing month data:", monthData);
-          if (typeof monthData === 'string') {
-            return JSON.parse(monthData);
-          }
-          if (typeof monthData === 'object' && monthData !== null) {
-            return {
-              value: String(monthData.value || ''),
-              note: String(monthData.note || '')
-            };
-          }
-          return { value: '', note: '' };
-        };
-
-        return {
-          id: item.id,
-          metric: item.metric,
-          month_1: parseMonthValue(item.month_1),
-          month_2: parseMonthValue(item.month_2),
-          month_3: parseMonthValue(item.month_3),
-          month_4: parseMonthValue(item.month_4),
-          month_5: parseMonthValue(item.month_5),
-          month_6: parseMonthValue(item.month_6),
-        };
-      });
-
-      console.log("Final parsed data:", parsedData);
-      return parsedData;
     },
   });
 
   if (isLoading) {
     return <div>Loading expectations...</div>;
+  }
+
+  if (error) {
+    console.error("Query error:", error);
+    return <div>Error loading expectations. Please try again later.</div>;
   }
 
   if (!expectations || expectations.length === 0) {
@@ -151,4 +165,4 @@ export function RampingExpectationsTable() {
       </Table>
     </div>
   );
-};
+}
