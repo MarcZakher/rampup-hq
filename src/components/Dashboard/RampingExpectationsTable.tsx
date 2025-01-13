@@ -11,17 +11,6 @@ interface MonthValue {
   note: string;
 }
 
-interface RampingExpectation {
-  id: string;
-  metric: string;
-  month_1: MonthValue;
-  month_2: MonthValue;
-  month_3: MonthValue;
-  month_4: MonthValue;
-  month_5: MonthValue;
-  month_6: MonthValue;
-}
-
 interface MetricRow {
   name: string;
   values: string[];
@@ -71,11 +60,12 @@ export function RampingExpectationsTable() {
     try {
       const { data, error } = await supabase
         .from("ramping_expectations")
-        .select("*");
+        .select("*")
+        .order('metric');
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
+      if (data) {
         const formattedMetrics = data.map((row: DatabaseRampingExpectation) => ({
           name: row.metric,
           values: [
@@ -197,8 +187,6 @@ export function RampingExpectationsTable() {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
-      </div>
-    </div>
+        </div>
   );
 }
