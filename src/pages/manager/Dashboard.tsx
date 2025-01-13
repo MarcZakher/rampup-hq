@@ -52,7 +52,13 @@ const ManagerDashboard = () => {
       // First get all sales reps managed by this manager
       const { data: salesRepsData, error: salesRepsError } = await supabase
         .from('user_roles')
-        .select('user_id, profiles:profiles(id, full_name)')
+        .select(`
+          user_id,
+          profiles:user_id (
+            id,
+            full_name
+          )
+        `)
         .eq('manager_id', user?.id)
         .eq('role', 'sales_rep');
 
@@ -108,8 +114,6 @@ const ManagerDashboard = () => {
   };
 
   const addSalesRep = async (name: string) => {
-    // This function should be implemented to work with Supabase
-    // For now, we'll show a toast message
     toast({
       title: "Not Implemented",
       description: "Adding sales representatives is not yet implemented",
@@ -118,8 +122,6 @@ const ManagerDashboard = () => {
   };
 
   const removeSalesRep = async (id: number) => {
-    // This function should be implemented to work with Supabase
-    // For now, we'll show a toast message
     toast({
       title: "Not Implemented",
       description: "Removing sales representatives is not yet implemented",
@@ -132,7 +134,7 @@ const ManagerDashboard = () => {
       const { error } = await supabase
         .from('assessment_scores')
         .upsert({
-          sales_rep_id: repId,
+          sales_rep_id: repId.toString(),
           manager_id: user?.id,
           month,
           assessment_index: index,
@@ -141,7 +143,6 @@ const ManagerDashboard = () => {
 
       if (error) throw error;
 
-      // Refresh the data
       await fetchSalesReps();
 
       toast({
