@@ -10,20 +10,28 @@ export function TopNav() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [username, setUsername] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-        
-        if (profile?.full_name) {
-          setUsername(profile.full_name);
+      try {
+        setIsLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile?.full_name) {
+            setUsername(profile.full_name);
+          }
         }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -31,6 +39,7 @@ export function TopNav() {
   }, []);
 
   const getInitials = (name: string) => {
+    if (!name) return '';
     return name
       .split(' ')
       .map(word => word[0])
@@ -75,13 +84,13 @@ export function TopNav() {
           </h2>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">{username}</span>
+          {!isLoading && username && <span className="text-sm text-gray-600">{username}</span>}
           <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <Bell className="h-5 w-5" />
           </Button>
           <Avatar className="h-8 w-8 bg-rampup-primary/10">
             <AvatarFallback className="text-rampup-primary text-sm">
-              {username ? getInitials(username) : '??'}
+              {isLoading ? '...' : username ? getInitials(username) : '?'}
             </AvatarFallback>
           </Avatar>
           <Button variant="ghost" size="icon" onClick={handleLogout} className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
