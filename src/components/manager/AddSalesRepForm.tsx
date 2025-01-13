@@ -10,10 +10,6 @@ interface AddSalesRepFormProps {
   onAddSalesRep: (name: string) => void;
 }
 
-/**
- * Form component for adding new sales representatives
- * @param onAddSalesRep Callback function triggered when a new sales rep is added
- */
 export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
   const [newRepName, setNewRepName] = useState('');
   const [newRepEmail, setNewRepEmail] = useState('');
@@ -37,23 +33,15 @@ export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-sales-rep`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('create-sales-rep', {
+        body: {
           email: newRepEmail,
           fullName: newRepName,
           managerId: user?.id
-        })
+        }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create sales representative');
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
