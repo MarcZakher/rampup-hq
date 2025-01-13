@@ -18,14 +18,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+type TrainingPeriod = "month_1" | "month_2" | "month_3" | "month_4";
+
 interface TrainingModuleForm {
   title: string;
   description: string;
-  period: string;
+  period: TrainingPeriod;
   duration: string;
   platform?: string;
   sort_order: number;
@@ -35,12 +38,13 @@ export function TrainingJourneyManager() {
   const { toast } = useToast();
   const [modules, setModules] = useState<any[]>([]);
   const [editingModule, setEditingModule] = useState<any | null>(null);
+  const [activeTab, setActiveTab] = useState<TrainingPeriod>("month_1");
 
   const form = useForm<TrainingModuleForm>({
     defaultValues: {
       title: "",
       description: "",
-      period: "",
+      period: "month_1",
       duration: "",
       platform: "",
       sort_order: 0,
@@ -51,7 +55,6 @@ export function TrainingJourneyManager() {
     const { data, error } = await supabase
       .from("training_journey_modules")
       .select("*")
-      .order("period", { ascending: true })
       .order("sort_order", { ascending: true });
 
     if (error) {
@@ -105,6 +108,7 @@ export function TrainingJourneyManager() {
       platform: module.platform || "",
       sort_order: module.sort_order,
     });
+    setActiveTab(module.period);
   };
 
   const handleDelete = async (id: string) => {
@@ -129,6 +133,9 @@ export function TrainingJourneyManager() {
 
     loadModules();
   };
+
+  const filteredModules = (period: TrainingPeriod) =>
+    modules.filter((module) => module.period === period);
 
   return (
     <div className="space-y-6">
@@ -266,43 +273,55 @@ export function TrainingJourneyManager() {
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
-        {modules.map((module) => (
-          <Card key={module.id}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">{module.title}</CardTitle>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(module)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(module.id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p className="text-gray-600">{module.description}</p>
-                <div className="flex gap-4 text-sm text-gray-500">
-                  <span>Period: {module.period}</span>
-                  <span>Duration: {module.duration}</span>
-                  {module.platform && <span>Platform: {module.platform}</span>}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <Tabs value={activeTab} onValueChange={(value: TrainingPeriod) => setActiveTab(value)}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="month_1">Month 1</TabsTrigger>
+          <TabsTrigger value="month_2">Month 2</TabsTrigger>
+          <TabsTrigger value="month_3">Month 3</TabsTrigger>
+          <TabsTrigger value="month_4">Month 4</TabsTrigger>
+        </TabsList>
+
+        {(["month_1", "month_2", "month_3", "month_4"] as TrainingPeriod[]).map((period) => (
+          <TabsContent key={period} value={period}>
+            <div className="grid gap-4">
+              {filteredModules(period).map((module) => (
+                <Card key={module.id}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-xl">{module.title}</CardTitle>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(module)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(module.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <p className="text-gray-600">{module.description}</p>
+                      <div className="flex gap-4 text-sm text-gray-500">
+                        <span>Duration: {module.duration}</span>
+                        {module.platform && <span>Platform: {module.platform}</span>}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
         ))}
-      </div>
+      </Tabs>
     </div>
   );
 }
