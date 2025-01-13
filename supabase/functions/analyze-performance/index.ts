@@ -14,6 +14,12 @@ serve(async (req) => {
   try {
     const { monthlyScores, assessmentData, areasOfFocus, teamProgress } = await req.json()
 
+    // Validate input data
+    if (!monthlyScores?.length || !assessmentData?.length || !areasOfFocus || !teamProgress) {
+      console.error('Invalid input data:', { monthlyScores, assessmentData, areasOfFocus, teamProgress })
+      throw new Error('Missing or invalid input data')
+    }
+
     // Prepare the prompt for analysis
     const analysisPrompt = `
       As a sales performance analyst, analyze this data and provide 3-4 specific, actionable recommendations:
@@ -53,6 +59,12 @@ serve(async (req) => {
         temperature: 0.7,
       }),
     })
+
+    if (!openAIResponse.ok) {
+      const errorData = await openAIResponse.json()
+      console.error('OpenAI API error:', errorData)
+      throw new Error('Failed to get AI recommendations')
+    }
 
     const aiResponse = await openAIResponse.json()
     const recommendations = aiResponse.choices[0].message.content
