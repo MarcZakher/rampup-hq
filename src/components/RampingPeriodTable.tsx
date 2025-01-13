@@ -12,8 +12,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil, Save, X } from "lucide-react";
+import { Json } from "@/integrations/supabase/types";
 
 interface MonthValue {
+  [key: string]: string;
   value: string;
   note: string;
 }
@@ -74,7 +76,7 @@ export function RampingPeriodTable() {
 
   const startEditing = (expectation: RampingExpectation) => {
     setEditingId(expectation.id);
-    setEditingData({ ...expectation });
+    setEditingData({ ...expectation } as RampingExpectation);
   };
 
   const cancelEditing = () => {
@@ -86,12 +88,14 @@ export function RampingPeriodTable() {
     if (!editingData) return;
     
     const monthKey = `month_${month}` as keyof RampingExpectation;
+    const updatedMonthValue = {
+      ...editingData[monthKey],
+      [field]: value,
+    } as MonthValue;
+
     setEditingData({
       ...editingData,
-      [monthKey]: {
-        ...editingData[monthKey],
-        [field]: value,
-      },
+      [monthKey]: updatedMonthValue,
     });
   };
 
@@ -102,12 +106,12 @@ export function RampingPeriodTable() {
       const { error } = await supabase
         .from("ramping_expectations")
         .update({
-          month_1: editingData.month_1,
-          month_2: editingData.month_2,
-          month_3: editingData.month_3,
-          month_4: editingData.month_4,
-          month_5: editingData.month_5,
-          month_6: editingData.month_6,
+          month_1: editingData.month_1 as Json,
+          month_2: editingData.month_2 as Json,
+          month_3: editingData.month_3 as Json,
+          month_4: editingData.month_4 as Json,
+          month_5: editingData.month_5 as Json,
+          month_6: editingData.month_6 as Json,
         })
         .eq("id", editingData.id);
 
