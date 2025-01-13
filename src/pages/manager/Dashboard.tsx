@@ -45,74 +45,74 @@ const ManagerDashboard = () => {
   }, [user]);
 
   const fetchSalesReps = async () => {
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      console.log('Fetching sales reps for manager:', user?.id);
+      console.log('Fetching sales reps for manager:', user.id);
       
       // First, get the current user's role
-      const { data: userRoleData, error: userRoleError } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (userRoleError) {
-        console.error('Error fetching user role:', userRoleError);
-        throw userRoleError;
+      if (roleError) {
+        console.error('Error fetching user role:', roleError);
+        throw roleError;
       }
 
-      console.log('User role:', userRoleData);
+      const isDirector = roleData?.role === 'director';
+      console.log('User role:', roleData?.role);
 
-      // Fetch sales reps and their profiles in separate queries
-      let salesRepsQuery = supabase
+      // Fetch sales reps
+      const { data: salesRepsData, error: salesRepsError } = await supabase
         .from('user_roles')
         .select('user_id')
-        .eq('role', 'sales_rep');
-
-      // If not director, only show sales reps managed by this user
-      if (userRoleData.role !== 'director') {
-        salesRepsQuery = salesRepsQuery.eq('manager_id', user?.id);
-      }
-
-      const { data: salesRepsData, error: salesRepsError } = await salesRepsQuery;
+        .eq('role', 'sales_rep')
+        .eq(isDirector ? 'role' : 'manager_id', isDirector ? 'sales_rep' : user.id);
 
       if (salesRepsError) {
         console.error('Error fetching sales reps:', salesRepsError);
         throw salesRepsError;
       }
 
-      console.log('Sales reps data:', salesRepsData);
-
-      if (!salesRepsData || salesRepsData.length === 0) {
+      if (!salesRepsData?.length) {
+        console.log('No sales reps found');
         setSalesReps([]);
         setIsLoading(false);
         return;
       }
 
-      // Get profiles for the sales reps
+      const salesRepIds = salesRepsData.map(rep => rep.user_id);
+      console.log('Sales rep IDs:', salesRepIds);
+
+      // Get profiles in a separate query
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name')
-        .in('id', salesRepsData.map(rep => rep.user_id));
+        .in('id', salesRepIds);
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
         throw profilesError;
       }
 
-      // Get assessment scores for all sales reps
+      // Get scores in a separate query
       const { data: scoresData, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
-        .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
+        .in('sales_rep_id', salesRepIds);
 
       if (scoresError) {
         console.error('Error fetching scores:', scoresError);
         throw scoresError;
       }
 
-      console.log('Scores data:', scoresData);
-
-      // Combine the data
+      // Combine all the data
       const formattedReps = salesRepsData.map(rep => {
         const profile = profilesData?.find(p => p.id === rep.user_id);
         const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
@@ -137,7 +137,6 @@ const ManagerDashboard = () => {
 
       console.log('Formatted reps:', formattedReps);
       setSalesReps(formattedReps);
-      setIsLoading(false);
     } catch (error) {
       console.error('Error in fetchSalesReps:', error);
       toast({
@@ -145,6 +144,7 @@ const ManagerDashboard = () => {
         description: "Failed to fetch sales representatives data",
         variant: "destructive"
       });
+    } finally {
       setIsLoading(false);
     }
   };
