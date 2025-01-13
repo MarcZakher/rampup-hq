@@ -1,226 +1,242 @@
-import { useEffect, useState } from 'react';
+import React from 'react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
-import { DirectorStats } from '@/components/Dashboard/DirectorStats';
-import { CommonChallengesChart } from '@/components/Analytics/CommonChallengesChart';
-import { AreasNeedingAttention } from '@/components/Analytics/AreasNeedingAttention';
-import { AssessmentMetrics } from '@/components/Analytics/AssessmentMetrics';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
-import { useQuery } from '@tanstack/react-query';
-import { ASSESSMENTS } from '@/lib/constants/assessments';
+import { StatCard } from '@/components/Dashboard/StatCard';
+import { Users, TrendingUp, Target, Trophy, AlertTriangle } from 'lucide-react';
+import { 
+  getMonthlyScores, 
+  getAssessmentData, 
+  getAreasOfFocus,
+  getTeamProgress 
+} from '@/lib/mockAnalyticsData';
+import { 
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle 
+} from '@/components/ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { 
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
+
+const chartConfig = {
+  improving: {
+    theme: {
+      light: '#10B981',
+      dark: '#059669',
+    },
+  },
+  declining: {
+    theme: {
+      light: '#EF4444',
+      dark: '#DC2626',
+    },
+  },
+  primary: {
+    theme: {
+      light: '#8884d8',
+      dark: '#6366f1',
+    },
+  },
+  secondary: {
+    theme: {
+      light: '#82ca9d',
+      dark: '#10b981',
+    },
+  },
+  warning: {
+    theme: {
+      light: '#fbbf24',
+      dark: '#d97706',
+    },
+  },
+};
 
 const AnalyticsPage = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const monthlyScores = getMonthlyScores();
+  const assessmentData = getAssessmentData();
+  const areasOfFocus = getAreasOfFocus();
+  const teamProgress = getTeamProgress();
 
-  const { data: analyticsData, isLoading } = useQuery({
-    queryKey: ['analytics', user?.id],
-    queryFn: async () => {
-      if (!user?.id) throw new Error('User not authenticated');
-
-      // First fetch all profiles to create a lookup map
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name');
-
-      if (profilesError) throw profilesError;
-
-      const profileMap = new Map(profiles.map(p => [p.id, p]));
-
-      // Then fetch assessment scores
-      const { data: scores, error: scoresError } = await supabase
-        .from('assessment_scores')
-        .select('*');
-
-      if (scoresError) throw scoresError;
-
-      // Enrich scores with profile data
-      const enrichedScores = scores.map(score => ({
-        ...score,
-        profile: profileMap.get(score.sales_rep_id)
-      }));
-
-      // Process data for different charts
-      const commonChallenges = processCommonChallenges(enrichedScores);
-      const areasNeedingAttention = processAreasNeedingAttention(enrichedScores);
-      const assessmentMetrics = processAssessmentMetrics(enrichedScores);
-
-      return {
-        commonChallenges,
-        areasNeedingAttention,
-        assessmentMetrics,
-        enrichedScores // Add this to calculate top performer
-      };
+  const summaryMetrics = [
+    {
+      title: "Team Average Score",
+      value: "4.2/5.0",
+      icon: <Users className="h-4 w-4 text-muted-foreground" />,
+      description: "+0.3 from last month"
     },
-    enabled: !!user?.id
-  });
-
-  if (isLoading) {
-    return (
-      <CustomAppLayout>
-        <div className="p-6">Loading analytics...</div>
-      </CustomAppLayout>
-    );
-  }
+    {
+      title: "Reps Meeting Target",
+      value: "85%",
+      icon: <Target className="h-4 w-4 text-muted-foreground" />,
+      description: "Score above 3/5"
+    },
+    {
+      title: "Completion Rate",
+      value: "92%",
+      icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
+      description: "Of all assessments"
+    },
+    {
+      title: "Top Performer",
+      value: "John Doe",
+      icon: <Trophy className="h-4 w-4 text-muted-foreground" />,
+      description: "Score: 4.8/5"
+    }
+  ];
 
   return (
     <CustomAppLayout>
-      <div className="space-y-6 p-6">
-        <div>
-          <h1 className="text-3xl font-bold">Performance Analytics</h1>
-          <p className="text-muted-foreground">Comprehensive view of sales team performance</p>
+      <div className="p-6 space-y-6">
+        <h1 className="text-2xl font-bold mb-6">Performance Analytics</h1>
+        
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {summaryMetrics.map((metric, index) => (
+            <StatCard
+              key={index}
+              title={metric.title}
+              value={metric.value}
+              icon={metric.icon}
+              description={metric.description}
+            />
+          ))}
         </div>
 
-        <DirectorStats
-          totalReps={analyticsData?.areasNeedingAttention?.length || 0}
-          averageScore={calculateAverageScore(analyticsData?.assessmentMetrics)}
-          performingWellCount={calculatePerformingWell(analyticsData?.assessmentMetrics)}
-          topPerformer={findTopPerformer(analyticsData?.enrichedScores || [])}
-        />
+        {/* Two Column Layout for Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Monthly Progress */}
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle>Monthly Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ChartContainer config={chartConfig}>
+                  <AreaChart data={monthlyScores}>
+                    <defs>
+                      <linearGradient id="improving" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="declining" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#EF4444" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <ChartTooltip />
+                    <Area 
+                      type="monotone" 
+                      dataKey="improving" 
+                      stroke="#10B981" 
+                      fillOpacity={1} 
+                      fill="url(#improving)" 
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="declining" 
+                      stroke="#EF4444" 
+                      fillOpacity={1} 
+                      fill="url(#declining)" 
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </div>
+            </CardContent>
+          </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <CommonChallengesChart data={analyticsData?.commonChallenges || []} />
-          <AreasNeedingAttention data={analyticsData?.areasNeedingAttention || []} />
-        </div>
+          {/* Assessment Performance */}
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle>Assessment Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ChartContainer config={chartConfig}>
+                  <BarChart data={assessmentData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <ChartTooltip />
+                    <Bar dataKey="successRate" fill="#8884d8" name="Success Rate %" />
+                    <Bar dataKey="avgScore" fill="#82ca9d" name="Average Score" />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+            </CardContent>
+          </Card>
 
-        <div className="space-y-6">
-          <AssessmentMetrics 
-            data={analyticsData?.assessmentMetrics || []} 
-            title="Assessment Completion Rates" 
-          />
-          <AssessmentMetrics 
-            data={analyticsData?.assessmentMetrics || []} 
-            title="Assessment Performance" 
-          />
+          {/* Areas Needing Attention */}
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                Areas Needing Attention
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {areasOfFocus.repsNeedingAttention.map((rep, index) => (
+                  <div key={index} className="space-y-2">
+                    <h3 className="text-lg font-semibold">{rep.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {rep.lowScoreCount} low scores (avg: {rep.averageLowScore})
+                    </p>
+                    <div className="space-y-2">
+                      {rep.areas.map((area, areaIndex) => (
+                        <div key={areaIndex} className="flex justify-between text-sm">
+                          <span className="text-red-500">{area.assessment}</span>
+                          <span>{area.month} - Score: {area.score}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Common Challenges */}
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                Common Challenges
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ChartContainer config={chartConfig}>
+                  <BarChart 
+                    data={areasOfFocus.commonChallenges} 
+                    layout="vertical"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="assessment" type="category" width={150} />
+                    <ChartTooltip />
+                    <Bar dataKey="count" fill="#fbbf24" />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </CustomAppLayout>
   );
-};
-
-const processCommonChallenges = (scores: any[]) => {
-  const challengeCounts: { [key: string]: number } = {};
-  
-  scores.forEach(score => {
-    if (score.score < 3) {
-      const assessmentName = ASSESSMENTS[score.month][score.assessment_index];
-      challengeCounts[assessmentName] = (challengeCounts[assessmentName] || 0) + 1;
-    }
-  });
-
-  return Object.entries(challengeCounts)
-    .map(([assessment, count]) => ({ assessment, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
-};
-
-const processAreasNeedingAttention = (scores: any[]) => {
-  const repScores: { [key: string]: any[] } = {};
-  
-  scores.forEach(score => {
-    const repId = score.sales_rep_id;
-    if (!repScores[repId]) {
-      repScores[repId] = [];
-    }
-    repScores[repId].push(score);
-  });
-
-  return Object.entries(repScores)
-    .map(([repId, scores]) => {
-      const lowScores = scores.filter(score => score.score < 3);
-      if (lowScores.length < 2) return null;
-
-      const repName = scores[0].profile?.full_name || 'Unknown Rep';
-
-      return {
-        name: repName,
-        lowScoreCount: lowScores.length,
-        averageLowScore: Number((lowScores.reduce((sum, score) => sum + score.score, 0) / lowScores.length).toFixed(1)),
-        areas: lowScores.map(score => ({
-          assessment: ASSESSMENTS[score.month][score.assessment_index],
-          score: score.score,
-          month: score.month.replace('month', 'Month ')
-        }))
-      };
-    })
-    .filter(Boolean);
-};
-
-const processAssessmentMetrics = (scores: any[]) => {
-  const metrics: { [key: string]: any } = {};
-  
-  scores.forEach(score => {
-    const assessmentName = ASSESSMENTS[score.month][score.assessment_index];
-    if (!metrics[assessmentName]) {
-      metrics[assessmentName] = {
-        name: assessmentName,
-        scores: [],
-        completions: 0,
-        total: 0
-      };
-    }
-    
-    metrics[assessmentName].total++;
-    if (score.score > 0) {
-      metrics[assessmentName].completions++;
-      metrics[assessmentName].scores.push(score.score);
-    }
-  });
-
-  return Object.values(metrics).map(metric => ({
-    name: metric.name,
-    completionRate: Number(((metric.completions / metric.total) * 100).toFixed(1)),
-    successRate: Number(((metric.scores.filter((s: number) => s >= 3).length / metric.scores.length) * 100).toFixed(1)),
-    averageScore: Number((metric.scores.reduce((a: number, b: number) => a + b, 0) / metric.scores.length).toFixed(1))
-  }));
-};
-
-const calculateAverageScore = (metrics: any[]) => {
-  if (!metrics?.length) return "0.0";
-  const avgScore = metrics.reduce((sum, metric) => sum + metric.averageScore, 0) / metrics.length;
-  return avgScore.toFixed(1);
-};
-
-const calculatePerformingWell = (metrics: any[]) => {
-  if (!metrics?.length) return 0;
-  return metrics.filter(metric => metric.successRate >= 70).length;
-};
-
-const findTopPerformer = (scores: any[]) => {
-  if (!scores?.length) return { name: "No data", score: 0 };
-  
-  // Group scores by sales rep
-  const repScores: { [key: string]: { scores: number[], name: string } } = {};
-  
-  scores.forEach(score => {
-    const repId = score.sales_rep_id;
-    if (!repScores[repId]) {
-      repScores[repId] = {
-        scores: [],
-        name: score.profile?.full_name || 'Unknown Rep'
-      };
-    }
-    if (score.score > 0) {
-      repScores[repId].scores.push(score.score);
-    }
-  });
-
-  // Find the rep with highest average score
-  let topPerformer = { name: "No data", score: 0 };
-  Object.entries(repScores).forEach(([repId, data]) => {
-    if (data.scores.length > 0) {
-      const avgScore = data.scores.reduce((a, b) => a + b, 0) / data.scores.length;
-      if (avgScore > topPerformer.score) {
-        topPerformer = {
-          name: data.name,
-          score: Number(avgScore.toFixed(1))
-        };
-      }
-    }
-  });
-
-  return topPerformer;
 };
 
 export default AnalyticsPage;
