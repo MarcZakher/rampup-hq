@@ -53,27 +53,29 @@ const DirectorDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all sales reps
+        // First fetch all sales reps with their profiles
         const { data: salesRepsData, error: salesRepsError } = await supabase
           .from('user_roles')
           .select(`
             user_id,
-            profiles:user_id(full_name)
+            profiles!inner (
+              full_name
+            )
           `)
           .eq('role', 'sales_rep');
 
         if (salesRepsError) throw salesRepsError;
 
-        // Fetch assessment scores for all sales reps
+        // Then fetch assessment scores for all sales reps
         const { data: scoresData, error: scoresError } = await supabase
           .from('assessment_scores')
           .select('*')
-          .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
+          .in('sales_rep_id', salesRepsData?.map(rep => rep.user_id) || []);
 
         if (scoresError) throw scoresError;
 
         // Process and organize the data
-        const processedData = salesRepsData.map(rep => {
+        const processedData = salesRepsData?.map(rep => {
           const repScores = scoresData.filter(score => score.sales_rep_id === rep.user_id);
           return {
             id: rep.user_id,
@@ -91,7 +93,7 @@ const DirectorDashboard = () => {
               return score ? Number(score.score) : 0;
             })
           };
-        });
+        }) || [];
 
         setSalesReps(processedData);
       } catch (error) {
