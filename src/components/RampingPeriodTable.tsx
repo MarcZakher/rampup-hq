@@ -9,25 +9,17 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Database } from "@/integrations/supabase/types";
+
+type RampingExpectation = Database['public']['Tables']['ramping_expectations']['Row'];
 
 interface MonthValue {
   value: string;
   note: string;
 }
 
-interface RampingExpectation {
-  id: string;
-  metric: string;
-  month_1: MonthValue;
-  month_2: MonthValue;
-  month_3: MonthValue;
-  month_4: MonthValue;
-  month_5: MonthValue;
-  month_6: MonthValue;
-}
-
 interface RampingPeriodTableProps {
-  initialData?: any[];
+  initialData?: RampingExpectation[];
   isLoading?: boolean;
   error?: Error | null;
 }
@@ -37,40 +29,10 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
   const [isLoading, setIsLoading] = useState(!initialData);
   const { toast } = useToast();
 
-  const parseMonthValue = (value: any): MonthValue => {
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch (e) {
-        return { value: '', note: '' };
-      }
-    }
-    return value || { value: '', note: '' };
-  };
-
   useEffect(() => {
     if (initialData) {
-      try {
-        const parsedData = initialData.map(item => ({
-          id: item.id,
-          metric: item.metric,
-          month_1: parseMonthValue(item.month_1),
-          month_2: parseMonthValue(item.month_2),
-          month_3: parseMonthValue(item.month_3),
-          month_4: parseMonthValue(item.month_4),
-          month_5: parseMonthValue(item.month_5),
-          month_6: parseMonthValue(item.month_6),
-        }));
-        setRampingData(parsedData);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error parsing data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to parse ramping expectations data",
-          variant: "destructive",
-        });
-      }
+      setRampingData(initialData);
+      setIsLoading(false);
     } else if (!externalIsLoading) {
       fetchRampingData();
     }
@@ -85,18 +47,7 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
 
       if (error) throw error;
 
-      const parsedData = data.map(item => ({
-        id: item.id,
-        metric: item.metric,
-        month_1: parseMonthValue(item.month_1),
-        month_2: parseMonthValue(item.month_2),
-        month_3: parseMonthValue(item.month_3),
-        month_4: parseMonthValue(item.month_4),
-        month_5: parseMonthValue(item.month_5),
-        month_6: parseMonthValue(item.month_6),
-      }));
-
-      setRampingData(parsedData);
+      setRampingData(data);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
