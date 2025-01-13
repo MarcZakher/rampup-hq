@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Save, X, Pencil, Trash2, BookPlus } from "lucide-react";
 
 interface TrainingModule {
   id: string;
@@ -201,7 +203,7 @@ export function TrainingModuleManager({ initialData }: TrainingModuleManagerProp
         {editingId === module.id ? (
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Description</label>
+              <Label>Description</Label>
               <Input
                 value={editingData?.description || ''}
                 onChange={(e) => handleChange('description', e.target.value)}
@@ -209,14 +211,14 @@ export function TrainingModuleManager({ initialData }: TrainingModuleManagerProp
             </div>
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="text-sm font-medium">Duration</label>
+                <Label>Duration</Label>
                 <Input
                   value={editingData?.duration || ''}
                   onChange={(e) => handleChange('duration', e.target.value)}
                 />
               </div>
               <div className="flex-1">
-                <label className="text-sm font-medium">Platform</label>
+                <Label>Platform</Label>
                 <Input
                   value={editingData?.platform || ''}
                   onChange={(e) => handleChange('platform', e.target.value)}
@@ -243,6 +245,10 @@ export function TrainingModuleManager({ initialData }: TrainingModuleManagerProp
 
   const periods = ['month1', 'month2', 'month3', 'month4'];
   const periodNames = ['Month 1', 'Month 2', 'Month 3', 'Month 4'];
+
+  if (isLoading) {
+    return <div>Loading training modules...</div>;
+  }
 
   return (
     <div className="space-y-6">

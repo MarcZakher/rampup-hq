@@ -13,10 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil, Save, X } from "lucide-react";
-import { Json } from "@/integrations/supabase/types";
 
 interface MonthValue {
-  [key: string]: string;
   value: string;
   note: string;
 }
@@ -33,7 +31,7 @@ interface RampingExpectation {
 }
 
 interface RampingPeriodTableProps {
-  initialData?: RampingExpectation[];
+  initialData?: any[]; // Changed to accept any[] to handle Json type from database
 }
 
 export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
@@ -55,7 +53,7 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
         month_4: typeof item.month_4 === 'string' ? JSON.parse(item.month_4) : item.month_4,
         month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5,
         month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6,
-      }));
+      })) as RampingExpectation[];
       setRampingData(parsedData);
       setIsLoading(false);
     } else {
