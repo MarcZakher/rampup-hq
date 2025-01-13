@@ -114,11 +114,8 @@ const ManagerDashboard = () => {
   };
 
   const addSalesRep = async (name: string) => {
-    toast({
-      title: "Not Implemented",
-      description: "Adding sales representatives is not yet implemented",
-      variant: "destructive"
-    });
+    // This is now handled in the AddSalesRepForm component
+    await fetchSalesReps(); // Refresh the list after adding
   };
 
   const removeSalesRep = async (id: number) => {
