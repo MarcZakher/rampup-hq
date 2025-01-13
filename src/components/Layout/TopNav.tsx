@@ -1,4 +1,4 @@
-import { Bell, User, LogOut } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -17,14 +17,20 @@ export function TopNav() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, email')
-          .eq('id', user.id)
-          .single();
-        setUserProfile(profile);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', user.id)
+            .single();
+          
+          console.log('Fetched profile:', profile); // Debug log
+          setUserProfile(profile);
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
       }
     };
 
@@ -46,12 +52,17 @@ export function TopNav() {
 
   const getInitials = (name: string | null) => {
     if (!name) return 'U';
-    return name
-      .split(' ')
+    const nameParts = name.trim().split(' ');
+    if (nameParts.length === 0) return 'U';
+    
+    const initials = nameParts
+      .filter(part => part.length > 0)
       .map(part => part[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
+    
+    return initials || 'U';
   };
 
   return (
