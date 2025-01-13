@@ -49,13 +49,7 @@ const ManagerDashboard = () => {
       // First get all sales reps managed by this manager
       const { data: salesRepsData, error: salesRepsError } = await supabase
         .from('user_roles')
-        .select(`
-          user_id,
-          profiles (
-            id,
-            full_name
-          )
-        `)
+        .select('user_id')
         .eq('manager_id', user?.id)
         .eq('role', 'sales_rep');
 
@@ -67,6 +61,14 @@ const ManagerDashboard = () => {
         return;
       }
 
+      // Then fetch profiles for these sales reps
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', salesRepsData.map(rep => rep.user_id));
+
+      if (profilesError) throw profilesError;
+
       // Then fetch assessment scores for these sales reps
       const { data: scoresData, error: scoresError } = await supabase
         .from('assessment_scores')
@@ -77,11 +79,12 @@ const ManagerDashboard = () => {
 
       // Transform the data into the format expected by the components
       const formattedReps = salesRepsData.map(rep => {
+        const profile = profilesData?.find(p => p.id === rep.user_id);
         const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
         
         return {
           id: rep.user_id,
-          name: rep.profiles?.full_name || 'Unknown',
+          name: profile?.full_name || 'Unknown',
           month1: new Array(assessments.month1.length).fill(0).map((_, index) => {
             const score = repScores.find(s => s.month === 'month1' && s.assessment_index === index);
             return score?.score || 0;
