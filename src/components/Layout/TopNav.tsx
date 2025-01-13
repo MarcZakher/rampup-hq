@@ -96,7 +96,9 @@ export function TopNav() {
           </h2>
         </div>
         <div className="flex items-center gap-4">
-          {!isLoading && username && <span className="text-sm text-gray-600">{username}</span>}
+          {!isLoading && (username || email) && (
+            <span className="text-sm text-gray-600">{username || email}</span>
+          )}
           <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <Bell className="h-5 w-5" />
           </Button>
