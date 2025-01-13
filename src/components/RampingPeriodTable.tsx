@@ -120,6 +120,7 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
 
   const startEditing = (expectation: RampingExpectation) => {
     if (!isAdminRoute) return;
+    console.log('Starting edit for:', expectation.id);
     setEditingId(expectation.id);
     setEditingData(JSON.parse(JSON.stringify(expectation)));
   };
@@ -132,6 +133,7 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
   const handleValueChange = (month: number, field: 'value' | 'note', value: string) => {
     if (!editingData) return;
     
+    console.log('Handling value change:', { month, field, value });
     const monthKey = `month_${month}` as keyof RampingExpectation;
     const currentMonthValue = editingData[monthKey] as MonthValue;
     const updatedMonthValue: MonthValue = {
@@ -149,6 +151,7 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
     if (!editingData) return;
 
     try {
+      console.log('Saving changes for:', editingData.id);
       const monthDataToSave = {
         month_1: editingData.month_1 as unknown as Json,
         month_2: editingData.month_2 as unknown as Json,
