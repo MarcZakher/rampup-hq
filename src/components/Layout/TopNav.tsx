@@ -16,10 +16,12 @@ import {
 export function TopNav() {
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<{ full_name: string | null, email: string | null } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
+        setIsLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: profile } = await supabase
@@ -28,11 +30,20 @@ export function TopNav() {
             .eq('id', user.id)
             .single();
           
-          console.log('Fetched profile:', profile);
-          setUserProfile(profile);
+          if (profile) {
+            setUserProfile(profile);
+          } else {
+            // If no profile found, use the email as fallback
+            setUserProfile({
+              full_name: user.email?.split('@')[0] || 'User',
+              email: user.email
+            });
+          }
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -85,7 +96,7 @@ export function TopNav() {
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8 border border-gray-200">
                   <AvatarFallback className="bg-rampup-primary/10 text-rampup-primary">
-                    {getInitials(userProfile?.full_name)}
+                    {isLoading ? '...' : getInitials(userProfile?.full_name)}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -93,9 +104,11 @@ export function TopNav() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{userProfile?.full_name || 'User'}</p>
+                  <p className="text-sm font-medium leading-none">
+                    {isLoading ? 'Loading...' : userProfile?.full_name || userProfile?.email?.split('@')[0] || 'User'}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {userProfile?.email}
+                    {isLoading ? '...' : userProfile?.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
