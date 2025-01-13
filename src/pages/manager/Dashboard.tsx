@@ -46,14 +46,27 @@ const ManagerDashboard = () => {
 
   const fetchSalesReps = async () => {
     try {
+      console.log('Fetching sales reps for manager:', user?.id);
+      
       // First get all sales reps managed by this manager
       const { data: salesRepsData, error: salesRepsError } = await supabase
         .from('user_roles')
-        .select('user_id')
+        .select(`
+          user_id,
+          profiles:user_id (
+            id,
+            full_name
+          )
+        `)
         .eq('manager_id', user?.id)
         .eq('role', 'sales_rep');
 
-      if (salesRepsError) throw salesRepsError;
+      if (salesRepsError) {
+        console.error('Error fetching sales reps:', salesRepsError);
+        throw salesRepsError;
+      }
+
+      console.log('Sales reps data:', salesRepsData);
 
       if (!salesRepsData || salesRepsData.length === 0) {
         setSalesReps([]);
@@ -61,25 +74,22 @@ const ManagerDashboard = () => {
         return;
       }
 
-      // Then fetch profiles for these sales reps
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', salesRepsData.map(rep => rep.user_id));
-
-      if (profilesError) throw profilesError;
-
       // Then fetch assessment scores for these sales reps
       const { data: scoresData, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
         .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
 
-      if (scoresError) throw scoresError;
+      if (scoresError) {
+        console.error('Error fetching scores:', scoresError);
+        throw scoresError;
+      }
+
+      console.log('Scores data:', scoresData);
 
       // Transform the data into the format expected by the components
       const formattedReps = salesRepsData.map(rep => {
-        const profile = profilesData?.find(p => p.id === rep.user_id);
+        const profile = rep.profiles;
         const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
         
         return {
@@ -100,10 +110,11 @@ const ManagerDashboard = () => {
         };
       });
 
+      console.log('Formatted reps:', formattedReps);
       setSalesReps(formattedReps);
       setIsLoading(false);
     } catch (error) {
-      console.error('Error fetching sales reps:', error);
+      console.error('Error in fetchSalesReps:', error);
       toast({
         title: "Error",
         description: "Failed to fetch sales representatives data",
@@ -114,7 +125,6 @@ const ManagerDashboard = () => {
   };
 
   const addSalesRep = async (name: string) => {
-    // This is now handled in the AddSalesRepForm component
     await fetchSalesReps(); // Refresh the list after adding
   };
 
