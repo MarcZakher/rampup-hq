@@ -49,7 +49,8 @@ const AnalyticsPage = () => {
       return {
         commonChallenges,
         areasNeedingAttention,
-        assessmentMetrics
+        assessmentMetrics,
+        enrichedScores // Add this to calculate top performer
       };
     },
     enabled: !!user?.id
@@ -75,7 +76,7 @@ const AnalyticsPage = () => {
           totalReps={analyticsData?.areasNeedingAttention?.length || 0}
           averageScore={calculateAverageScore(analyticsData?.assessmentMetrics)}
           performingWellCount={calculatePerformingWell(analyticsData?.assessmentMetrics)}
-          topPerformer={findTopPerformer(analyticsData?.assessmentMetrics)}
+          topPerformer={findTopPerformer(analyticsData?.enrichedScores || [])}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -186,17 +187,40 @@ const calculatePerformingWell = (metrics: any[]) => {
   return metrics.filter(metric => metric.successRate >= 70).length;
 };
 
-const findTopPerformer = (metrics: any[]) => {
-  if (!metrics?.length) return { name: "No data", score: 0 };
+const findTopPerformer = (scores: any[]) => {
+  if (!scores?.length) return { name: "No data", score: 0 };
   
-  const topMetric = metrics.reduce((top, metric) => 
-    metric.averageScore > top.averageScore ? metric : top
-  );
+  // Group scores by sales rep
+  const repScores: { [key: string]: { scores: number[], name: string } } = {};
+  
+  scores.forEach(score => {
+    const repId = score.sales_rep_id;
+    if (!repScores[repId]) {
+      repScores[repId] = {
+        scores: [],
+        name: score.profile?.full_name || 'Unknown Rep'
+      };
+    }
+    if (score.score > 0) {
+      repScores[repId].scores.push(score.score);
+    }
+  });
 
-  return {
-    name: topMetric.name,
-    score: topMetric.averageScore
-  };
+  // Find the rep with highest average score
+  let topPerformer = { name: "No data", score: 0 };
+  Object.entries(repScores).forEach(([repId, data]) => {
+    if (data.scores.length > 0) {
+      const avgScore = data.scores.reduce((a, b) => a + b, 0) / data.scores.length;
+      if (avgScore > topPerformer.score) {
+        topPerformer = {
+          name: data.name,
+          score: Number(avgScore.toFixed(1))
+        };
+      }
+    }
+  });
+
+  return topPerformer;
 };
 
 export default AnalyticsPage;
