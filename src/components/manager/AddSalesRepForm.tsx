@@ -17,6 +17,7 @@ interface AddSalesRepFormProps {
 export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
   const [newRepName, setNewRepName] = useState('');
   const [newRepEmail, setNewRepEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -30,33 +31,29 @@ export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
       return;
     }
 
+    setIsLoading(true);
+
     try {
-      // Create the user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newRepEmail,
-        email_confirm: true,
-        user_metadata: {
-          full_name: newRepName,
-          role: 'sales_rep'
-        }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-sales-rep`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: newRepEmail,
+          fullName: newRepName,
+          managerId: user?.id
+        })
       });
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error('No user data returned');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create sales representative');
       }
-
-      // Create the user role with manager relationship
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          role: 'sales_rep',
-          manager_id: user?.id
-        });
-
-      if (roleError) throw roleError;
 
       toast({
         title: "Success",
@@ -73,6 +70,8 @@ export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
         description: error.message || "Failed to add sales representative",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -83,6 +82,7 @@ export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
         value={newRepName}
         onChange={(e) => setNewRepName(e.target.value)}
         className="w-64"
+        disabled={isLoading}
       />
       <Input
         placeholder="Enter sales rep email"
@@ -90,10 +90,11 @@ export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
         value={newRepEmail}
         onChange={(e) => setNewRepEmail(e.target.value)}
         className="w-64"
+        disabled={isLoading}
       />
-      <Button onClick={handleSubmit}>
+      <Button onClick={handleSubmit} disabled={isLoading}>
         <UserPlus className="mr-2 h-4 w-4" />
-        Add Sales Rep
+        {isLoading ? 'Adding...' : 'Add Sales Rep'}
       </Button>
     </div>
   );
