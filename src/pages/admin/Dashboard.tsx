@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Target } from "lucide-react";
+import { RampingPeriodTable } from "@/components/RampingPeriodTable";
 
 export default function AdminDashboard() {
   const { data: modules, isLoading } = useQuery({
@@ -28,6 +29,19 @@ export default function AdminDashboard() {
     }
   });
 
+  const { data: rampingData, isLoading: isRampingLoading } = useQuery({
+    queryKey: ['ramping-expectations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ramping_expectations')
+        .select('*')
+        .order('metric');
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8 space-y-8">
@@ -38,6 +52,19 @@ export default function AdminDashboard() {
             Add Module
           </Button>
         </div>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Ramping Expectations</CardTitle>
+            <Target className="h-5 w-5 text-gray-500" />
+          </CardHeader>
+          <CardContent>
+            <RampingPeriodTable 
+              initialData={rampingData} 
+              isLoading={isRampingLoading} 
+            />
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
