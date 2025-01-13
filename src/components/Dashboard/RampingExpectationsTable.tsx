@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 export function RampingExpectationsTable() {
   const metrics = [
-    { name: "DMs", values: [5, 10, 15, 20, 20, 20] },
+    { name: "DMs", values: ["5 (booked)", 10, 15, 20, 20, 20] },
     { name: "NBMs", values: [0, 1, 1, 1, 2, 2] },
     { name: "Scope+", values: [0, 0, 1, 1, 1, 1] },
     { name: "NL", values: [0, 0, 0, 0, 0, 1] },
