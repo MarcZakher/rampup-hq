@@ -39,7 +39,20 @@ export function RampingExpectationsManager() {
         .order("metric");
 
       if (error) throw error;
-      setExpectations(data);
+
+      // Parse the JSON data into the correct type
+      const parsedData: RampingExpectation[] = data.map(item => ({
+        id: item.id,
+        metric: item.metric,
+        month_1: typeof item.month_1 === 'string' ? JSON.parse(item.month_1) : item.month_1,
+        month_2: typeof item.month_2 === 'string' ? JSON.parse(item.month_2) : item.month_2,
+        month_3: typeof item.month_3 === 'string' ? JSON.parse(item.month_3) : item.month_3,
+        month_4: typeof item.month_4 === 'string' ? JSON.parse(item.month_4) : item.month_4,
+        month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5,
+        month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6,
+      }));
+
+      setExpectations(parsedData);
     } catch (error) {
       toast({
         title: "Error",
@@ -61,10 +74,11 @@ export function RampingExpectationsManager() {
       prev.map((exp) => {
         if (exp.id === expectationId) {
           const monthKey = `month_${month}` as keyof RampingExpectation;
+          const currentMonth = exp[monthKey] as MonthValue;
           return {
             ...exp,
             [monthKey]: {
-              ...exp[monthKey],
+              ...currentMonth,
               [field]: newValue,
             },
           };
@@ -148,10 +162,7 @@ export function RampingExpectationsManager() {
               );
             })}
           </div>
-          <Button
-            onClick={() => handleSave(expectation)}
-            className="mt-4"
-          >
+          <Button onClick={() => handleSave(expectation)} className="mt-4">
             Save Changes
           </Button>
         </Card>
