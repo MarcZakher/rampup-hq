@@ -1,4 +1,4 @@
-import { Bell, User, LogOut } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -25,57 +25,22 @@ export function TopNav() {
 
   const handleLogout = async () => {
     try {
-      // First check if we have a valid session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // First clear any existing session data
+      await supabase.auth.clearSession();
       
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        navigate('/login');
-        toast({
-          variant: "destructive",
-          title: "Session Error",
-          description: "Your session has expired. Please log in again."
-        });
-        return;
-      }
-
-      // If we have a valid session, attempt to sign out
-      if (session) {
-        // Try to sign out both locally and globally
-        const { error } = await supabase.auth.signOut({
-          scope: 'local'
-        });
-
-        if (error) {
-          console.error('Logout error:', error);
-          // If there's an error, we'll still redirect to login
-          navigate('/login');
-          toast({
-            variant: "destructive",
-            title: "Error during logout",
-            description: "You have been redirected to the login page"
-          });
-          return;
-        }
-
-        // Show success message
-        toast({
-          title: "Logged out successfully",
-          description: "You have been signed out of your account"
-        });
-      } else {
-        // No session found, just redirect to login
-        toast({
-          title: "Session Expired",
-          description: "Your session has expired. Please log in again."
-        });
-      }
+      // Show success message
+      toast({
+        title: "Logged out successfully",
+        description: "You have been signed out of your account"
+      });
       
-      // Always navigate to login at the end
+      // Navigate to login page
       navigate('/login');
       
     } catch (error) {
       console.error('Logout error:', error);
+      // If there's an error, still clear local storage and redirect
+      supabase.auth.clearSession();
       navigate('/login');
       toast({
         variant: "destructive",
