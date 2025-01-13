@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { AuthError } from '@supabase/supabase-js';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -118,6 +119,8 @@ export default function Login() {
 
           <Auth
             supabaseClient={supabase}
+            view={view}
+            onViewChange={setView}
             appearance={{
               theme: ThemeSupa,
               variables: {
@@ -140,7 +143,6 @@ export default function Login() {
             }}
             providers={[]}
             magicLink={false}
-            view={view}
           />
         </div>
       </div>
