@@ -1,15 +1,17 @@
-import { Bell, LogOut } from 'lucide-react';
+import { Bell, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function TopNav() {
   const navigate = useNavigate();
@@ -26,7 +28,7 @@ export function TopNav() {
             .eq('id', user.id)
             .single();
           
-          console.log('Fetched profile:', profile); // Debug log
+          console.log('Fetched profile:', profile);
           setUserProfile(profile);
         }
       } catch (error) {
@@ -77,31 +79,33 @@ export function TopNav() {
           <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <Bell className="h-5 w-5" />
           </Button>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center">
-                  <Avatar className="h-8 w-8 border border-gray-200">
-                    <AvatarFallback className="bg-rampup-primary/10 text-rampup-primary">
-                      {getInitials(userProfile?.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8 border border-gray-200">
+                  <AvatarFallback className="bg-rampup-primary/10 text-rampup-primary">
+                    {getInitials(userProfile?.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{userProfile?.full_name || 'User'}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {userProfile?.email}
+                  </p>
                 </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="font-medium">{userProfile?.full_name || 'User'}</p>
-                <p className="text-xs text-gray-500">{userProfile?.email}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSignOut}
-            className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
