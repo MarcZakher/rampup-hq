@@ -57,11 +57,11 @@ serve(async (req) => {
     )
 
     // Verify the JWT token
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+    const { data: { user: requestingUser }, error: authError } = await supabaseClient.auth.getUser(
       authHeader.replace('Bearer ', '')
     )
 
-    if (authError || !user) {
+    if (authError || !requestingUser) {
       console.error('Invalid token:', authError)
       throw new Error('Invalid token')
     }
@@ -70,7 +70,7 @@ serve(async (req) => {
     const { data: userRoles, error: rolesError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', requestingUser.id)
       .single()
 
     if (rolesError || !userRoles || userRoles.role !== 'manager') {
@@ -81,9 +81,13 @@ serve(async (req) => {
       )
     }
 
-    // Create the user
+    // Generate a random password for the new user
+    const tempPassword = Math.random().toString(36).slice(-8)
+
+    // Create the user with the generated password
     const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
+      password: tempPassword,
       email_confirm: true,
       user_metadata: {
         full_name: fullName,
@@ -99,7 +103,24 @@ serve(async (req) => {
       )
     }
 
-    // Update the user_roles table to set the manager_id
+    // Insert into profiles table
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        id: userData.user.id,
+        full_name: fullName,
+        email: email
+      })
+
+    if (profileError) {
+      console.error('Error creating profile:', profileError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to create user profile' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
+    }
+
+    // Insert into user_roles table
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .insert({
@@ -109,15 +130,30 @@ serve(async (req) => {
       })
 
     if (roleError) {
-      console.error('Error updating user role:', roleError)
+      console.error('Error setting user role:', roleError)
       return new Response(
-        JSON.stringify({ error: 'Failed to set manager relationship' }),
+        JSON.stringify({ error: 'Failed to set user role' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
 
+    // Send password reset email to allow user to set their own password
+    const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: email
+    })
+
+    if (resetError) {
+      console.error('Error generating password reset link:', resetError)
+      // Don't return error here as the user is already created
+    }
+
     return new Response(
-      JSON.stringify({ success: true, user: userData.user }),
+      JSON.stringify({ 
+        success: true, 
+        user: userData.user,
+        message: 'User created successfully. A password reset email has been sent.'
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
 
