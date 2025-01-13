@@ -13,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil, Save, X } from "lucide-react";
-import { Json } from "@/integrations/supabase/types";
 
 interface MonthValue {
   value: string;
@@ -44,20 +43,33 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
 
+  const parseMonthValue = (value: any): MonthValue => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.error('Error parsing month value:', value, e);
+        return { value: '', note: '' };
+      }
+    }
+    return value || { value: '', note: '' };
+  };
+
   useEffect(() => {
     if (initialData) {
       try {
-        console.log('Processing initial data:', initialData); // Debug log
+        console.log('Processing initial data:', initialData);
         const parsedData = initialData.map(item => ({
-          ...item,
-          month_1: typeof item.month_1 === 'string' ? JSON.parse(item.month_1) : item.month_1,
-          month_2: typeof item.month_2 === 'string' ? JSON.parse(item.month_2) : item.month_2,
-          month_3: typeof item.month_3 === 'string' ? JSON.parse(item.month_3) : item.month_3,
-          month_4: typeof item.month_4 === 'string' ? JSON.parse(item.month_4) : item.month_4,
-          month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5,
-          month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6,
-        })) as RampingExpectation[];
-        console.log('Parsed data:', parsedData); // Debug log
+          id: item.id,
+          metric: item.metric,
+          month_1: parseMonthValue(item.month_1),
+          month_2: parseMonthValue(item.month_2),
+          month_3: parseMonthValue(item.month_3),
+          month_4: parseMonthValue(item.month_4),
+          month_5: parseMonthValue(item.month_5),
+          month_6: parseMonthValue(item.month_6),
+        }));
+        console.log('Parsed data:', parsedData);
         setRampingData(parsedData);
       } catch (error) {
         console.error('Error parsing data:', error);
@@ -81,20 +93,24 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
         .order("metric");
 
       if (error) throw error;
+
+      console.log('Fetched data from Supabase:', data);
       
-      const parsedData: RampingExpectation[] = data.map(item => ({
+      const parsedData = data.map(item => ({
         id: item.id,
         metric: item.metric,
-        month_1: typeof item.month_1 === 'string' ? JSON.parse(item.month_1) : item.month_1,
-        month_2: typeof item.month_2 === 'string' ? JSON.parse(item.month_2) : item.month_2,
-        month_3: typeof item.month_3 === 'string' ? JSON.parse(item.month_3) : item.month_3,
-        month_4: typeof item.month_4 === 'string' ? JSON.parse(item.month_4) : item.month_4,
-        month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5,
-        month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6,
+        month_1: parseMonthValue(item.month_1),
+        month_2: parseMonthValue(item.month_2),
+        month_3: parseMonthValue(item.month_3),
+        month_4: parseMonthValue(item.month_4),
+        month_5: parseMonthValue(item.month_5),
+        month_6: parseMonthValue(item.month_6),
       }));
 
+      console.log('Parsed fetched data:', parsedData);
       setRampingData(parsedData);
     } catch (error) {
+      console.error('Error fetching data:', error);
       toast({
         title: "Error",
         description: "Failed to fetch ramping expectations",
@@ -137,12 +153,12 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
 
     try {
       const monthDataToSave = {
-        month_1: editingData.month_1 as unknown as Json,
-        month_2: editingData.month_2 as unknown as Json,
-        month_3: editingData.month_3 as unknown as Json,
-        month_4: editingData.month_4 as unknown as Json,
-        month_5: editingData.month_5 as unknown as Json,
-        month_6: editingData.month_6 as unknown as Json,
+        month_1: editingData.month_1,
+        month_2: editingData.month_2,
+        month_3: editingData.month_3,
+        month_4: editingData.month_4,
+        month_5: editingData.month_5,
+        month_6: editingData.month_6,
       };
 
       const { error } = await supabase
@@ -174,6 +190,10 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
 
   if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (rampingData.length === 0) {
+    return <div>No ramping expectations found</div>;
   }
 
   return (

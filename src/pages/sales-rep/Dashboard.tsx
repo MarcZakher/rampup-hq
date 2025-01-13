@@ -1,16 +1,38 @@
+import { useQuery } from "@tanstack/react-query";
 import { RampingPeriodTable } from "@/components/RampingPeriodTable";
 import { ProgressTrackingTable } from "@/components/ProgressTrackingTable";
 import { CustomAppLayout } from "@/components/Layout/CustomAppLayout";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function SalesRepDashboard() {
-  console.log("Rendering Sales Rep Dashboard");
+  const { data: rampingData, isLoading, error } = useQuery({
+    queryKey: ['ramping-expectations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ramping_expectations")
+        .select("*")
+        .order("metric");
+      
+      if (error) throw error;
+      console.log('Ramping data fetched in Sales Rep Dashboard:', data);
+      return data;
+    }
+  });
 
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-8">Sales Representative Dashboard</h1>
         <div className="bg-white rounded-lg shadow-md p-6">
-          <RampingPeriodTable />
+          {error ? (
+            <div className="text-red-500">Error loading ramping expectations</div>
+          ) : isLoading ? (
+            <div>Loading ramping expectations...</div>
+          ) : !rampingData ? (
+            <div>No ramping expectations found</div>
+          ) : (
+            <RampingPeriodTable initialData={rampingData} />
+          )}
           <ProgressTrackingTable />
         </div>
       </div>
