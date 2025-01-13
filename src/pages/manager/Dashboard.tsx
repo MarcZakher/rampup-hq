@@ -48,34 +48,20 @@ const ManagerDashboard = () => {
     try {
       console.log('Fetching sales reps for manager:', user?.id);
       
-      // First, check if the current user is a director
-      const { data: userRoleData, error: userRoleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (userRoleError) {
-        console.error('Error fetching user role:', userRoleError);
-        throw userRoleError;
-      }
-
-      console.log('Current user role:', userRoleData);
-
-      // Get all sales reps with their profiles using two separate queries
+      // First, get all sales reps for this manager
       const { data: salesRepsData, error: salesRepsError } = await supabase
         .from('user_roles')
-        .select('id, user_id, manager_id')
+        .select(`
+          user_id,
+          role
+        `)
         .eq('role', 'sales_rep')
-        .eq(userRoleData.role !== 'director' ? 'manager_id' : 'role', 
-            userRoleData.role !== 'director' ? user?.id : 'sales_rep');
+        .eq('manager_id', user?.id);
 
       if (salesRepsError) {
         console.error('Error fetching sales reps:', salesRepsError);
         throw salesRepsError;
       }
-
-      console.log('Sales reps data:', salesRepsData);
 
       if (!salesRepsData || salesRepsData.length === 0) {
         setSalesReps([]);
@@ -83,7 +69,7 @@ const ManagerDashboard = () => {
         return;
       }
 
-      // Fetch profiles separately
+      // Get profiles for these sales reps
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -94,7 +80,7 @@ const ManagerDashboard = () => {
         throw profilesError;
       }
 
-      // Then fetch assessment scores for these sales reps
+      // Get assessment scores
       const { data: scoresData, error: scoresError } = await supabase
         .from('assessment_scores')
         .select('*')
@@ -105,9 +91,7 @@ const ManagerDashboard = () => {
         throw scoresError;
       }
 
-      console.log('Scores data:', scoresData);
-
-      // Transform the data into the format expected by the components
+      // Combine the data
       const formattedReps = salesRepsData.map(rep => {
         const profile = profilesData?.find(p => p.id === rep.user_id);
         const repScores = scoresData?.filter(score => score.sales_rep_id === rep.user_id) || [];
