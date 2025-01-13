@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -8,144 +6,64 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Pencil, Save, X } from "lucide-react";
-import { Json } from "@/integrations/supabase/types";
-import { useQuery } from "@tanstack/react-query";
 
-interface MonthValue {
-  [key: string]: string;
-  value: string;
-  note: string;
-}
-
-interface RampingExpectation {
-  id: string;
-  metric: string;
-  month_1: MonthValue;
-  month_2: MonthValue;
-  month_3: MonthValue;
-  month_4: MonthValue;
-  month_5: MonthValue;
-  month_6: MonthValue;
-}
-
-const fetchRampingData = async () => {
-  const { data, error } = await supabase
-    .from("ramping_expectations")
-    .select("*")
-    .order("metric");
-
-  if (error) throw error;
-  
-  return data.map(item => ({
-    id: item.id,
-    metric: item.metric,
-    month_1: typeof item.month_1 === 'string' ? JSON.parse(item.month_1) : item.month_1,
-    month_2: typeof item.month_2 === 'string' ? JSON.parse(item.month_2) : item.month_2,
-    month_3: typeof item.month_3 === 'string' ? JSON.parse(item.month_3) : item.month_3,
-    month_4: typeof item.month_4 === 'string' ? JSON.parse(item.month_4) : item.month_4,
-    month_5: typeof item.month_5 === 'string' ? JSON.parse(item.month_5) : item.month_5,
-    month_6: typeof item.month_6 === 'string' ? JSON.parse(item.month_6) : item.month_6,
-  }));
-};
+const staticData = [
+  {
+    metric: "DMs",
+    months: [
+      { value: "5", note: "(booked)" },
+      { value: "10", note: "" },
+      { value: "15", note: "" },
+      { value: "20", note: "" },
+      { value: "20", note: "" },
+      { value: "20", note: "" },
+    ],
+  },
+  {
+    metric: "NBMs",
+    months: [
+      { value: "0", note: "" },
+      { value: "1", note: "" },
+      { value: "1", note: "" },
+      { value: "1", note: "" },
+      { value: "2", note: "" },
+      { value: "2", note: "" },
+    ],
+  },
+  {
+    metric: "Scope+",
+    months: [
+      { value: "0", note: "" },
+      { value: "0", note: "" },
+      { value: "1", note: "" },
+      { value: "1", note: "" },
+      { value: "1", note: "" },
+      { value: "1", note: "" },
+    ],
+  },
+  {
+    metric: "NL",
+    months: [
+      { value: "0", note: "" },
+      { value: "0", note: "" },
+      { value: "0", note: "" },
+      { value: "0", note: "" },
+      { value: "0", note: "" },
+      { value: "1", note: "" },
+    ],
+  },
+];
 
 export function RampingPeriodTable() {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState<RampingExpectation | null>(null);
-  const { toast } = useToast();
-  const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin');
-
-  const { data: rampingData, isLoading, error } = useQuery({
-    queryKey: ['ramping-expectations'],
-    queryFn: fetchRampingData,
-  });
-
-  const startEditing = (expectation: RampingExpectation) => {
-    if (!isAdminRoute) return;
-    setEditingId(expectation.id);
-    setEditingData(JSON.parse(JSON.stringify(expectation)));
-  };
-
-  const cancelEditing = () => {
-    setEditingId(null);
-    setEditingData(null);
-  };
-
-  const handleValueChange = (month: number, field: 'value' | 'note', value: string) => {
-    if (!editingData) return;
-    
-    const monthKey = `month_${month}` as keyof RampingExpectation;
-    const currentMonthValue = editingData[monthKey] as MonthValue;
-    const updatedMonthValue: MonthValue = {
-      ...currentMonthValue,
-      [field]: value,
-    };
-
-    setEditingData({
-      ...editingData,
-      [monthKey]: updatedMonthValue,
-    });
-  };
-
-  const saveChanges = async () => {
-    if (!editingData) return;
-
-    try {
-      const { error } = await supabase
-        .from("ramping_expectations")
-        .update({
-          month_1: editingData.month_1 as Json,
-          month_2: editingData.month_2 as Json,
-          month_3: editingData.month_3 as Json,
-          month_4: editingData.month_4 as Json,
-          month_5: editingData.month_5 as Json,
-          month_6: editingData.month_6 as Json,
-        })
-        .eq("id", editingData.id);
-
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Changes saved successfully",
-      });
-      
-      cancelEditing();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save changes",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>Error loading ramping expectations</div>;
-  }
-
-  if (!rampingData || rampingData.length === 0) {
-    return <div>No ramping expectations available</div>;
-  }
-
   return (
     <div className="w-full">
       <div className="text-2xl font-semibold text-center mb-6">
-        Ramping Expectations
+        Ramping Period
       </div>
       <Table className="border border-gray-200 rounded-lg overflow-hidden">
         <TableHeader>
           <TableRow className="bg-gray-50">
-            <TableHead className="w-[100px] bg-rampup-primary text-white font-semibold">
+            <TableHead className="w-[100px] bg-gray-700 text-white font-semibold">
               Metric
             </TableHead>
             {[1, 2, 3, 4, 5, 6].map((month) => (
@@ -156,80 +74,28 @@ export function RampingPeriodTable() {
                 Month {month}
               </TableHead>
             ))}
-            {isAdminRoute && <TableHead className="w-[100px]">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rampingData.map((row) => (
-            <TableRow key={row.id} className="hover:bg-gray-50">
-              <TableCell className="font-medium bg-rampup-primary text-white">
+          {staticData.map((row, index) => (
+            <TableRow key={index} className="hover:bg-gray-50">
+              <TableCell className="font-medium bg-gray-700 text-white">
                 {row.metric}
               </TableCell>
-              {[1, 2, 3, 4, 5, 6].map((month) => {
-                const monthKey = `month_${month}` as keyof RampingExpectation;
-                const monthData = editingId === row.id && editingData 
-                  ? editingData[monthKey] as MonthValue
-                  : row[monthKey] as MonthValue;
-
-                return (
-                  <TableCell key={month} className="text-center p-2">
-                    {editingId === row.id && isAdminRoute ? (
-                      <div className="space-y-2">
-                        <Input
-                          value={monthData.value}
-                          onChange={(e) => handleValueChange(month, 'value', e.target.value)}
-                          className="w-full text-center"
-                        />
-                        <Input
-                          value={monthData.note}
-                          onChange={(e) => handleValueChange(month, 'note', e.target.value)}
-                          className="w-full text-center text-sm text-gray-500"
-                          placeholder="Add note"
-                        />
-                      </div>
-                    ) : (
-                      <div>
-                        <span className="font-semibold text-gray-900">{monthData.value}</span>
-                        {monthData.note && (
-                          <span className="text-sm text-gray-500 block">
-                            {monthData.note}
-                          </span>
-                        )}
-                      </div>
+              {row.months.map((month, monthIndex) => (
+                <TableCell key={monthIndex} className="text-center p-2">
+                  <div>
+                    <span className="font-semibold text-gray-900">
+                      {month.value}
+                    </span>
+                    {month.note && (
+                      <span className="text-sm text-gray-500 block">
+                        {month.note}
+                      </span>
                     )}
-                  </TableCell>
-                );
-              })}
-              {isAdminRoute && (
-                <TableCell>
-                  {editingId === row.id ? (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={saveChanges}
-                      >
-                        <Save className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={cancelEditing}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startEditing(row)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
+                  </div>
                 </TableCell>
-              )}
+              ))}
             </TableRow>
           ))}
         </TableBody>
