@@ -32,6 +32,16 @@ serve(async (req) => {
       }
     )
 
+    // Verify the JWT token using admin client
+    const { data: { user: requestingUser }, error: verifyError } = await supabaseAdmin.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    )
+
+    if (verifyError || !requestingUser) {
+      console.error('Token verification failed:', verifyError)
+      throw new Error('Invalid token')
+    }
+
     // Get the request body
     const { email, fullName, managerId } = await req.json()
 
@@ -42,28 +52,6 @@ serve(async (req) => {
         JSON.stringify({ error: 'Missing required fields' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
-    }
-
-    // Create Supabase client for JWT verification
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-
-    // Verify the JWT token
-    const { data: { user: requestingUser }, error: authError } = await supabaseClient.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
-
-    if (authError || !requestingUser) {
-      console.error('Invalid token:', authError)
-      throw new Error('Invalid token')
     }
 
     // Verify the requester is a manager
