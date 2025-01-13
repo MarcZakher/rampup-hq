@@ -2,9 +2,34 @@ import { Bell, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function TopNav() {
   const navigate = useNavigate();
+  const [userProfile, setUserProfile] = useState<{ full_name: string | null, email: string | null } | null>(null);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', user.id)
+          .single();
+        setUserProfile(profile);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -13,11 +38,20 @@ export function TopNav() {
         console.error('Error signing out:', error.message);
         return;
       }
-      // Only navigate after successful sign out
       navigate('/auth');
     } catch (error) {
       console.error('Unexpected error during sign out:', error);
     }
+  };
+
+  const getInitials = (name: string | null) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
@@ -32,9 +66,23 @@ export function TopNav() {
           <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
             <Bell className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-rampup-primary hover:text-rampup-secondary hover:bg-rampup-light/10">
-            <User className="h-5 w-5" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center">
+                  <Avatar className="h-8 w-8 border border-gray-200">
+                    <AvatarFallback className="bg-rampup-primary/10 text-rampup-primary">
+                      {getInitials(userProfile?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="font-medium">{userProfile?.full_name || 'User'}</p>
+                <p className="text-xs text-gray-500">{userProfile?.email}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button
             variant="ghost"
             size="icon"
