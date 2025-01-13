@@ -33,6 +33,15 @@ export function RampingExpectationsDisplay() {
     queryKey: ['ramping-expectations'],
     queryFn: async () => {
       console.log('Fetching ramping expectations...');
+      
+      // First, check if user is authenticated
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log('Current user:', user);
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw authError;
+      }
+      
       const { data, error } = await supabase
         .from('ramping_expectations')
         .select('*')
