@@ -17,7 +17,6 @@ export default function CoachingDashboard() {
   const [transcript, setTranscript] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiFeedback, setAiFeedback] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,7 +31,6 @@ export default function CoachingDashboard() {
     }
 
     setIsSubmitting(true);
-    setIsAnalyzing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
@@ -43,34 +41,36 @@ export default function CoachingDashboard() {
       });
 
       if (aiError) throw aiError;
-      const aiFeedbackText = aiData.analysis;
-      setAiFeedback(aiFeedbackText);
+      
+      if (!aiData?.analysis) {
+        throw new Error("No analysis received from AI");
+      }
+
+      setAiFeedback(aiData.analysis);
 
       // Save to database
-      const { error } = await supabase.from("meeting_analyses").insert({
+      const { error: dbError } = await supabase.from("meeting_analyses").insert({
         meeting_type: meetingType as MeetingType,
         transcript: transcript,
         sales_rep_id: user.id,
-        ai_feedback: aiFeedbackText
+        ai_feedback: aiData.analysis
       });
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
       toast({
         title: "Success",
         description: "Meeting transcript analyzed and saved",
       });
-      setTranscript("");
-      setMeetingType("");
     } catch (error) {
+      console.error("Error analyzing meeting:", error);
       toast({
         title: "Error",
-        description: "Failed to submit transcript",
+        description: error instanceof Error ? error.message : "Failed to analyze transcript",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
-      setIsAnalyzing(false);
     }
   };
 

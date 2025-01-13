@@ -43,6 +43,12 @@ serve(async (req) => {
     })
 
     const data = await response.json()
+    
+    if (!response.ok) {
+      console.error('OpenAI API error:', data)
+      throw new Error(data.error?.message || 'Failed to analyze transcript')
+    }
+
     const analysis = data.choices[0].message.content
 
     return new Response(
@@ -50,6 +56,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
+    console.error('Error in analyze-meeting function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
