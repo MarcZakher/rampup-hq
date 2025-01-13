@@ -32,17 +32,24 @@ export function RampingExpectationsDisplay() {
   const { data: expectations, isLoading } = useQuery({
     queryKey: ['ramping-expectations'],
     queryFn: async () => {
+      console.log('Fetching ramping expectations...');
       const { data, error } = await supabase
         .from('ramping_expectations')
-        .select('*');
+        .select('*')
+        .order('metric');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching expectations:', error);
+        throw error;
+      }
+      console.log('Fetched expectations:', data);
       return data as ExpectationRow[];
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async (expectation: ExpectationRow) => {
+      console.log('Updating expectation:', expectation);
       const { error } = await supabase
         .from('ramping_expectations')
         .update({
