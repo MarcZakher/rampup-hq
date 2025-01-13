@@ -60,10 +60,10 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rampup-light via-white to-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg border border-rampup-primary/20">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900 bg-gradient-to-r from-rampup-primary to-rampup-secondary bg-clip-text text-transparent">
             Welcome to RampUP
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
@@ -83,9 +83,47 @@ const Auth = () => {
               variables: {
                 default: {
                   colors: {
-                    brand: '#2563eb',
-                    brandAccent: '#1d4ed8',
+                    brand: '#9b87f5',
+                    brandAccent: '#7E69AB',
+                    brandButtonText: 'white',
+                    defaultButtonBackground: '#F8F9FA',
+                    defaultButtonBackgroundHover: '#E9ECEF',
+                    inputBackground: 'white',
+                    inputBorder: '#E9ECEF',
+                    inputBorderHover: '#9b87f5',
+                    inputBorderFocus: '#7E69AB',
                   },
+                  borderWidths: {
+                    buttonBorderWidth: '1px',
+                    inputBorderWidth: '1px',
+                  },
+                  radii: {
+                    borderRadiusButton: '0.5rem',
+                    buttonBorderRadius: '0.5rem',
+                    inputBorderRadius: '0.5rem',
+                  },
+                },
+              },
+              style: {
+                button: {
+                  border: '1px solid transparent',
+                  borderRadius: '0.5rem',
+                  padding: '0.625rem 1.25rem',
+                  transition: 'all 0.2s ease-in-out',
+                },
+                anchor: {
+                  color: '#7E69AB',
+                  textDecoration: 'none',
+                  fontWeight: '500',
+                  '&:hover': {
+                    color: '#9b87f5',
+                  },
+                },
+                container: {
+                  borderRadius: '0.75rem',
+                },
+                input: {
+                  borderRadius: '0.5rem',
                 },
               },
             }}
