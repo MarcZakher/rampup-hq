@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil, Save, X } from "lucide-react";
+import { Json } from "@/integrations/supabase/types";
 
 interface MonthValue {
   value: string;
@@ -152,13 +153,14 @@ export function RampingPeriodTable({ initialData }: RampingPeriodTableProps) {
     if (!editingData) return;
 
     try {
+      // Convert MonthValue objects to Json type for Supabase
       const monthDataToSave = {
-        month_1: editingData.month_1,
-        month_2: editingData.month_2,
-        month_3: editingData.month_3,
-        month_4: editingData.month_4,
-        month_5: editingData.month_5,
-        month_6: editingData.month_6,
+        month_1: editingData.month_1 as Json,
+        month_2: editingData.month_2 as Json,
+        month_3: editingData.month_3 as Json,
+        month_4: editingData.month_4 as Json,
+        month_5: editingData.month_5 as Json,
+        month_6: editingData.month_6 as Json,
       };
 
       const { error } = await supabase
