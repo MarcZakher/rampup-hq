@@ -129,7 +129,6 @@ const ManagerDashboard = () => {
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
 
-  // Load data from Supabase on component mount
   useEffect(() => {
     const loadSalesReps = async () => {
       try {
@@ -138,7 +137,7 @@ const ManagerDashboard = () => {
           .from('user_roles')
           .select(`
             user_id,
-            profiles:user_id (
+            profiles (
               full_name
             )
           `)
@@ -171,7 +170,7 @@ const ManagerDashboard = () => {
           
           return {
             id: index + 1,
-            name: rep.profiles?.full_name || 'Unknown',
+            name: rep.profiles?.[0]?.full_name || 'Unknown',
             month1: new Array(5).fill(0).map((_, i) => 
               repScores.find(s => s.month === 'month1' && s.assessment_index === i)?.score || 0
             ),
