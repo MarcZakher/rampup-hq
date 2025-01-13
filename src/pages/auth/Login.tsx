@@ -51,6 +51,22 @@ export default function Login() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Handle auth state changes to catch sign up attempts
+  useEffect(() => {
+    const handleAuthChange = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_UP' && !selectedRole) {
+        setError('Please select a role before signing up');
+        // Sign out the user if they haven't selected a role
+        await supabase.auth.signOut();
+        return;
+      }
+    });
+
+    return () => {
+      handleAuthChange.data.subscription.unsubscribe();
+    };
+  }, [selectedRole]);
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#9b87f5] via-[#7E69AB] to-[#6E59A5] p-4">
       <div className="w-full max-w-md space-y-8 relative">
@@ -76,7 +92,10 @@ export default function Login() {
           {view === 'sign_up' && (
             <div className="space-y-2 mb-4">
               <Label htmlFor="role" className="text-gray-700">Select Your Role</Label>
-              <Select onValueChange={setSelectedRole} value={selectedRole}>
+              <Select onValueChange={(value) => {
+                setSelectedRole(value);
+                setError('');
+              }} value={selectedRole}>
                 <SelectTrigger id="role" className="w-full bg-white border-purple-200 focus:ring-purple-200">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
@@ -112,32 +131,8 @@ export default function Login() {
               },
             }}
             providers={[]}
-            onSubmit={async (formData) => {
-              if (view === 'sign_up') {
-                if (!selectedRole) {
-                  setError('Please select a role before signing up');
-                  return false;
-                }
-                setError('');
-                
-                const { error: signUpError } = await supabase.auth.signUp({
-                  email: formData.email,
-                  password: formData.password,
-                  options: {
-                    data: {
-                      role: selectedRole,
-                    },
-                  },
-                });
-
-                if (signUpError) {
-                  setError(signUpError.message);
-                  return false;
-                }
-              }
-              return true;
-            }}
-            onViewChange={(newView) => {
+            view={view}
+            onViewChange={(newView: any) => {
               setView(newView);
               if (newView === 'sign_in') {
                 setError('');
