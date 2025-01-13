@@ -48,15 +48,30 @@ const ManagerDashboard = () => {
     try {
       console.log('Fetching sales reps for manager:', user?.id);
       
-      // First, get all sales reps for this manager
-      const { data: salesRepsData, error: salesRepsError } = await supabase
+      // First, get the current user's role
+      const { data: userRole, error: userRoleError } = await supabase
         .from('user_roles')
-        .select(`
-          user_id,
-          role
-        `)
-        .eq('role', 'sales_rep')
-        .eq('manager_id', user?.id);
+        .select('role')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (userRoleError) {
+        console.error('Error fetching user role:', userRoleError);
+        throw userRoleError;
+      }
+
+      // Fetch sales reps based on role
+      const query = supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'sales_rep');
+
+      // If not director, only show sales reps managed by this user
+      if (userRole?.role !== 'director') {
+        query.eq('manager_id', user?.id);
+      }
+
+      const { data: salesRepsData, error: salesRepsError } = await query;
 
       if (salesRepsError) {
         console.error('Error fetching sales reps:', salesRepsError);
