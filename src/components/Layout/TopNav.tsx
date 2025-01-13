@@ -23,12 +23,17 @@ export function TopNav() {
       try {
         setIsLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
+        console.log('Current user:', user); // Debug log
+
         if (user) {
-          const { data: profile } = await supabase
+          const { data: profile, error } = await supabase
             .from('profiles')
             .select('full_name, email')
             .eq('id', user.id)
             .single();
+          
+          console.log('Profile data:', profile); // Debug log
+          console.log('Profile error:', error); // Debug log
           
           if (profile) {
             setUserProfile(profile);
