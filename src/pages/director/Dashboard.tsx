@@ -53,46 +53,57 @@ const DirectorDashboard = () => {
   useEffect(() => {
     const fetchSalesReps = async () => {
       try {
-        // First, get all sales reps from user_roles
+        console.log('Fetching sales reps data...');
+        
+        // First, get all sales reps roles
         const { data: salesRepRoles, error: rolesError } = await supabase
           .from('user_roles')
           .select('user_id')
           .eq('role', 'sales_rep');
 
-        if (rolesError) throw rolesError;
-        if (!salesRepRoles) return;
+        if (rolesError) {
+          console.error('Error fetching sales rep roles:', rolesError);
+          throw rolesError;
+        }
 
-        // Then get the profiles for these sales reps
-        const salesRepsWithProfiles = await Promise.all(
+        if (!salesRepRoles || salesRepRoles.length === 0) {
+          console.log('No sales reps found');
+          return;
+        }
+
+        console.log('Found sales rep roles:', salesRepRoles);
+
+        // Get profiles and scores for each sales rep
+        const salesRepsData = await Promise.all(
           salesRepRoles.map(async (role) => {
-            const { data: profile, error: profileError } = await supabase
+            // Get profile
+            const { data: profile } = await supabase
               .from('profiles')
               .select('full_name')
               .eq('id', role.user_id)
-              .single();
+              .maybeSingle();
 
-            if (profileError) throw profileError;
-
-            // Get assessment scores for this sales rep
-            const { data: scores, error: scoresError } = await supabase
+            // Get assessment scores
+            const { data: scores } = await supabase
               .from('assessment_scores')
               .select('*')
               .eq('sales_rep_id', role.user_id);
 
-            if (scoresError) throw scoresError;
+            console.log(`Fetched scores for ${role.user_id}:`, scores);
 
-            // Transform scores into the expected format
+            // Initialize score arrays
             const month1Scores = Array(5).fill(0);
             const month2Scores = Array(6).fill(0);
             const month3Scores = Array(6).fill(0);
 
+            // Populate scores if they exist
             scores?.forEach(score => {
               if (score.month === 'month1' && score.assessment_index < 5) {
-                month1Scores[score.assessment_index] = Number(score.score);
+                month1Scores[score.assessment_index] = Number(score.score) || 0;
               } else if (score.month === 'month2' && score.assessment_index < 6) {
-                month2Scores[score.assessment_index] = Number(score.score);
+                month2Scores[score.assessment_index] = Number(score.score) || 0;
               } else if (score.month === 'month3' && score.assessment_index < 6) {
-                month3Scores[score.assessment_index] = Number(score.score);
+                month3Scores[score.assessment_index] = Number(score.score) || 0;
               }
             });
 
@@ -106,7 +117,8 @@ const DirectorDashboard = () => {
           })
         );
 
-        setSalesReps(salesRepsWithProfiles);
+        console.log('Processed sales reps data:', salesRepsData);
+        setSalesReps(salesRepsData);
       } catch (error) {
         console.error('Error fetching sales reps:', error);
       }
