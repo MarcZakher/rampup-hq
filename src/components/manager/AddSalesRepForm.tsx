@@ -30,14 +30,23 @@ export function AddSalesRepForm({ onAddSalesRep }: AddSalesRepFormProps) {
     setIsLoading(true);
 
     try {
+      // Get the current session
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
+      // Make sure we have the access token
+      const accessToken = session.access_token;
+      if (!accessToken) throw new Error('No access token available');
+
+      // Call the edge function with the authorization header
       const { data, error } = await supabase.functions.invoke('create-sales-rep', {
         body: {
           email: newRepEmail,
           fullName: newRepName,
           managerId: user?.id
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`
         }
       });
 
