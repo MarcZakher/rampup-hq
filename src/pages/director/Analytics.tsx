@@ -12,6 +12,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { AIRecommendations } from '@/components/Analytics/AIRecommendations';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+} from '@/components/ui/chart';
 
 const chartConfig = {
   improving: {
