@@ -72,6 +72,17 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
     return <div className="w-full text-center py-4">No ramping expectations available</div>;
   }
 
+  const getMonthValue = (jsonData: unknown): MonthValue => {
+    if (typeof jsonData === 'object' && jsonData !== null) {
+      const data = jsonData as Record<string, unknown>;
+      return {
+        value: String(data.value || ''),
+        note: String(data.note || ''),
+      };
+    }
+    return { value: '', note: '' };
+  };
+
   return (
     <div className="w-full">
       <div className="text-2xl font-semibold text-center mb-6">
@@ -101,7 +112,7 @@ export function RampingPeriodTable({ initialData, isLoading: externalIsLoading, 
               </TableCell>
               {[1, 2, 3, 4, 5, 6].map((month) => {
                 const monthKey = `month_${month}` as keyof RampingExpectation;
-                const monthData = row[monthKey] as MonthValue;
+                const monthData = getMonthValue(row[monthKey]);
 
                 return (
                   <TableCell key={month} className="text-center p-2">

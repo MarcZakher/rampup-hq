@@ -4,13 +4,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Database } from "@/integrations/supabase/types";
+
+type MetricType = Database['public']['Enums']['metric_type'];
 
 export function RampingExpectationsTable() {
   const [metrics, setMetrics] = useState([
-    { name: "DMs", values: ["5 (booked)", 10, 15, 20, 20, 20] },
-    { name: "NBMs", values: [0, 1, 1, 1, 2, 2] },
-    { name: "Scope+", values: [0, 0, 1, 1, 1, 1] },
-    { name: "NL", values: [0, 0, 0, 0, 0, 1] },
+    { name: "DMs" as MetricType, values: ["5 (booked)", 10, 15, 20, 20, 20] },
+    { name: "NBMs" as MetricType, values: [0, 1, 1, 1, 2, 2] },
+    { name: "Scope+" as MetricType, values: [0, 0, 1, 1, 1, 1] },
+    { name: "NL" as MetricType, values: [0, 0, 0, 0, 0, 1] },
   ]);
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
