@@ -89,7 +89,8 @@ const fetchSalesReps = async () => {
 const DirectorDashboard = () => {
   const { data: salesReps, isLoading, error } = useQuery({
     queryKey: ['salesReps'],
-    queryFn: fetchSalesReps
+    queryFn: fetchSalesReps,
+    retry: 1
   });
 
   const calculateAverage = (scores: number[]) => {
@@ -104,6 +105,14 @@ const DirectorDashboard = () => {
     if (score >= 3) return 'bg-[#FFEB9C]';
     return 'bg-[#FFC7CE]';
   };
+
+  if (isLoading) {
+    return (
+      <CustomAppLayout>
+        <div className="p-6">Loading...</div>
+      </CustomAppLayout>
+    );
+  }
 
   if (error) {
     console.error('Error loading sales reps:', error);
@@ -140,14 +149,6 @@ const DirectorDashboard = () => {
   };
 
   const topRampingRep = getTopRampingRep();
-
-  if (isLoading) {
-    return (
-      <CustomAppLayout>
-        <div className="p-6">Loading...</div>
-      </CustomAppLayout>
-    );
-  }
 
   return (
     <CustomAppLayout>
