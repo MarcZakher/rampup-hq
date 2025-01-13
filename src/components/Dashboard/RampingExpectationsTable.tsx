@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Json } from "@/integrations/supabase/types";
 
 interface MonthValue {
   value: string;
@@ -29,12 +30,12 @@ interface MetricRow {
 interface DatabaseRampingExpectation {
   id: string;
   metric: string;
-  month_1: string | MonthValue;
-  month_2: string | MonthValue;
-  month_3: string | MonthValue;
-  month_4: string | MonthValue;
-  month_5: string | MonthValue;
-  month_6: string | MonthValue;
+  month_1: Json;
+  month_2: Json;
+  month_3: Json;
+  month_4: Json;
+  month_5: Json;
+  month_6: Json;
   created_at: string;
   updated_at: string;
 }
@@ -48,7 +49,7 @@ export function RampingExpectationsTable() {
     fetchRampingExpectations();
   }, []);
 
-  const parseMonthValue = (value: string | MonthValue): MonthValue => {
+  const parseMonthValue = (value: Json): MonthValue => {
     if (typeof value === 'string') {
       try {
         return JSON.parse(value);
@@ -56,7 +57,10 @@ export function RampingExpectationsTable() {
         return { value: '', note: '' };
       }
     }
-    return value;
+    if (typeof value === 'object' && value !== null && 'value' in value) {
+      return value as MonthValue;
+    }
+    return { value: '', note: '' };
   };
 
   const fetchRampingExpectations = async () => {
