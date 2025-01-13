@@ -112,8 +112,27 @@ export default function Login() {
               },
             }}
             providers={[]}
+            localization={{
+              variables: {
+                sign_up: {
+                  email_label: "Email",
+                  password_label: "Password",
+                  button_label: "Sign Up",
+                },
+              },
+            }}
+            onSubmit={async (e) => {
+              if (view === 'sign_up' && !selectedRole) {
+                e.preventDefault();
+                setError('Please select a role before signing up');
+                return;
+              }
+            }}
             view={view}
-            onViewChange={setView}
+            onViewChange={(newView) => {
+              setView(newView as 'sign_in' | 'sign_up');
+              setError('');
+            }}
           />
         </div>
       </div>
