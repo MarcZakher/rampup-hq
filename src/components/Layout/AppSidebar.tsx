@@ -1,4 +1,4 @@
-import { Home, Users, LineChart, ClipboardList, Settings, Flag, BookOpen } from 'lucide-react';
+import { Home, Users, LineChart, ClipboardList, Settings } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -15,8 +15,6 @@ const menuItems = [
   { title: 'Sales Reps', icon: Users, url: '/sales-reps' },
   { title: 'Assessments', icon: ClipboardList, url: '/assessments' },
   { title: 'Performance Analytics', icon: LineChart, url: '/director/analytics' },
-  { title: 'Ramping Expectations', icon: Flag, url: '/admin/ramping-expectations' },
-  { title: 'Edit Training Journey', icon: BookOpen, url: '/admin/training-journey' },
   { title: 'Settings', icon: Settings, url: '/settings' },
 ];
 
