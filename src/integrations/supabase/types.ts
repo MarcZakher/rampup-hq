@@ -40,15 +40,7 @@ export type Database = {
           score?: number | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "assessment_scores_sales_rep_id_profiles_fkey"
-            columns: ["sales_rep_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       meeting_analyses: {
         Row: {
