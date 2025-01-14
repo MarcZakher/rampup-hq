@@ -43,8 +43,6 @@ const assessments = {
   ]
 };
 
-const STORAGE_KEY = 'manager_dashboard_sales_reps';
-
 const ManagerDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [newRepName, setNewRepName] = useState('');
@@ -140,12 +138,16 @@ const ManagerDashboard = () => {
     }
 
     try {
-      // Create a new user profile
+      // Generate a UUID for the new profile
+      const newProfileId = crypto.randomUUID();
+
+      // Create a new user profile with the generated ID
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .insert([
-          { full_name: newRepName }
-        ])
+        .insert({
+          id: newProfileId,
+          full_name: newRepName,
+        })
         .select()
         .single();
 
@@ -156,7 +158,7 @@ const ManagerDashboard = () => {
         .from('user_roles')
         .insert([
           {
-            user_id: profile.id,
+            user_id: newProfileId,
             role: 'sales_rep',
             manager_id: user.id
           }
@@ -166,7 +168,7 @@ const ManagerDashboard = () => {
 
       // Add the new rep to the local state
       const newRep: SalesRep = {
-        id: parseInt(profile.id),
+        id: parseInt(newProfileId),
         name: newRepName,
         month1: new Array(assessments.month1.length).fill(0),
         month2: new Array(assessments.month2.length).fill(0),
