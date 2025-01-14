@@ -1,4 +1,5 @@
-import { Home, Users, LineChart, ClipboardList, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart3, ClipboardList, GraduationCap, LayoutDashboard, MessageSquare } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -9,33 +10,53 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-
-const menuItems = [
-  { title: 'Home', icon: Home, url: '/' },
-  { title: 'Sales Reps', icon: Users, url: '/sales-reps' },
-  { title: 'Assessments', icon: ClipboardList, url: '/assessments' },
-  { title: 'Performance Analytics', icon: LineChart, url: '/director/analytics' },
-  { title: 'Settings', icon: Settings, url: '/settings' },
-];
+import { useUserRole } from '@/hooks/use-user-role';
 
 export function AppSidebar() {
+  const navigate = useNavigate();
+  const { role } = useUserRole();
+
+  const getMenuItems = () => {
+    switch (role) {
+      case 'director':
+        return [
+          { icon: LayoutDashboard, label: 'Dashboard', onClick: () => navigate('/director/dashboard') },
+          { icon: BarChart3, label: 'Analytics', onClick: () => navigate('/director/analytics') },
+        ];
+      case 'manager':
+        return [
+          { icon: LayoutDashboard, label: 'Dashboard', onClick: () => navigate('/manager/dashboard') },
+          { icon: MessageSquare, label: 'Feedback to Reps', onClick: () => navigate('/manager/feedback') },
+        ];
+      case 'sales_rep':
+        return [
+          { icon: LayoutDashboard, label: 'Dashboard', onClick: () => navigate('/sales-rep/dashboard') },
+          { icon: GraduationCap, label: 'Training Journey', onClick: () => navigate('/sales-rep/training') },
+          { icon: BarChart3, label: 'Analytics', onClick: () => navigate('/sales-rep/analytics') },
+        ];
+      case 'admin':
+        return [
+          { icon: LayoutDashboard, label: 'Dashboard', onClick: () => navigate('/admin/dashboard') },
+        ];
+      default:
+        return [
+          { icon: ClipboardList, label: 'Coaching', onClick: () => navigate('/coaching/dashboard') },
+        ];
+    }
+  };
+
   return (
     <Sidebar>
       <SidebarContent>
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-primary">RampUP</h1>
-        </div>
         <SidebarGroup>
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-3">
-                      <item.icon className="w-5 h-5" />
-                      <span>{item.title}</span>
-                    </a>
+              {getMenuItems().map((item, index) => (
+                <SidebarMenuItem key={index}>
+                  <SidebarMenuButton onClick={item.onClick}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

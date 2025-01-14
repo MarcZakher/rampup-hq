@@ -13,6 +13,7 @@ import TrainingJourney from './pages/sales-rep/TrainingJourney';
 import SalesRepAnalytics from './pages/sales-rep/Analytics';
 import CoachingDashboard from './pages/coaching/Dashboard';
 import AdminDashboard from './pages/admin/Dashboard';
+import FeedbackToReps from './pages/manager/FeedbackToReps';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -98,6 +99,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ManagerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/feedback"
+            element={
+              <ProtectedRoute>
+                <FeedbackToReps />
               </ProtectedRoute>
             }
           />

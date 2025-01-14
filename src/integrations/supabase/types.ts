@@ -50,6 +50,68 @@ export type Database = {
           },
         ]
       }
+      feedback_form_templates: {
+        Row: {
+          assessment_name: string
+          created_at: string
+          form_structure: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_name: string
+          created_at?: string
+          form_structure: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_name?: string
+          created_at?: string
+          form_structure?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      feedback_submissions: {
+        Row: {
+          created_at: string
+          feedback_data: Json
+          id: string
+          manager_id: string
+          sales_rep_id: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feedback_data: Json
+          id?: string
+          manager_id: string
+          sales_rep_id: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feedback_data?: Json
+          id?: string
+          manager_id?: string
+          sales_rep_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_submissions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_form_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_analyses: {
         Row: {
           ai_feedback: string | null
