@@ -19,60 +19,11 @@ const Auth = () => {
           return;
         }
         if (session) {
-          redirectBasedOnRole();
+          navigate('/director/dashboard');
         }
       } catch (error) {
         console.error('Session check failed:', error);
         setErrorMessage('Failed to check authentication status');
-      }
-    };
-
-    const redirectBasedOnRole = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          throw new Error('No user found');
-        }
-
-        // Get user role from user_roles table, filtered by the current user's ID
-        const { data: userRole, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (roleError) {
-          console.error('Role check error:', roleError);
-          setErrorMessage('Failed to check user role');
-          return;
-        }
-
-        if (!userRole) {
-          console.error('No role found for user');
-          setErrorMessage('User role not found');
-          await supabase.auth.signOut();
-          return;
-        }
-
-        // Redirect based on role
-        switch (userRole.role) {
-          case 'director':
-            navigate('/director/dashboard');
-            break;
-          case 'manager':
-            navigate('/manager/dashboard');
-            break;
-          case 'sales_rep':
-            navigate('/sales-rep/dashboard');
-            break;
-          default:
-            console.error('Unknown role:', userRole.role);
-            setErrorMessage('Invalid user role');
-            await supabase.auth.signOut();
-        }
-      } catch (error) {
-        console.error('Role redirect failed:', error);
-        setErrorMessage('Failed to process user role');
       }
     };
 
@@ -83,7 +34,7 @@ const Auth = () => {
       
       if (event === 'SIGNED_IN') {
         if (session) {
-          redirectBasedOnRole();
+          navigate('/director/dashboard');
         }
       }
       if (event === 'TOKEN_REFRESHED') {
