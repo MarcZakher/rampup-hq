@@ -61,12 +61,12 @@ const DirectorDashboard = () => {
   useEffect(() => {
     const fetchSalesRepsData = async () => {
       try {
-        // First, get all sales reps with their profiles
+        // First, get all sales reps with their profiles using a proper join
         const { data: salesRepsData, error: salesRepsError } = await supabase
           .from('user_roles')
           .select(`
             user_id,
-            profiles:user_id (
+            profiles!user_roles_user_id_fkey (
               full_name
             )
           `)
