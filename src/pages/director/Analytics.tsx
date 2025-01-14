@@ -95,8 +95,14 @@ const Analytics = () => {
   }
 
   const chartConfig = {
-    width: '100%',
-    height: 300,
+    scores: {
+      label: 'Assessment Scores',
+      color: '#8884d8'
+    },
+    target: {
+      label: 'Target',
+      color: '#82ca9d'
+    }
   };
 
   return (
