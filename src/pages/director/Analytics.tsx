@@ -97,33 +97,6 @@ const Analytics = () => {
 
   const metrics = calculateMetrics();
 
-  const summaryMetrics = [
-    {
-      title: "Team Average Score",
-      value: `${metrics.avgScore}/5.0`,
-      icon: <Users className="h-4 w-4 text-muted-foreground" />,
-      description: "Across all assessments"
-    },
-    {
-      title: "Reps Meeting Target",
-      value: `${metrics.meetingTarget}%`,
-      icon: <Target className="h-4 w-4 text-muted-foreground" />,
-      description: "Score above 3/5"
-    },
-    {
-      title: "Completion Rate",
-      value: `${metrics.completionRate}%`,
-      icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
-      description: "Of all assessments"
-    },
-    {
-      title: "Top Performer",
-      value: metrics.topPerformer.name,
-      icon: <Trophy className="h-4 w-4 text-muted-foreground" />,
-      description: `Score: ${metrics.topPerformer.score}/5`
-    }
-  ];
-
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -133,45 +106,62 @@ const Analytics = () => {
       <div className="p-6 space-y-6">
         <h1 className="text-2xl font-bold mb-6">Performance Analytics</h1>
         
-        {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {summaryMetrics.map((metric, index) => (
-            <StatCard
-              key={index}
-              title={metric.title}
-              value={metric.value}
-              icon={metric.icon}
-              description={metric.description}
-            />
-          ))}
+          <StatCard
+            title="Team Average Score"
+            value={`${metrics.avgScore}/5.0`}
+            icon={<Users className="h-4 w-4 text-muted-foreground" />}
+            description="Across all assessments"
+          />
+          <StatCard
+            title="Reps Meeting Target"
+            value={`${metrics.meetingTarget}%`}
+            icon={<Target className="h-4 w-4 text-muted-foreground" />}
+            description="Score above 3/5"
+          />
+          <StatCard
+            title="Completion Rate"
+            value={`${metrics.completionRate}%`}
+            icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+            description="Of all assessments"
+          />
+          <StatCard
+            title="Top Performer"
+            value={metrics.topPerformer.name}
+            icon={<Trophy className="h-4 w-4 text-muted-foreground" />}
+            description={`Score: ${metrics.topPerformer.score}/5`}
+          />
         </div>
 
-        {/* Charts section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartContainer config={{}}>
-            <AreaChart data={assessmentData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <ChartTooltip />
-              <Area 
-                type="monotone" 
-                dataKey="score" 
-                stroke="#10B981" 
-                fill="#10B981" 
-                fillOpacity={0.1} 
-              />
-            </AreaChart>
+          <ChartContainer>
+            <ResponsiveContainer>
+              <AreaChart data={assessmentData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <ChartTooltip />
+                <Area 
+                  type="monotone" 
+                  dataKey="score" 
+                  stroke="#10B981" 
+                  fill="#10B981" 
+                  fillOpacity={0.1} 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </ChartContainer>
 
-          <ChartContainer config={{}}>
-            <BarChart data={assessmentData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="assessment_index" />
-              <YAxis />
-              <ChartTooltip />
-              <Bar dataKey="score" fill="#8884d8" />
-            </BarChart>
+          <ChartContainer>
+            <ResponsiveContainer>
+              <BarChart data={assessmentData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="assessment_index" />
+                <YAxis />
+                <ChartTooltip />
+                <Bar dataKey="score" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
           </ChartContainer>
         </div>
       </div>
