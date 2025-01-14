@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useUser } from '@supabase/auth-helpers-react';
 
 interface SalesRep {
   id: number;
@@ -41,112 +43,94 @@ const assessments = {
   ]
 };
 
-const initialSalesReps: SalesRep[] = [
-  {
-    id: 1,
-    name: "Charlie Hobbs",
-    month1: [1.8, 2, 0, 3, 3],
-    month2: [3, 2, 2, 2, 2, 2.5],
-    month3: [2.5, 2, 0, 2.5, 0, 0]
-  },
-  {
-    id: 2,
-    name: "Amina Boualem",
-    month1: [4.0, 3, 3, 4, 3.5],
-    month2: [3, 3, 3, 3, 3.5, 0],
-    month3: [2.5, 4, 3, 2, 3.5, 3]
-  },
-  {
-    id: 3,
-    name: "Tayfun Kurtbas",
-    month1: [2.3, 3, 3, 3, 3],
-    month2: [3, 3, 2, 2, 3, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 4,
-    name: "Katrien VanHeusden",
-    month1: [2.0, 0, 0, 3, 2.5],
-    month2: [2, 3, 2, 3, 2, 0],
-    month3: [2, 2, 1, 0, 0, 0]
-  },
-  {
-    id: 5,
-    name: "Derynne Wittes",
-    month1: [2.2, 0, 3, 3, 4.5],
-    month2: [0, 0, 3, 3.5, 0, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 6,
-    name: "Ziad Ayman",
-    month1: [3.0, 0, 3, 3.25, 3.5],
-    month2: [3.5, 0, 0, 4, 3.5, 4],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 7,
-    name: "Karl Chayeb",
-    month1: [3.5, 0, 3, 3.5, 3],
-    month2: [3, 0, 3, 3.5, 0, 3.5],
-    month3: [4, 0, 0, 3, 4, 0]
-  },
-  {
-    id: 8,
-    name: "Jose Konopnicki",
-    month1: [4.0, 0, 3, 3.075, 3.5],
-    month2: [3, 0, 4, 4, 4, 4],
-    month3: [4, 0, 0, 3.5, 3.5, 0]
-  },
-  {
-    id: 9,
-    name: "Emma Hellqvist",
-    month1: [3.0, 0, 0, 4, 4],
-    month2: [3, 0, 3.5, 3, 3, 4],
-    month3: [0, 0, 0, 4.5, 0, 0]
-  },
-  {
-    id: 10,
-    name: "Jake Curtis",
-    month1: [0.0, 0, 0, 4, 0],
-    month2: [0, 0, 0, 0, 0, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 11,
-    name: "Riccardo Profiti",
-    month1: [3.5, 4, 2.5, 3.875, 3],
-    month2: [3, 4, 3, 3.5, 2.25, 0],
-    month3: [3, 0, 0, 4, 3.75, 0]
-  }
-];
-
 const STORAGE_KEY = 'manager_dashboard_sales_reps';
 
 const ManagerDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
+  const user = useUser();
 
-  // Load saved data on component mount
+  // Load sales reps data for the current manager
   useEffect(() => {
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    if (savedReps) {
-      setSalesReps(JSON.parse(savedReps));
-    } else {
-      // If no saved data, use the initial data
-      setSalesReps(initialSalesReps);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialSalesReps));
-    }
-  }, []);
+    const fetchSalesReps = async () => {
+      if (!user) return;
 
-  // Save data whenever salesReps changes
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(salesReps));
-  }, [salesReps]);
+      try {
+        // Get sales reps managed by the current manager
+        const { data: userRoles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('manager_id', user.id)
+          .eq('role', 'sales_rep');
 
-  const addSalesRep = () => {
-    if (!newRepName.trim()) {
+        if (rolesError) throw rolesError;
+
+        if (!userRoles.length) {
+          setSalesReps([]);
+          return;
+        }
+
+        // Get profiles for the sales reps
+        const salesRepIds = userRoles.map(role => role.user_id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', salesRepIds);
+
+        if (profilesError) throw profilesError;
+
+        // Get assessment scores for the sales reps
+        const { data: scores, error: scoresError } = await supabase
+          .from('assessment_scores')
+          .select('*')
+          .in('sales_rep_id', salesRepIds);
+
+        if (scoresError) throw scoresError;
+
+        // Transform the data into the required format
+        const formattedReps = profiles.map(profile => {
+          const repScores = scores.filter(score => score.sales_rep_id === profile.id);
+          
+          const month1Scores = new Array(5).fill(0);
+          const month2Scores = new Array(6).fill(0);
+          const month3Scores = new Array(6).fill(0);
+
+          repScores.forEach(score => {
+            if (score.month === 'month1' && score.assessment_index < 5) {
+              month1Scores[score.assessment_index] = score.score || 0;
+            } else if (score.month === 'month2' && score.assessment_index < 6) {
+              month2Scores[score.assessment_index] = score.score || 0;
+            } else if (score.month === 'month3' && score.assessment_index < 6) {
+              month3Scores[score.assessment_index] = score.score || 0;
+            }
+          });
+
+          return {
+            id: parseInt(profile.id),
+            name: profile.full_name || 'Unknown',
+            month1: month1Scores,
+            month2: month2Scores,
+            month3: month3Scores
+          };
+        });
+
+        setSalesReps(formattedReps);
+      } catch (error) {
+        console.error('Error fetching sales reps:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load sales representatives data",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchSalesReps();
+  }, [user, toast]);
+
+  const addSalesRep = async () => {
+    if (!newRepName.trim() || !user) {
       toast({
         title: "Error",
         description: "Please enter a name for the sales representative",
@@ -155,31 +139,87 @@ const ManagerDashboard = () => {
       return;
     }
 
-    const newRep: SalesRep = {
-      id: Date.now(),
-      name: newRepName,
-      month1: new Array(assessments.month1.length).fill(0),
-      month2: new Array(assessments.month2.length).fill(0),
-      month3: new Array(assessments.month3.length).fill(0)
-    };
+    try {
+      // Create a new user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          { full_name: newRepName }
+        ])
+        .select()
+        .single();
 
-    setSalesReps([...salesReps, newRep]);
-    setNewRepName('');
-    toast({
-      title: "Success",
-      description: "Sales representative added successfully"
-    });
+      if (profileError) throw profileError;
+
+      // Create user role for the new sales rep
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert([
+          {
+            user_id: profile.id,
+            role: 'sales_rep',
+            manager_id: user.id
+          }
+        ]);
+
+      if (roleError) throw roleError;
+
+      // Add the new rep to the local state
+      const newRep: SalesRep = {
+        id: parseInt(profile.id),
+        name: newRepName,
+        month1: new Array(assessments.month1.length).fill(0),
+        month2: new Array(assessments.month2.length).fill(0),
+        month3: new Array(assessments.month3.length).fill(0)
+      };
+
+      setSalesReps([...salesReps, newRep]);
+      setNewRepName('');
+      toast({
+        title: "Success",
+        description: "Sales representative added successfully"
+      });
+    } catch (error) {
+      console.error('Error adding sales rep:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add sales representative",
+        variant: "destructive"
+      });
+    }
   };
 
-  const removeSalesRep = (id: number) => {
-    setSalesReps(salesReps.filter(rep => rep.id !== id));
-    toast({
-      title: "Success",
-      description: "Sales representative removed successfully"
-    });
+  const removeSalesRep = async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', id.toString())
+        .eq('manager_id', user?.id);
+
+      if (error) throw error;
+
+      setSalesReps(salesReps.filter(rep => rep.id !== id));
+      toast({
+        title: "Success",
+        description: "Sales representative removed successfully"
+      });
+    } catch (error) {
+      console.error('Error removing sales rep:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove sales representative",
+        variant: "destructive"
+      });
+    }
   };
 
-  const updateScore = (repId: number, month: 'month1' | 'month2' | 'month3', index: number, value: string) => {
+  const updateScore = async (
+    repId: number,
+    month: 'month1' | 'month2' | 'month3',
+    index: number,
+    value: string
+  ) => {
     const score = parseFloat(value);
     if (isNaN(score) || score < 0 || score > 5) {
       toast({
@@ -190,14 +230,37 @@ const ManagerDashboard = () => {
       return;
     }
 
-    setSalesReps(salesReps.map(rep => {
-      if (rep.id === repId) {
-        const newScores = [...rep[month]];
-        newScores[index] = score;
-        return { ...rep, [month]: newScores };
-      }
-      return rep;
-    }));
+    try {
+      const { error } = await supabase
+        .from('assessment_scores')
+        .upsert({
+          sales_rep_id: repId.toString(),
+          manager_id: user?.id,
+          month,
+          assessment_index: index,
+          score
+        }, {
+          onConflict: 'sales_rep_id,month,assessment_index'
+        });
+
+      if (error) throw error;
+
+      setSalesReps(salesReps.map(rep => {
+        if (rep.id === repId) {
+          const newScores = [...rep[month]];
+          newScores[index] = score;
+          return { ...rep, [month]: newScores };
+        }
+        return rep;
+      }));
+    } catch (error) {
+      console.error('Error updating score:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update score",
+        variant: "destructive"
+      });
+    }
   };
 
   const getScoreColor = (score: number) => {
