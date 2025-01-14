@@ -27,20 +27,43 @@ const queryClient = new QueryClient({
 // Protected Route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    });
+    const checkAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Session error:', error);
+          setIsAuthenticated(false);
+          // Clear any invalid session data
+          await supabase.auth.signOut();
+          return;
+        }
+        setIsAuthenticated(!!session);
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session);
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change in ProtectedRoute:', event); // Debug log
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        setIsAuthenticated(false);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setIsAuthenticated(true);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  if (isAuthenticated === null) {
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 

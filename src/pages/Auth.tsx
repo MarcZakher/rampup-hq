@@ -19,37 +19,59 @@ const Auth = () => {
   const [selectedRole, setSelectedRole] = useState<string>("sales_rep");
 
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate('/director/dashboard');
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Session check error:', error);
+          // Clear any invalid session data
+          await supabase.auth.signOut();
+          return;
+        }
+        if (session) {
+          navigate('/director/dashboard');
+        }
+      } catch (error) {
+        console.error('Session check failed:', error);
+        setErrorMessage('Failed to check authentication status');
       }
-    });
+    };
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session); // Debug log
+      
       if (event === 'SIGNED_IN') {
-        navigate('/director/dashboard');
+        if (session) {
+          navigate('/director/dashboard');
+        }
+      }
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
       }
       if (event === 'USER_UPDATED') {
-        const handleError = async () => {
-          const { error } = await supabase.auth.getSession();
-          if (error) {
-            setErrorMessage(getErrorMessage(error));
-          }
-        };
-        handleError();
+        const { error } = await supabase.auth.getSession();
+        if (error) {
+          setErrorMessage(getErrorMessage(error));
+        }
       }
       if (event === 'SIGNED_OUT') {
-        navigate('/');
+        // Clear any stored session data
+        localStorage.removeItem('supabase.auth.token');
+        navigate('/auth');
         setErrorMessage(""); // Clear errors on sign out
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const getErrorMessage = (error: AuthError) => {
+    console.error('Auth error:', error); // Debug log
+    
     if (error instanceof AuthApiError) {
       switch (error.code) {
         case 'invalid_credentials':
@@ -60,8 +82,10 @@ const Auth = () => {
           return 'No user found with these credentials.';
         case 'invalid_grant':
           return 'Invalid login credentials.';
+        case 'refresh_token_not_found':
+          return 'Your session has expired. Please sign in again.';
         default:
-          return error.message;
+          return `Authentication error: ${error.message}`;
       }
     }
     return error.message;
