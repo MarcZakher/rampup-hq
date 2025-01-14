@@ -61,36 +61,41 @@ const DirectorDashboard = () => {
   useEffect(() => {
     const fetchSalesRepsData = async () => {
       try {
-        // First, get all sales reps with their profiles using a proper join
-        const { data: salesRepsData, error: salesRepsError } = await supabase
+        // First, get all sales reps from user_roles
+        const { data: salesRepsRoles, error: rolesError } = await supabase
           .from('user_roles')
-          .select(`
-            user_id,
-            profiles!user_roles_user_id_fkey (
-              full_name
-            )
-          `)
+          .select('user_id')
           .eq('role', 'sales_rep');
 
-        if (salesRepsError) {
-          console.error('Error fetching sales reps:', salesRepsError);
-          throw salesRepsError;
+        if (rolesError) {
+          console.error('Error fetching sales rep roles:', rolesError);
+          throw rolesError;
         }
 
-        if (!salesRepsData) {
+        if (!salesRepsRoles?.length) {
           console.log('No sales reps found');
           return;
         }
 
-        console.log('Fetched sales reps:', salesRepsData);
+        // Then, get their profiles
+        const userIds = salesRepsRoles.map(role => role.user_id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
+        }
 
         // For each sales rep, fetch their assessment scores
         const repsWithScores = await Promise.all(
-          salesRepsData.map(async (rep) => {
+          profiles.map(async (profile) => {
             const { data: scores, error: scoresError } = await supabase
               .from('assessment_scores')
               .select('month, assessment_index, score')
-              .eq('sales_rep_id', rep.user_id)
+              .eq('sales_rep_id', profile.id)
               .order('month')
               .order('assessment_index');
 
@@ -112,8 +117,8 @@ const DirectorDashboard = () => {
             });
 
             return {
-              id: rep.user_id,
-              name: rep.profiles?.full_name || 'Unknown',
+              id: profile.id,
+              name: profile.full_name || 'Unknown',
               month1,
               month2,
               month3
