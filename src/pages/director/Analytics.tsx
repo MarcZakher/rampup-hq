@@ -16,7 +16,7 @@ interface AssessmentScore {
   score: number;
   created_at: string;
   updated_at: string;
-  profiles: {
+  profiles?: {
     full_name: string | null;
   } | null;
 }
@@ -36,14 +36,15 @@ const Analytics = () => {
         .select(`
           *,
           profiles:sales_rep_id(full_name)
-        `);
+        `)
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching assessment scores:', error);
         throw error;
       }
 
-      return data as AssessmentScore[];
+      return data as unknown as AssessmentScore[];
     }
   });
 
@@ -57,19 +58,11 @@ const Analytics = () => {
       };
     }
 
-    // Calculate average score
     const scores = assessmentData.map(score => Number(score.score)).filter(score => !isNaN(score));
     const avgScore = scores.reduce((acc, curr) => acc + curr, 0) / scores.length;
-
-    // Calculate reps meeting target (score >= 3)
     const meetingTarget = (scores.filter(score => score >= 3).length / scores.length) * 100;
+    const completionRate = (scores.length / assessmentData.length) * 100;
 
-    // Calculate completion rate
-    const totalPossibleAssessments = assessmentData.length;
-    const completedAssessments = scores.length;
-    const completionRate = (completedAssessments / totalPossibleAssessments) * 100;
-
-    // Find top performer
     const repScores = new Map<string, { name: string; score: number }>();
     assessmentData.forEach(assessment => {
       const repName = assessment.profiles?.full_name || 'Unknown';
@@ -100,6 +93,11 @@ const Analytics = () => {
   if (isLoading) {
     return <div>Loading...</div>;
   }
+
+  const chartConfig = {
+    width: '100%',
+    height: 300,
+  };
 
   return (
     <CustomAppLayout>
@@ -134,7 +132,7 @@ const Analytics = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartContainer>
+          <ChartContainer config={chartConfig}>
             <ResponsiveContainer>
               <AreaChart data={assessmentData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -152,7 +150,7 @@ const Analytics = () => {
             </ResponsiveContainer>
           </ChartContainer>
 
-          <ChartContainer>
+          <ChartContainer config={chartConfig}>
             <ResponsiveContainer>
               <BarChart data={assessmentData}>
                 <CartesianGrid strokeDasharray="3 3" />
