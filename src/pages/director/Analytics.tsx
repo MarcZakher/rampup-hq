@@ -27,6 +27,8 @@ import {
   Area
 } from 'recharts';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const chartConfig = {
   improving: {
@@ -62,35 +64,97 @@ const chartConfig = {
 };
 
 const AnalyticsPage = () => {
+  // Fetch assessment scores and profiles
+  const { data: assessmentData, isLoading: isLoadingAssessments } = useQuery({
+    queryKey: ['assessmentScores'],
+    queryFn: async () => {
+      const { data: scores, error } = await supabase
+        .from('assessment_scores')
+        .select('*, profiles(full_name)');
+      
+      if (error) throw error;
+      return scores;
+    }
+  });
+
+  // Calculate metrics from real data
+  const calculateMetrics = () => {
+    if (!assessmentData) return {
+      avgScore: "0.0",
+      meetingTarget: 0,
+      completionRate: 0,
+      topPerformer: { name: "N/A", score: 0 }
+    };
+
+    // Calculate average score
+    const validScores = assessmentData.filter(score => score.score !== null);
+    const avgScore = validScores.length > 0 
+      ? (validScores.reduce((sum, score) => sum + (score.score || 0), 0) / validScores.length).toFixed(1)
+      : "0.0";
+
+    // Calculate reps meeting target (score >= 3)
+    const meetingTarget = Math.round((validScores.filter(score => (score.score || 0) >= 3).length / validScores.length) * 100);
+
+    // Calculate completion rate
+    const totalPossibleAssessments = assessmentData.length; // This should ideally be calculated based on total required assessments
+    const completionRate = Math.round((validScores.length / totalPossibleAssessments) * 100);
+
+    // Find top performer
+    const repScores = validScores.reduce((acc, score) => {
+      const repName = score.profiles?.full_name || 'Unknown';
+      if (!acc[score.sales_rep_id]) {
+        acc[score.sales_rep_id] = { 
+          name: repName,
+          scores: []
+        };
+      }
+      acc[score.sales_rep_id].scores.push(score.score || 0);
+      return acc;
+    }, {} as Record<string, { name: string, scores: number[] }>);
+
+    const topPerformer = Object.values(repScores).reduce((top, rep) => {
+      const avgScore = rep.scores.reduce((sum, score) => sum + score, 0) / rep.scores.length;
+      return avgScore > (top.score || 0) ? { name: rep.name, score: avgScore } : top;
+    }, { name: "N/A", score: 0 });
+
+    return {
+      avgScore,
+      meetingTarget,
+      completionRate,
+      topPerformer
+    };
+  };
+
+  const metrics = calculateMetrics();
   const monthlyScores = getMonthlyScores();
-  const assessmentData = getAssessmentData();
+  const assessmentDataChart = getAssessmentData();
   const areasOfFocus = getAreasOfFocus();
   const teamProgress = getTeamProgress();
 
   const summaryMetrics = [
     {
       title: "Team Average Score",
-      value: "4.2/5.0",
+      value: `${metrics.avgScore}/5.0`,
       icon: <Users className="h-4 w-4 text-muted-foreground" />,
-      description: "+0.3 from last month"
+      description: "Overall performance"
     },
     {
       title: "Reps Meeting Target",
-      value: "85%",
+      value: `${metrics.meetingTarget}%`,
       icon: <Target className="h-4 w-4 text-muted-foreground" />,
       description: "Score above 3/5"
     },
     {
       title: "Completion Rate",
-      value: "92%",
+      value: `${metrics.completionRate}%`,
       icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
       description: "Of all assessments"
     },
     {
       title: "Top Performer",
-      value: "John Doe",
+      value: metrics.topPerformer.name,
       icon: <Trophy className="h-4 w-4 text-muted-foreground" />,
-      description: "Score: 4.8/5"
+      description: `Score: ${metrics.topPerformer.score.toFixed(1)}/5`
     }
   ];
 
@@ -165,7 +229,7 @@ const AnalyticsPage = () => {
             <CardContent>
               <div className="h-[300px]">
                 <ChartContainer config={chartConfig}>
-                  <BarChart data={assessmentData}>
+                  <BarChart data={assessmentDataChart}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
