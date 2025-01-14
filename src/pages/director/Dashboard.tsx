@@ -57,11 +57,19 @@ const DirectorDashboard = () => {
   const { data: assessmentData, isLoading, error } = useQuery({
     queryKey: ['assessmentScores'],
     queryFn: async () => {
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session.session) {
+        throw new Error('No active session');
+      }
+
       const { data, error } = await supabase
         .from('assessment_scores')
         .select(`
           *,
-          profiles!assessment_scores_sales_rep_id_profiles_fkey(full_name)
+          profiles!assessment_scores_sales_rep_id_profiles_fkey (
+            full_name
+          )
         `)
         .order('created_at', { ascending: false });
 
@@ -70,25 +78,24 @@ const DirectorDashboard = () => {
         toast({
           variant: "destructive",
           title: "Error fetching data",
-          description: "Could not load assessment scores. Please try again later."
+          description: error.message
         });
         throw error;
       }
 
       return data;
-    }
+    },
+    retry: 1
   });
 
   useEffect(() => {
     if (assessmentData) {
-      // Process assessment data to update salesReps state
       const processedData = processAssessmentData(assessmentData);
       setSalesReps(processedData);
     }
   }, [assessmentData]);
 
   const processAssessmentData = (data: any[]) => {
-    // Group data by sales rep
     const groupedData = data.reduce((acc: any, curr: any) => {
       const repId = curr.sales_rep_id;
       if (!acc[repId]) {
@@ -101,7 +108,6 @@ const DirectorDashboard = () => {
         };
       }
       
-      // Update scores based on month and assessment index
       const monthKey = `month${curr.month}` as 'month1' | 'month2' | 'month3';
       if (acc[repId][monthKey]) {
         acc[repId][monthKey][curr.assessment_index - 1] = Number(curr.score);
@@ -114,11 +120,15 @@ const DirectorDashboard = () => {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
   if (error) {
-    return <div>Error loading dashboard data</div>;
+    return (
+      <div className="flex items-center justify-center h-screen text-red-500">
+        Error loading dashboard data: {(error as Error).message}
+      </div>
+    );
   }
 
   const totalReps = salesReps.length;
