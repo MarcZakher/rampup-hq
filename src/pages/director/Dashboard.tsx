@@ -5,7 +5,7 @@ import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface SalesRep {
   id: string;
@@ -25,39 +25,45 @@ const DirectorDashboard = () => {
   useEffect(() => {
     const fetchSalesReps = async () => {
       try {
-        // First, get all sales rep user roles
-        const { data: roleData, error: roleError } = await supabase
+        console.log('Fetching sales reps data...');
+        
+        // First, get all sales rep roles
+        const { data: salesRepRoles, error: rolesError } = await supabase
           .from('user_roles')
           .select('user_id')
           .eq('role', 'sales_rep');
 
-        if (roleError) {
-          console.error('Error fetching roles:', roleError);
-          throw roleError;
+        if (rolesError) {
+          console.error('Error fetching sales rep roles:', rolesError);
+          throw rolesError;
         }
 
-        if (!roleData?.length) {
+        if (!salesRepRoles?.length) {
+          console.log('No sales reps found');
           setSalesReps([]);
           setIsLoading(false);
           return;
         }
 
+        const salesRepIds = salesRepRoles.map(role => role.user_id);
+        console.log('Sales rep IDs:', salesRepIds);
+
         // Get profiles for all sales reps
-        const { data: profileData, error: profileError } = await supabase
+        const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name, email')
-          .in('id', roleData.map(role => role.user_id));
+          .in('id', salesRepIds);
 
-        if (profileError) {
-          console.error('Error fetching profiles:', profileError);
-          throw profileError;
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
         }
 
         // Get assessment scores for all sales reps
         const { data: scoresData, error: scoresError } = await supabase
           .from('assessment_scores')
           .select('sales_rep_id, month, score')
-          .in('sales_rep_id', roleData.map(role => role.user_id));
+          .in('sales_rep_id', salesRepIds);
 
         if (scoresError) {
           console.error('Error fetching scores:', scoresError);
@@ -65,10 +71,10 @@ const DirectorDashboard = () => {
         }
 
         // Combine the data
-        const repsWithScores = profileData.map(profile => ({
+        const repsWithScores = profilesData.map(profile => ({
           id: profile.id,
-          full_name: profile.full_name || 'Unknown',
-          email: profile.email || '',
+          full_name: profile.full_name,
+          email: profile.email,
           assessment_scores: scoresData
             .filter(score => score.sales_rep_id === profile.id)
             .map(score => ({
@@ -77,9 +83,10 @@ const DirectorDashboard = () => {
             }))
         }));
 
+        console.log('Processed sales reps data:', repsWithScores);
         setSalesReps(repsWithScores);
       } catch (error) {
-        console.error('Error fetching sales reps:', error);
+        console.error('Error in fetchSalesReps:', error);
         toast({
           title: "Error",
           description: "Failed to fetch sales representatives data",
@@ -113,7 +120,7 @@ const DirectorDashboard = () => {
     const scores = rep.assessment_scores || [];
     const avgScore = scores.length > 0 ? 
       scores.reduce((sum, score) => sum + score.score, 0) / scores.length : 0;
-    return avgScore > (top.score || 0) ? { name: rep.full_name, score: avgScore } : top;
+    return avgScore > (top.score || 0) ? { name: rep.full_name || 'Unknown', score: avgScore } : top;
   }, { name: "No reps", score: 0 });
 
   if (isLoading) {
