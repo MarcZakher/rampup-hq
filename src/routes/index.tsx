@@ -10,7 +10,6 @@ import SalesRepAnalytics from '@/pages/sales-rep/Analytics';
 import CoachingDashboard from '@/pages/coaching/Dashboard';
 import AdminDashboard from '@/pages/admin/Dashboard';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { RoleProtectedRoute } from '@/components/auth/RoleProtectedRoute';
 
 export const routes: RouteObject[] = [
   {
@@ -23,43 +22,19 @@ export const routes: RouteObject[] = [
   },
   {
     path: '/director/dashboard',
-    element: (
-      <ProtectedRoute>
-        <RoleProtectedRoute allowedRoles={['director', 'manager']}>
-          <DirectorDashboard />
-        </RoleProtectedRoute>
-      </ProtectedRoute>
-    )
+    element: <ProtectedRoute><DirectorDashboard /></ProtectedRoute>
   },
   {
     path: '/director/analytics',
-    element: (
-      <ProtectedRoute>
-        <RoleProtectedRoute allowedRoles={['director', 'manager']}>
-          <AnalyticsPage />
-        </RoleProtectedRoute>
-      </ProtectedRoute>
-    )
+    element: <ProtectedRoute><AnalyticsPage /></ProtectedRoute>
   },
   {
     path: '/manager/dashboard',
-    element: (
-      <ProtectedRoute>
-        <RoleProtectedRoute allowedRoles={['director', 'manager']}>
-          <ManagerDashboard />
-        </RoleProtectedRoute>
-      </ProtectedRoute>
-    )
+    element: <ProtectedRoute><ManagerDashboard /></ProtectedRoute>
   },
   {
     path: '/admin/dashboard',
-    element: (
-      <ProtectedRoute>
-        <RoleProtectedRoute allowedRoles={['director']}>
-          <AdminDashboard />
-        </RoleProtectedRoute>
-      </ProtectedRoute>
-    )
+    element: <ProtectedRoute><AdminDashboard /></ProtectedRoute>
   },
   {
     path: '/sales-rep/dashboard',

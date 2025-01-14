@@ -15,15 +15,11 @@ const Auth = () => {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Session check error:', error);
-          if (error.message.includes('refresh_token_not_found')) {
-            // Clear any stale session data
-            await supabase.auth.signOut();
-            localStorage.clear();
-          }
+          await supabase.auth.signOut();
           return;
         }
         if (session) {
-          redirectBasedOnRole(session);
+          redirectBasedOnRole();
         }
       } catch (error) {
         console.error('Session check failed:', error);
@@ -31,40 +27,39 @@ const Auth = () => {
       }
     };
 
-    const redirectBasedOnRole = async (session: any) => {
+    const redirectBasedOnRole = async () => {
       try {
-        // First, get the user's role from user_roles table
-        const { data: roleData, error: roleError } = await supabase
+        // Get user role from user_roles table
+        const { data: userRoles, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', session.user.id)
           .single();
 
         if (roleError) {
-          console.error('Role fetch error:', roleError);
+          console.error('Role check error:', roleError);
+          setErrorMessage('Failed to check user role');
           return;
         }
 
         // Redirect based on role
-        if (roleData) {
-          switch (roleData.role) {
-            case 'director':
-              navigate('/director/dashboard');
-              break;
-            case 'manager':
-              navigate('/manager/dashboard');
-              break;
-            case 'sales_rep':
-              navigate('/sales-rep/dashboard');
-              break;
-            default:
-              console.error('Unknown role:', roleData.role);
-              setErrorMessage('Invalid user role');
-          }
+        switch (userRoles?.role) {
+          case 'director':
+            navigate('/director/dashboard');
+            break;
+          case 'manager':
+            navigate('/manager/dashboard');
+            break;
+          case 'sales_rep':
+            navigate('/sales-rep/dashboard');
+            break;
+          default:
+            console.error('Unknown role:', userRoles?.role);
+            setErrorMessage('Invalid user role');
+            await supabase.auth.signOut();
         }
       } catch (error) {
-        console.error('Role check failed:', error);
-        setErrorMessage('Failed to determine user role');
+        console.error('Role redirect failed:', error);
+        setErrorMessage('Failed to process user role');
       }
     };
 
@@ -75,7 +70,7 @@ const Auth = () => {
       
       if (event === 'SIGNED_IN') {
         if (session) {
-          redirectBasedOnRole(session);
+          redirectBasedOnRole();
         }
       }
       if (event === 'TOKEN_REFRESHED') {
