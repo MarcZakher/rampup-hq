@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserMenu } from './TopNav/UserMenu';
 import { NotificationButton } from './TopNav/NotificationButton';
+import { useToast } from '@/hooks/use-toast';
 
 interface UserProfile {
   full_name: string | null;
@@ -11,12 +12,14 @@ interface UserProfile {
 export function TopNav() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     let mounted = true;
 
     const fetchUserProfile = async () => {
       try {
+        if (!mounted) return;
         setIsLoading(true);
         
         // First, ensure we have a valid session
@@ -24,6 +27,11 @@ export function TopNav() {
         
         if (sessionError) {
           console.error('Session error:', sessionError);
+          toast({
+            variant: "destructive",
+            title: "Session Error",
+            description: "Failed to verify your session. Please try logging in again."
+          });
           return;
         }
 
@@ -32,27 +40,20 @@ export function TopNav() {
           return;
         }
 
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) {
-          console.error('User fetch error:', userError);
-          return;
-        }
-
-        if (!user) {
-          console.log('No user found');
-          return;
-        }
-
-        // Only proceed with profile fetch if we have a valid user
+        // Get user data
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('full_name, email')
-          .eq('id', user.id)
+          .eq('id', session.user.id)
           .single();
         
         if (profileError) {
           console.error('Profile fetch error:', profileError);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load user profile"
+          });
           return;
         }
 
@@ -63,13 +64,20 @@ export function TopNav() {
           } else {
             // If no profile found, use the email as fallback
             setUserProfile({
-              full_name: user.email?.split('@')[0] || 'User',
-              email: user.email
+              full_name: session.user.email?.split('@')[0] || 'User',
+              email: session.user.email
             });
           }
         }
       } catch (error) {
         console.error('Error in fetchUserProfile:', error);
+        if (mounted) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "An unexpected error occurred while loading your profile"
+          });
+        }
       } finally {
         if (mounted) {
           setIsLoading(false);

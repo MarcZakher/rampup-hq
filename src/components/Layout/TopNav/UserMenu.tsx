@@ -1,4 +1,4 @@
-import { LogOut, User } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface UserProfile {
   full_name: string | null;
@@ -24,6 +25,7 @@ interface UserMenuProps {
 
 export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleSignOut = async () => {
     try {
@@ -32,14 +34,16 @@ export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
       
       if (sessionError) {
         console.error('Session error:', sessionError);
-        // If there's a session error, clear local storage and redirect
-        localStorage.clear();
-        navigate('/auth');
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Session error occurred. Please try again."
+        });
         return;
       }
 
+      // If no session exists, just clear storage and redirect
       if (!session) {
-        // If no session exists, just clear storage and redirect
         localStorage.clear();
         navigate('/auth');
         return;
@@ -48,19 +52,19 @@ export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
       // If we have a valid session, attempt to sign out
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Error signing out:', error.message);
-        // Even if there's an error, clear storage and redirect
-        localStorage.clear();
-        navigate('/auth');
-        return;
+        console.error('Error signing out:', error);
+        toast({
+          variant: "destructive",
+          title: "Error signing out",
+          description: error.message
+        });
       }
 
-      // Successful signout
+      // Always clear local storage and redirect, even if there was an error
       localStorage.clear();
       navigate('/auth');
     } catch (error) {
       console.error('Unexpected error during sign out:', error);
-      // On any error, clear storage and redirect
       localStorage.clear();
       navigate('/auth');
     }
