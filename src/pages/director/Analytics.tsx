@@ -27,8 +27,6 @@ import {
   Area
 } from 'recharts';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 
 const chartConfig = {
   improving: {
@@ -64,110 +62,35 @@ const chartConfig = {
 };
 
 const AnalyticsPage = () => {
-  // First check if we have a valid session
-  const { data: assessmentData, isLoading: isLoadingAssessments } = useQuery({
-    queryKey: ['assessmentScores'],
-    queryFn: async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        throw new Error('Authentication required');
-      }
-
-      // Use a proper join with the profiles table
-      const { data: scores, error } = await supabase
-        .from('assessment_scores')
-        .select(`
-          *,
-          sales_rep:sales_rep_id(
-            profile:profiles(full_name)
-          )
-        `);
-      
-      if (error) throw error;
-      return scores;
-    }
-  });
-
-  // Calculate metrics from real data
-  const calculateMetrics = () => {
-    if (!assessmentData) return {
-      avgScore: "0.0",
-      meetingTarget: 0,
-      completionRate: 0,
-      topPerformer: { name: "N/A", score: 0 }
-    };
-
-    // Calculate average score
-    const validScores = assessmentData.filter(score => score.score !== null);
-    const avgScore = validScores.length > 0 
-      ? (validScores.reduce((sum, score) => sum + (score.score || 0), 0) / validScores.length).toFixed(1)
-      : "0.0";
-
-    // Calculate reps meeting target (score >= 3)
-    const meetingTarget = validScores.length > 0
-      ? Math.round((validScores.filter(score => (score.score || 0) >= 3).length / validScores.length) * 100)
-      : 0;
-
-    // Calculate completion rate
-    const totalPossibleAssessments = assessmentData.length || 1; // Prevent division by zero
-    const completionRate = Math.round((validScores.length / totalPossibleAssessments) * 100);
-
-    // Find top performer
-    const repScores = validScores.reduce((acc, score) => {
-      const repName = score.sales_rep?.profile?.full_name || 'Unknown';
-      if (!acc[score.sales_rep_id]) {
-        acc[score.sales_rep_id] = { 
-          name: repName,
-          scores: []
-        };
-      }
-      acc[score.sales_rep_id].scores.push(score.score || 0);
-      return acc;
-    }, {} as Record<string, { name: string, scores: number[] }>);
-
-    const topPerformer = Object.values(repScores).reduce((top, rep) => {
-      const avgScore = rep.scores.reduce((sum, score) => sum + score, 0) / rep.scores.length;
-      return avgScore > (top.score || 0) ? { name: rep.name, score: avgScore } : top;
-    }, { name: "N/A", score: 0 });
-
-    return {
-      avgScore,
-      meetingTarget,
-      completionRate,
-      topPerformer
-    };
-  };
-
-  const metrics = calculateMetrics();
   const monthlyScores = getMonthlyScores();
-  const assessmentDataChart = getAssessmentData();
+  const assessmentData = getAssessmentData();
   const areasOfFocus = getAreasOfFocus();
   const teamProgress = getTeamProgress();
 
   const summaryMetrics = [
     {
       title: "Team Average Score",
-      value: `${metrics.avgScore}/5.0`,
+      value: "4.2/5.0",
       icon: <Users className="h-4 w-4 text-muted-foreground" />,
-      description: "Overall performance"
+      description: "+0.3 from last month"
     },
     {
       title: "Reps Meeting Target",
-      value: `${metrics.meetingTarget}%`,
+      value: "85%",
       icon: <Target className="h-4 w-4 text-muted-foreground" />,
       description: "Score above 3/5"
     },
     {
       title: "Completion Rate",
-      value: `${metrics.completionRate}%`,
+      value: "92%",
       icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
       description: "Of all assessments"
     },
     {
       title: "Top Performer",
-      value: metrics.topPerformer.name,
+      value: "John Doe",
       icon: <Trophy className="h-4 w-4 text-muted-foreground" />,
-      description: `Score: ${metrics.topPerformer.score.toFixed(1)}/5`
+      description: "Score: 4.8/5"
     }
   ];
 
@@ -242,7 +165,7 @@ const AnalyticsPage = () => {
             <CardContent>
               <div className="h-[300px]">
                 <ChartContainer config={chartConfig}>
-                  <BarChart data={assessmentDataChart}>
+                  <BarChart data={assessmentData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
