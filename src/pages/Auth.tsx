@@ -19,11 +19,48 @@ const Auth = () => {
           return;
         }
         if (session) {
-          navigate('/director/dashboard');
+          redirectBasedOnRole(session);
         }
       } catch (error) {
         console.error('Session check failed:', error);
         setErrorMessage('Failed to check authentication status');
+      }
+    };
+
+    const redirectBasedOnRole = async (session: any) => {
+      try {
+        // First, get the user's role from user_roles table
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (roleError) {
+          console.error('Role fetch error:', roleError);
+          return;
+        }
+
+        // Redirect based on role
+        if (roleData) {
+          switch (roleData.role) {
+            case 'director':
+              navigate('/director/dashboard');
+              break;
+            case 'manager':
+              navigate('/manager/dashboard');
+              break;
+            case 'sales_rep':
+              navigate('/sales-rep/dashboard');
+              break;
+            default:
+              console.error('Unknown role:', roleData.role);
+              setErrorMessage('Invalid user role');
+          }
+        }
+      } catch (error) {
+        console.error('Role check failed:', error);
+        setErrorMessage('Failed to determine user role');
       }
     };
 
@@ -34,7 +71,7 @@ const Auth = () => {
       
       if (event === 'SIGNED_IN') {
         if (session) {
-          navigate('/director/dashboard');
+          redirectBasedOnRole(session);
         }
       }
       if (event === 'TOKEN_REFRESHED') {
