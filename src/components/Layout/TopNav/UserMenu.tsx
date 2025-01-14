@@ -29,43 +29,22 @@ export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
 
   const handleSignOut = async () => {
     try {
-      // First check if we have a valid session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Clear local storage first to ensure we remove any stale data
+      localStorage.clear();
       
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Session error occurred. Please try again."
-        });
-        return;
-      }
-
-      // If no session exists, just clear storage and redirect
-      if (!session) {
-        localStorage.clear();
-        navigate('/auth');
-        return;
-      }
-
-      // If we have a valid session, attempt to sign out
+      // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error);
-        toast({
-          variant: "destructive",
-          title: "Error signing out",
-          description: error.message
-        });
+        // Even if there's an error, we'll redirect to auth page
+        // since we've already cleared local storage
       }
-
-      // Always clear local storage and redirect, even if there was an error
-      localStorage.clear();
+      
+      // Always navigate to auth page after sign out attempt
       navigate('/auth');
     } catch (error) {
       console.error('Unexpected error during sign out:', error);
-      localStorage.clear();
+      // Ensure we still redirect to auth page even if there's an error
       navigate('/auth');
     }
   };
