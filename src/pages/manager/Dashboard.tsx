@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@supabase/auth-helpers-react';
 
 interface SalesRep {
-  id: number;
+  id: string;  // Changed from number to string for UUID
   name: string;
   month1: number[];
   month2: number[];
@@ -23,18 +23,18 @@ const assessments = {
     { name: 'SA program', shortName: 'SA' },
     { name: 'Shadow capture', shortName: 'Shadow' },
     { name: 'Deliver 3 Proof points', shortName: 'Proof' },
-    { name: 'Account Tiering on territory + Workload & Contact Researches on 2 accs', shortName: 'Tiering' }
+    { name: 'Account Tiering', shortName: 'Tiering' }
   ],
   month2: [
     { name: 'PG plan', shortName: 'PG' },
     { name: 'SA program', shortName: 'SA' },
     { name: 'NBM Role play', shortName: 'NBM' },
     { name: '1st meeting excellence deck', shortName: '1st Meeting' },
-    { name: 'Pitch/Trap setting questions versus main competitors in region: PostGre, DynamoDB..', shortName: 'Pitch' },
+    { name: 'Pitch/Trap setting questions', shortName: 'Pitch' },
     { name: 'Account plan 1', shortName: 'Account' }
   ],
   month3: [
-    { name: 'COM: Review of one LoS through discovery capture sheet', shortName: 'COM' },
+    { name: 'COM Review', shortName: 'COM' },
     { name: 'SA program', shortName: 'SA' },
     { name: 'Champion plan', shortName: 'Champion' },
     { name: 'Deal review', shortName: 'Deal' },
@@ -105,7 +105,7 @@ const ManagerDashboard = () => {
           });
 
           return {
-            id: parseInt(profile.id),
+            id: profile.id,  // No parseInt here
             name: profile.full_name || 'Unknown',
             month1: month1Scores,
             month2: month2Scores,
@@ -168,7 +168,7 @@ const ManagerDashboard = () => {
 
       // Add the new rep to the local state
       const newRep: SalesRep = {
-        id: parseInt(newProfileId),
+        id: newProfileId,  // No parseInt here
         name: newRepName,
         month1: new Array(assessments.month1.length).fill(0),
         month2: new Array(assessments.month2.length).fill(0),
@@ -191,12 +191,12 @@ const ManagerDashboard = () => {
     }
   };
 
-  const removeSalesRep = async (id: number) => {
+  const removeSalesRep = async (id: string) => {  // Changed from number to string
     try {
       const { error } = await supabase
         .from('user_roles')
         .delete()
-        .eq('user_id', id.toString())
+        .eq('user_id', id)
         .eq('manager_id', user?.id);
 
       if (error) throw error;
@@ -217,7 +217,7 @@ const ManagerDashboard = () => {
   };
 
   const updateScore = async (
-    repId: number,
+    repId: string,  // Changed from number to string
     month: 'month1' | 'month2' | 'month3',
     index: number,
     value: string
@@ -236,7 +236,7 @@ const ManagerDashboard = () => {
       const { error } = await supabase
         .from('assessment_scores')
         .upsert({
-          sales_rep_id: repId.toString(),
+          sales_rep_id: repId,
           manager_id: user?.id,
           month,
           assessment_index: index,
