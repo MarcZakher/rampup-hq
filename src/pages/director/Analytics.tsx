@@ -14,7 +14,6 @@ import {
   CardHeader,
   CardTitle 
 } from '@/components/ui/card';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { 
   BarChart,
   Bar,
@@ -96,11 +95,13 @@ const AnalyticsPage = () => {
 
   return (
     <CustomAppLayout>
-      <div className="p-6 space-y-6">
-        <h1 className="text-2xl font-bold mb-6">Performance Analytics</h1>
+      <div className="container mx-auto p-6 space-y-8 max-w-7xl">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Performance Analytics</h1>
+        </div>
         
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {summaryMetrics.map((metric, index) => (
             <StatCard
               key={index}
@@ -112,12 +113,12 @@ const AnalyticsPage = () => {
           ))}
         </div>
 
-        {/* Two Column Layout for Charts */}
+        {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Monthly Progress */}
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle>Monthly Progress</CardTitle>
+          <Card className="w-full shadow-lg">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl">Monthly Progress</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[300px]">
@@ -158,9 +159,9 @@ const AnalyticsPage = () => {
           </Card>
 
           {/* Assessment Performance */}
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle>Assessment Performance</CardTitle>
+          <Card className="w-full shadow-lg">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl">Assessment Performance</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[300px]">
@@ -179,17 +180,17 @@ const AnalyticsPage = () => {
           </Card>
 
           {/* Areas Needing Attention */}
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+          <Card className="w-full shadow-lg">
+            <CardHeader className="space-y-1">
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <AlertTriangle className="h-6 w-6 text-yellow-500" />
                 Areas Needing Attention
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
+              <div className="space-y-6 max-h-[300px] overflow-y-auto">
                 {areasOfFocus.repsNeedingAttention.map((rep, index) => (
-                  <div key={index} className="space-y-2">
+                  <div key={index} className="p-4 bg-yellow-50 rounded-lg space-y-2">
                     <h3 className="text-lg font-semibold">{rep.name}</h3>
                     <p className="text-sm text-muted-foreground">
                       {rep.lowScoreCount} low scores (avg: {rep.averageLowScore})
@@ -197,7 +198,7 @@ const AnalyticsPage = () => {
                     <div className="space-y-2">
                       {rep.areas.map((area, areaIndex) => (
                         <div key={areaIndex} className="flex justify-between text-sm">
-                          <span className="text-red-500">{area.assessment}</span>
+                          <span className="text-red-500 font-medium">{area.assessment}</span>
                           <span>{area.month} - Score: {area.score}</span>
                         </div>
                       ))}
@@ -209,10 +210,10 @@ const AnalyticsPage = () => {
           </Card>
 
           {/* Common Challenges */}
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+          <Card className="w-full shadow-lg">
+            <CardHeader className="space-y-1">
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <AlertTriangle className="h-6 w-6 text-yellow-500" />
                 Common Challenges
               </CardTitle>
             </CardHeader>
