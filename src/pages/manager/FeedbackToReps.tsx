@@ -30,9 +30,13 @@ const FeedbackToReps = () => {
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select('id, full_name')
-        .innerJoin('user_roles', 'profiles.id = user_roles.user_id')
-        .eq('user_roles.manager_id', user.id)
-        .eq('user_roles.role', 'sales_rep');
+        .in('id', (
+          await supabase
+            .from('user_roles')
+            .select('user_id')
+            .eq('manager_id', user.id)
+            .eq('role', 'sales_rep')
+        ).data?.map(row => row.user_id) || []);
 
       if (error) throw error;
       return profiles as Profile[];
