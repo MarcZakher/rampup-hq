@@ -29,43 +29,34 @@ export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
 
   const handleSignOut = async () => {
     try {
-      // First check if we have a valid session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Clear local storage first to ensure we remove any stale data
+      localStorage.clear();
       
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Session error occurred. Please try again."
-        });
-        return;
+      try {
+        // Attempt to sign out from Supabase
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.error('Error during sign out:', error);
+          // Even if there's an error, we'll continue with the navigation
+          // since we've already cleared local storage
+        }
+      } catch (signOutError) {
+        console.error('Unexpected error during sign out:', signOutError);
+        // Continue with navigation even if sign out fails
       }
 
-      // If no session exists, just clear storage and redirect
-      if (!session) {
-        localStorage.clear();
-        navigate('/auth');
-        return;
-      }
-
-      // If we have a valid session, attempt to sign out
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Error signing out:', error);
-        toast({
-          variant: "destructive",
-          title: "Error signing out",
-          description: error.message
-        });
-      }
-
-      // Always clear local storage and redirect, even if there was an error
-      localStorage.clear();
+      // Always navigate to auth page
       navigate('/auth');
+      
+      // Show success message
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account."
+      });
+      
     } catch (error) {
-      console.error('Unexpected error during sign out:', error);
-      localStorage.clear();
+      console.error('Critical error during sign out process:', error);
+      // Ensure we still navigate to auth page even if something goes wrong
       navigate('/auth');
     }
   };
