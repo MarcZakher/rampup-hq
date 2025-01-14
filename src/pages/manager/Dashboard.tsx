@@ -52,11 +52,29 @@ const ManagerDashboard = () => {
   // Load sales reps data for the current manager
   useEffect(() => {
     const fetchSalesReps = async () => {
-      if (!user) return;
+      if (!user) {
+        console.log('No user found');
+        return;
+      }
 
       try {
         console.log('Current user ID:', user.id);
+        console.log('Current user email:', user.email);
         
+        // First, check the user's role
+        const { data: userRole, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        console.log('User role query result:', { userRole, roleError });
+
+        if (roleError) {
+          console.error('Error fetching user role:', roleError);
+          return;
+        }
+
         // Get sales reps managed by the current manager
         const { data: userRoles, error: rolesError } = await supabase
           .from('user_roles')
@@ -66,7 +84,10 @@ const ManagerDashboard = () => {
 
         console.log('User roles query result:', { userRoles, rolesError });
 
-        if (rolesError) throw rolesError;
+        if (rolesError) {
+          console.error('Error fetching user roles:', rolesError);
+          throw rolesError;
+        }
 
         if (!userRoles.length) {
           console.log('No sales reps found for this manager');
@@ -85,7 +106,10 @@ const ManagerDashboard = () => {
 
         console.log('Profiles query result:', { profiles, profilesError });
 
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
+        }
 
         // Get assessment scores for the sales reps
         const { data: scores, error: scoresError } = await supabase
@@ -95,7 +119,10 @@ const ManagerDashboard = () => {
 
         console.log('Scores query result:', { scores, scoresError });
 
-        if (scoresError) throw scoresError;
+        if (scoresError) {
+          console.error('Error fetching scores:', scoresError);
+          throw scoresError;
+        }
 
         // Transform the data into the required format
         const formattedReps = profiles.map(profile => {
