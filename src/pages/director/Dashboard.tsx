@@ -3,7 +3,10 @@ import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 const assessments = {
   month1: [
@@ -47,30 +50,83 @@ const getScoreColor = (score: number) => {
   return 'bg-[#FFC7CE]'; // Light red for lower scores
 };
 
-interface SalesRep {
-  id: number;
-  name: string;
-  month1: number[];
-  month2: number[];
-  month3: number[];
-}
-
 const DirectorDashboard = () => {
-  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+  const { toast } = useToast();
+  const [salesReps, setSalesReps] = useState<any[]>([]);
+
+  const { data: assessmentData, isLoading, error } = useQuery({
+    queryKey: ['assessmentScores'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('assessment_scores')
+        .select(`
+          *,
+          profiles!assessment_scores_sales_rep_id_profiles_fkey(full_name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching assessment scores:', error);
+        toast({
+          variant: "destructive",
+          title: "Error fetching data",
+          description: "Could not load assessment scores. Please try again later."
+        });
+        throw error;
+      }
+
+      return data;
+    }
+  });
 
   useEffect(() => {
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    if (savedReps) {
-      setSalesReps(JSON.parse(savedReps));
+    if (assessmentData) {
+      // Process assessment data to update salesReps state
+      const processedData = processAssessmentData(assessmentData);
+      setSalesReps(processedData);
     }
-  }, []);
+  }, [assessmentData]);
+
+  const processAssessmentData = (data: any[]) => {
+    // Group data by sales rep
+    const groupedData = data.reduce((acc: any, curr: any) => {
+      const repId = curr.sales_rep_id;
+      if (!acc[repId]) {
+        acc[repId] = {
+          id: repId,
+          name: curr.profiles?.full_name || 'Unknown',
+          month1: Array(5).fill(0),
+          month2: Array(6).fill(0),
+          month3: Array(6).fill(0)
+        };
+      }
+      
+      // Update scores based on month and assessment index
+      const monthKey = `month${curr.month}` as 'month1' | 'month2' | 'month3';
+      if (acc[repId][monthKey]) {
+        acc[repId][monthKey][curr.assessment_index - 1] = Number(curr.score);
+      }
+      
+      return acc;
+    }, {});
+
+    return Object.values(groupedData);
+  };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading dashboard data</div>;
+  }
 
   const totalReps = salesReps.length;
-  const avgScore = totalReps === 0 ? 0 : (salesReps.reduce((acc, rep) => {
+  const avgScore = totalReps === 0 ? 0 : Number((salesReps.reduce((acc, rep) => {
     const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
     const validScores = allScores.filter(score => score > 0);
     return acc + (validScores.length > 0 ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length : 0);
-  }, 0) / totalReps).toFixed(1);
+  }, 0) / totalReps).toFixed(1));
 
   const performingWell = salesReps.filter(rep => {
     const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
