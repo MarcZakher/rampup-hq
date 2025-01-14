@@ -14,7 +14,6 @@ import {
   CardHeader,
   CardTitle 
 } from '@/components/ui/card';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { 
   BarChart,
   Bar,
@@ -96,11 +95,13 @@ const AnalyticsPage = () => {
 
   return (
     <CustomAppLayout>
-      <div className="p-6 space-y-6">
-        <h1 className="text-2xl font-bold mb-6">Performance Analytics</h1>
+      <div className="container mx-auto p-6 space-y-8 max-w-7xl">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Performance Analytics</h1>
+        </div>
         
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {summaryMetrics.map((metric, index) => (
             <StatCard
               key={index}
@@ -112,14 +113,14 @@ const AnalyticsPage = () => {
           ))}
         </div>
 
-        {/* Two Column Layout for Charts */}
+        {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Monthly Progress */}
           <Card className="w-full">
             <CardHeader>
               <CardTitle>Monthly Progress</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="h-[300px]">
                 <ChartContainer config={chartConfig}>
                   <AreaChart data={monthlyScores}>
@@ -162,7 +163,7 @@ const AnalyticsPage = () => {
             <CardHeader>
               <CardTitle>Assessment Performance</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="h-[300px]">
                 <ChartContainer config={chartConfig}>
                   <BarChart data={assessmentData}>
@@ -187,17 +188,17 @@ const AnalyticsPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
+              <div className="space-y-6 max-h-[300px] overflow-y-auto">
                 {areasOfFocus.repsNeedingAttention.map((rep, index) => (
-                  <div key={index} className="space-y-2">
+                  <div key={index} className="p-4 bg-yellow-50 rounded-lg">
                     <h3 className="text-lg font-semibold">{rep.name}</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {rep.lowScoreCount} low scores (avg: {rep.averageLowScore})
                     </p>
-                    <div className="space-y-2">
+                    <div className="mt-3 space-y-2">
                       {rep.areas.map((area, areaIndex) => (
-                        <div key={areaIndex} className="flex justify-between text-sm">
-                          <span className="text-red-500">{area.assessment}</span>
+                        <div key={areaIndex} className="flex justify-between text-sm bg-white p-2 rounded">
+                          <span className="text-red-500 font-medium">{area.assessment}</span>
                           <span>{area.month} - Score: {area.score}</span>
                         </div>
                       ))}
@@ -216,7 +217,7 @@ const AnalyticsPage = () => {
                 Common Challenges
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="h-[300px]">
                 <ChartContainer config={chartConfig}>
                   <BarChart 
