@@ -7,15 +7,35 @@ import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 
+interface AssessmentScore {
+  id: string;
+  sales_rep_id: string;
+  manager_id: string;
+  month: string;
+  assessment_index: number;
+  score: number;
+  created_at: string;
+  updated_at: string;
+  profiles: {
+    full_name: string | null;
+  } | null;
+}
+
 const Analytics = () => {
   const { data: assessmentData, isLoading } = useQuery({
     queryKey: ['assessmentScores'],
     queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No session found');
+      }
+
       const { data, error } = await supabase
         .from('assessment_scores')
         .select(`
           *,
-          profiles!assessment_scores_sales_rep_id_fkey(full_name)
+          profiles:sales_rep_id(full_name)
         `);
 
       if (error) {
@@ -23,7 +43,7 @@ const Analytics = () => {
         throw error;
       }
 
-      return data;
+      return data as AssessmentScore[];
     }
   });
 
@@ -50,19 +70,20 @@ const Analytics = () => {
     const completionRate = (completedAssessments / totalPossibleAssessments) * 100;
 
     // Find top performer
-    const repScores = new Map();
+    const repScores = new Map<string, { name: string; score: number }>();
     assessmentData.forEach(assessment => {
       const repName = assessment.profiles?.full_name || 'Unknown';
       const score = Number(assessment.score) || 0;
-      if (!repScores.has(repName) || repScores.get(repName) < score) {
-        repScores.set(repName, score);
+      const currentBest = repScores.get(assessment.sales_rep_id);
+      if (!currentBest || currentBest.score < score) {
+        repScores.set(assessment.sales_rep_id, { name: repName, score });
       }
     });
 
     let topPerformer = { name: 'N/A', score: 0 };
-    repScores.forEach((score, name) => {
-      if (score > topPerformer.score) {
-        topPerformer = { name, score };
+    repScores.forEach((value) => {
+      if (value.score > topPerformer.score) {
+        topPerformer = value;
       }
     });
 
@@ -125,88 +146,31 @@ const Analytics = () => {
           ))}
         </div>
 
-        {/* Two Column Layout for Charts */}
+        {/* Charts section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Monthly Progress */}
           <ChartContainer config={{}}>
             <AreaChart data={assessmentData}>
-              <defs>
-                <linearGradient id="improving" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="declining" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
               <ChartTooltip />
               <Area 
                 type="monotone" 
-                dataKey="improving" 
+                dataKey="score" 
                 stroke="#10B981" 
-                fillOpacity={1} 
-                fill="url(#improving)" 
-              />
-              <Area 
-                type="monotone" 
-                dataKey="declining" 
-                stroke="#EF4444" 
-                fillOpacity={1} 
-                fill="url(#declining)" 
+                fill="#10B981" 
+                fillOpacity={0.1} 
               />
             </AreaChart>
           </ChartContainer>
 
-          {/* Assessment Performance */}
           <ChartContainer config={{}}>
             <BarChart data={assessmentData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
+              <XAxis dataKey="assessment_index" />
               <YAxis />
               <ChartTooltip />
-              <Bar dataKey="successRate" fill="#8884d8" name="Success Rate %" />
-              <Bar dataKey="avgScore" fill="#82ca9d" name="Average Score" />
-            </BarChart>
-          </ChartContainer>
-
-          {/* Areas Needing Attention */}
-          <div className="w-full">
-            <h3 className="text-lg font-semibold">Areas Needing Attention</h3>
-            <div className="space-y-6">
-              {assessmentData.map((rep, index) => (
-                <div key={index} className="space-y-2">
-                  <h3 className="text-lg font-semibold">{rep.profiles?.full_name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {rep.lowScoreCount} low scores (avg: {rep.averageLowScore})
-                  </p>
-                  <div className="space-y-2">
-                    {rep.areas.map((area, areaIndex) => (
-                      <div key={areaIndex} className="flex justify-between text-sm">
-                        <span className="text-red-500">{area.assessment}</span>
-                        <span>{area.month} - Score: {area.score}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Common Challenges */}
-          <ChartContainer config={{}}>
-            <BarChart 
-              data={assessmentData} 
-              layout="vertical"
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="assessment" type="category" width={150} />
-              <ChartTooltip />
-              <Bar dataKey="count" fill="#fbbf24" />
+              <Bar dataKey="score" fill="#8884d8" />
             </BarChart>
           </ChartContainer>
         </div>
