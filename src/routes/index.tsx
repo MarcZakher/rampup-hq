@@ -25,7 +25,7 @@ export const routes: RouteObject[] = [
     path: '/director/dashboard',
     element: (
       <ProtectedRoute>
-        <RoleProtectedRoute allowedRoles={['director']}>
+        <RoleProtectedRoute allowedRoles={['director', 'manager']}>
           <DirectorDashboard />
         </RoleProtectedRoute>
       </ProtectedRoute>
@@ -35,7 +35,7 @@ export const routes: RouteObject[] = [
     path: '/director/analytics',
     element: (
       <ProtectedRoute>
-        <RoleProtectedRoute allowedRoles={['director']}>
+        <RoleProtectedRoute allowedRoles={['director', 'manager']}>
           <AnalyticsPage />
         </RoleProtectedRoute>
       </ProtectedRoute>
