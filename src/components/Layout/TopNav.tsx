@@ -13,22 +13,51 @@ export function TopNav() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchUserProfile = async () => {
       try {
         setIsLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        console.log('Current user:', user); // Debug log
+        
+        // First, ensure we have a valid session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          return;
+        }
 
-        if (user) {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('full_name, email')
-            .eq('id', user.id)
-            .single();
-          
-          console.log('Profile data:', profile); // Debug log
-          console.log('Profile error:', error); // Debug log
-          
+        if (!session) {
+          console.log('No active session found');
+          return;
+        }
+
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error('User fetch error:', userError);
+          return;
+        }
+
+        if (!user) {
+          console.log('No user found');
+          return;
+        }
+
+        // Only proceed with profile fetch if we have a valid user
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', user.id)
+          .single();
+        
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          return;
+        }
+
+        // Only update state if the component is still mounted
+        if (mounted) {
           if (profile) {
             setUserProfile(profile);
           } else {
@@ -40,13 +69,32 @@ export function TopNav() {
           }
         }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('Error in fetchUserProfile:', error);
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event);
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        fetchUserProfile();
+      } else if (event === 'SIGNED_OUT') {
+        setUserProfile(null);
+      }
+    });
+
+    // Initial fetch
     fetchUserProfile();
+
+    // Cleanup
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
