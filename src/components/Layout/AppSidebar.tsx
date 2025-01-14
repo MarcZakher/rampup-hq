@@ -34,8 +34,12 @@ export function AppSidebar() {
           { icon: GraduationCap, label: 'Training Journey', onClick: () => navigate('/sales-rep/training') },
           { icon: BarChart3, label: 'Analytics', onClick: () => navigate('/sales-rep/analytics') },
         ];
+      case 'coaching':
+        return [
+          { icon: ClipboardList, label: 'Coaching', onClick: () => navigate('/coaching/dashboard') },
+        ];
       default:
-        // This will handle both undefined roles and coaching roles
+        // If no role matches or role is undefined, show coaching dashboard as fallback
         return [
           { icon: ClipboardList, label: 'Coaching', onClick: () => navigate('/coaching/dashboard') },
         ];
