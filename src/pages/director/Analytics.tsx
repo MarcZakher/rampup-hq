@@ -64,13 +64,24 @@ const chartConfig = {
 };
 
 const AnalyticsPage = () => {
-  // Fetch assessment scores and profiles
+  // First check if we have a valid session
   const { data: assessmentData, isLoading: isLoadingAssessments } = useQuery({
     queryKey: ['assessmentScores'],
     queryFn: async () => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error('Authentication required');
+      }
+
+      // Use a proper join with the profiles table
       const { data: scores, error } = await supabase
         .from('assessment_scores')
-        .select('*, profiles(full_name)');
+        .select(`
+          *,
+          sales_rep:sales_rep_id(
+            profile:profiles(full_name)
+          )
+        `);
       
       if (error) throw error;
       return scores;
@@ -93,15 +104,17 @@ const AnalyticsPage = () => {
       : "0.0";
 
     // Calculate reps meeting target (score >= 3)
-    const meetingTarget = Math.round((validScores.filter(score => (score.score || 0) >= 3).length / validScores.length) * 100);
+    const meetingTarget = validScores.length > 0
+      ? Math.round((validScores.filter(score => (score.score || 0) >= 3).length / validScores.length) * 100)
+      : 0;
 
     // Calculate completion rate
-    const totalPossibleAssessments = assessmentData.length; // This should ideally be calculated based on total required assessments
+    const totalPossibleAssessments = assessmentData.length || 1; // Prevent division by zero
     const completionRate = Math.round((validScores.length / totalPossibleAssessments) * 100);
 
     // Find top performer
     const repScores = validScores.reduce((acc, score) => {
-      const repName = score.profiles?.full_name || 'Unknown';
+      const repName = score.sales_rep?.profile?.full_name || 'Unknown';
       if (!acc[score.sales_rep_id]) {
         acc[score.sales_rep_id] = { 
           name: repName,
