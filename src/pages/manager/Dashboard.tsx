@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@supabase/auth-helpers-react';
 
 interface SalesRep {
-  id: string;  // Changed from number to string for UUID
+  id: string;
   name: string;
   month1: number[];
   month2: number[];
@@ -55,6 +55,8 @@ const ManagerDashboard = () => {
       if (!user) return;
 
       try {
+        console.log('Current user ID:', user.id);
+        
         // Get sales reps managed by the current manager
         const { data: userRoles, error: rolesError } = await supabase
           .from('user_roles')
@@ -62,19 +64,26 @@ const ManagerDashboard = () => {
           .eq('manager_id', user.id)
           .eq('role', 'sales_rep');
 
+        console.log('User roles query result:', { userRoles, rolesError });
+
         if (rolesError) throw rolesError;
 
         if (!userRoles.length) {
+          console.log('No sales reps found for this manager');
           setSalesReps([]);
           return;
         }
 
         // Get profiles for the sales reps
         const salesRepIds = userRoles.map(role => role.user_id);
+        console.log('Sales rep IDs:', salesRepIds);
+
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name')
           .in('id', salesRepIds);
+
+        console.log('Profiles query result:', { profiles, profilesError });
 
         if (profilesError) throw profilesError;
 
@@ -84,11 +93,14 @@ const ManagerDashboard = () => {
           .select('*')
           .in('sales_rep_id', salesRepIds);
 
+        console.log('Scores query result:', { scores, scoresError });
+
         if (scoresError) throw scoresError;
 
         // Transform the data into the required format
         const formattedReps = profiles.map(profile => {
           const repScores = scores.filter(score => score.sales_rep_id === profile.id);
+          console.log(`Scores for rep ${profile.full_name}:`, repScores);
           
           const month1Scores = new Array(5).fill(0);
           const month2Scores = new Array(6).fill(0);
@@ -105,7 +117,7 @@ const ManagerDashboard = () => {
           });
 
           return {
-            id: profile.id,  // No parseInt here
+            id: profile.id,
             name: profile.full_name || 'Unknown',
             month1: month1Scores,
             month2: month2Scores,
@@ -113,6 +125,7 @@ const ManagerDashboard = () => {
           };
         });
 
+        console.log('Formatted reps:', formattedReps);
         setSalesReps(formattedReps);
       } catch (error) {
         console.error('Error fetching sales reps:', error);
