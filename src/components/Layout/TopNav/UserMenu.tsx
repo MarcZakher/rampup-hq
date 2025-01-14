@@ -27,14 +27,42 @@ export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
 
   const handleSignOut = async () => {
     try {
+      // First check if we have a valid session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        // If there's a session error, clear local storage and redirect
+        localStorage.clear();
+        navigate('/auth');
+        return;
+      }
+
+      if (!session) {
+        // If no session exists, just clear storage and redirect
+        localStorage.clear();
+        navigate('/auth');
+        return;
+      }
+
+      // If we have a valid session, attempt to sign out
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error.message);
+        // Even if there's an error, clear storage and redirect
+        localStorage.clear();
+        navigate('/auth');
         return;
       }
+
+      // Successful signout
+      localStorage.clear();
       navigate('/auth');
     } catch (error) {
       console.error('Unexpected error during sign out:', error);
+      // On any error, clear storage and redirect
+      localStorage.clear();
+      navigate('/auth');
     }
   };
 
