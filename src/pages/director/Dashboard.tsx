@@ -11,7 +11,6 @@ interface SalesRep {
   id: string;
   full_name: string | null;
   email: string | null;
-  role: string;
   assessment_scores?: {
     month: string;
     score: number;
@@ -36,31 +35,31 @@ const DirectorDashboard = () => {
 
         if (!roleData?.length) {
           setSalesReps([]);
+          setIsLoading(false);
           return;
         }
 
-        // Then, get their profile information
+        // Get profiles for all sales reps
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, full_name, email')
           .in('id', roleData.map(role => role.user_id));
 
         if (profileError) throw profileError;
 
-        // Finally, get assessment scores
+        // Get assessment scores for all sales reps
         const { data: scoresData, error: scoresError } = await supabase
           .from('assessment_scores')
-          .select('*')
+          .select('sales_rep_id, month, score')
           .in('sales_rep_id', roleData.map(role => role.user_id));
 
         if (scoresError) throw scoresError;
 
-        // Combine all the data
+        // Combine the data
         const repsWithScores = profileData.map(profile => ({
           id: profile.id,
           full_name: profile.full_name || 'Unknown',
           email: profile.email || '',
-          role: 'sales_rep',
           assessment_scores: scoresData
             .filter(score => score.sales_rep_id === profile.id)
             .map(score => ({
