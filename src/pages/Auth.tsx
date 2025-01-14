@@ -15,7 +15,11 @@ const Auth = () => {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Session check error:', error);
-          await supabase.auth.signOut();
+          if (error.message.includes('refresh_token_not_found')) {
+            // Clear any stale session data
+            await supabase.auth.signOut();
+            localStorage.clear();
+          }
           return;
         }
         if (session) {
