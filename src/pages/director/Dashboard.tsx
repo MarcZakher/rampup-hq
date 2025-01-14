@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface SalesRep {
   id: string;
@@ -61,18 +61,28 @@ const DirectorDashboard = () => {
   useEffect(() => {
     const fetchSalesRepsData = async () => {
       try {
-        // First, get all sales reps
+        // First, get all sales reps with their profiles
         const { data: salesRepsData, error: salesRepsError } = await supabase
           .from('user_roles')
-          .select('user_id, profiles:user_id(full_name)')
+          .select(`
+            user_id,
+            profiles:user_id (
+              full_name
+            )
+          `)
           .eq('role', 'sales_rep');
 
-        if (salesRepsError) throw salesRepsError;
+        if (salesRepsError) {
+          console.error('Error fetching sales reps:', salesRepsError);
+          throw salesRepsError;
+        }
 
         if (!salesRepsData) {
           console.log('No sales reps found');
           return;
         }
+
+        console.log('Fetched sales reps:', salesRepsData);
 
         // For each sales rep, fetch their assessment scores
         const repsWithScores = await Promise.all(
@@ -113,7 +123,7 @@ const DirectorDashboard = () => {
 
         const validReps = repsWithScores.filter((rep): rep is SalesRep => rep !== null);
         setSalesReps(validReps);
-        console.log('Fetched sales reps data:', validReps);
+        console.log('Processed sales reps data:', validReps);
 
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -165,24 +175,31 @@ const DirectorDashboard = () => {
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard
             title="Total Sales Reps"
-            value={totalReps}
+            value={salesReps.length}
             icon={<Users className="h-4 w-4 text-muted-foreground" />}
           />
           <StatCard
             title="Average Score"
-            value={`${avgScore}/5`}
+            value={`${calculateAverage(salesReps.flatMap(rep => [...rep.month1, ...rep.month2, ...rep.month3]))}/5`}
             icon={<Target className="h-4 w-4 text-muted-foreground" />}
           />
           <StatCard
             title="Performing Well"
-            value={performingWell}
+            value={salesReps.filter(rep => {
+              const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
+              const validScores = allScores.filter(score => score > 0);
+              return validScores.length > 0 && (validScores.reduce((sum, score) => sum + score, 0) / validScores.length) > 3;
+            }).length}
             description="Score above 3/5"
             icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
           />
           <StatCard
             title="Top Ramping Rep"
-            value={topRampingRep.name}
-            description={`Score: ${topRampingRep.score}/5`}
+            value={salesReps.reduce((top, rep) => {
+              const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
+              const avgScore = calculateAverage(allScores);
+              return avgScore > top.score ? { name: rep.name, score: avgScore } : top;
+            }, { name: "No reps", score: 0 }).name}
             icon={<Trophy className="h-4 w-4 text-muted-foreground" />}
           />
         </div>
