@@ -6,7 +6,8 @@ import {
   getMonthlyScores, 
   getAssessmentData, 
   getAreasOfFocus,
-  getTeamProgress 
+  getTeamProgress,
+  getRepPerformance
 } from '@/lib/mockAnalyticsData';
 import { 
   Card,
@@ -65,31 +66,37 @@ const AnalyticsPage = () => {
   const assessmentData = getAssessmentData();
   const areasOfFocus = getAreasOfFocus();
   const teamProgress = getTeamProgress();
+  const repPerformance = getRepPerformance();
+
+  // Calculate top performer
+  const topPerformer = repPerformance.reduce((top, current) => 
+    current.overallScore > top.overallScore ? current : top
+  );
 
   const summaryMetrics = [
     {
       title: "Team Average Score",
-      value: "4.2/5.0",
+      value: `${monthlyScores[monthlyScores.length - 1].avgScore}/5.0`,
       icon: <Users className="h-4 w-4 text-muted-foreground" />,
-      description: "+0.3 from last month"
+      description: `+${teamProgress.averageImprovement} from last month`
     },
     {
       title: "Reps Meeting Target",
-      value: "85%",
+      value: `${teamProgress.meetingTarget}%`,
       icon: <Target className="h-4 w-4 text-muted-foreground" />,
       description: "Score above 3/5"
     },
     {
       title: "Completion Rate",
-      value: "92%",
+      value: `${teamProgress.completionRate}%`,
       icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
       description: "Of all assessments"
     },
     {
       title: "Top Performer",
-      value: "John Doe",
+      value: topPerformer.name,
       icon: <Trophy className="h-4 w-4 text-muted-foreground" />,
-      description: "Score: 4.8/5"
+      description: `Score: ${topPerformer.overallScore}/5`
     }
   ];
 
