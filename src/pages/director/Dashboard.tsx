@@ -9,8 +9,8 @@ import { useToast } from '@/components/ui/use-toast';
 
 interface SalesRep {
   id: string;
-  full_name: string;
-  email: string;
+  full_name: string | null;
+  email: string | null;
   role: string;
   assessment_scores?: {
     month: string;
@@ -26,42 +26,48 @@ const DirectorDashboard = () => {
   useEffect(() => {
     const fetchSalesReps = async () => {
       try {
-        // Fetch sales reps with their profiles
-        const { data: salesRepsData, error: salesRepsError } = await supabase
+        // First, get all sales rep user roles
+        const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
-          .select(`
-            user_id,
-            profiles!inner (
-              id,
-              full_name,
-              email
-            )
-          `)
+          .select('user_id')
           .eq('role', 'sales_rep');
 
-        if (salesRepsError) throw salesRepsError;
+        if (roleError) throw roleError;
 
-        // Fetch assessment scores for all sales reps
+        if (!roleData?.length) {
+          setSalesReps([]);
+          return;
+        }
+
+        // Then, get their profile information
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', roleData.map(role => role.user_id));
+
+        if (profileError) throw profileError;
+
+        // Finally, get assessment scores
         const { data: scoresData, error: scoresError } = await supabase
           .from('assessment_scores')
           .select('*')
-          .in('sales_rep_id', salesRepsData?.map(rep => rep.user_id) || []);
+          .in('sales_rep_id', roleData.map(role => role.user_id));
 
         if (scoresError) throw scoresError;
 
-        // Combine the data
-        const repsWithScores = salesRepsData?.map(rep => ({
-          id: rep.user_id,
-          full_name: rep.profiles.full_name || 'Unknown',
-          email: rep.profiles.email || '',
+        // Combine all the data
+        const repsWithScores = profileData.map(profile => ({
+          id: profile.id,
+          full_name: profile.full_name || 'Unknown',
+          email: profile.email || '',
           role: 'sales_rep',
           assessment_scores: scoresData
-            .filter(score => score.sales_rep_id === rep.user_id)
+            .filter(score => score.sales_rep_id === profile.id)
             .map(score => ({
               month: score.month,
               score: Number(score.score)
             }))
-        })) || [];
+        }));
 
         setSalesReps(repsWithScores);
       } catch (error) {
