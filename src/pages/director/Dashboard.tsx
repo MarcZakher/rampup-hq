@@ -1,17 +1,20 @@
+import { useEffect, useState } from 'react';
 import { Users, TrendingUp, Target, Trophy } from 'lucide-react';
 import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useEffect, useState } from 'react';
-import { STORAGE_KEY } from '@/lib/constants/assessments';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface SalesRep {
-  id: number;
+  id: string;
   name: string;
-  month1: number[];
-  month2: number[];
-  month3: number[];
+  scores: {
+    month1: number[];
+    month2: number[];
+    month3: number[];
+  };
 }
 
 const assessments = {
@@ -42,13 +45,80 @@ const assessments = {
 
 const DirectorDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    if (savedReps) {
-      setSalesReps(JSON.parse(savedReps));
-    }
-  }, []);
+    const fetchSalesReps = async () => {
+      try {
+        // Fetch all sales reps (users with sales_rep role)
+        const { data: salesRepsData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'sales_rep');
+
+        if (rolesError) throw rolesError;
+
+        if (!salesRepsData) {
+          setSalesReps([]);
+          return;
+        }
+
+        // Fetch profiles for all sales reps
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', salesRepsData.map(rep => rep.user_id));
+
+        if (profilesError) throw profilesError;
+
+        // Fetch assessment scores for all sales reps
+        const { data: scores, error: scoresError } = await supabase
+          .from('assessment_scores')
+          .select('*')
+          .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
+
+        if (scoresError) throw scoresError;
+
+        // Process and combine the data
+        const processedReps = profiles.map(profile => {
+          const repScores = scores.filter(score => score.sales_rep_id === profile.id);
+          
+          const monthScores = {
+            month1: new Array(5).fill(0),
+            month2: new Array(6).fill(0),
+            month3: new Array(6).fill(0)
+          };
+
+          repScores.forEach(score => {
+            const month = score.month as keyof typeof monthScores;
+            if (monthScores[month] && score.assessment_index !== null) {
+              monthScores[month][score.assessment_index] = Number(score.score) || 0;
+            }
+          });
+
+          return {
+            id: profile.id,
+            name: profile.full_name || 'Unknown',
+            scores: monthScores
+          };
+        });
+
+        setSalesReps(processedReps);
+      } catch (error) {
+        console.error('Error fetching sales reps data:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load sales representatives data"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSalesReps();
+  }, [toast]);
 
   const calculateAverage = (scores: number[]) => {
     const validScores = scores.filter(score => score > 0);
@@ -59,13 +129,13 @@ const DirectorDashboard = () => {
   const totalReps = salesReps.length;
   const avgScore = totalReps === 0 ? 0 : 
     Number((salesReps.reduce((acc, rep) => {
-      const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
+      const allScores = [...rep.scores.month1, ...rep.scores.month2, ...rep.scores.month3];
       const validScores = allScores.filter(score => score > 0);
       return acc + (validScores.length > 0 ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length : 0);
     }, 0) / totalReps).toFixed(1));
 
   const performingWell = salesReps.filter(rep => {
-    const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
+    const allScores = [...rep.scores.month1, ...rep.scores.month2, ...rep.scores.month3];
     const validScores = allScores.filter(score => score > 0);
     return validScores.length > 0 && (validScores.reduce((sum, score) => sum + score, 0) / validScores.length) > 3;
   }).length;
@@ -74,7 +144,7 @@ const DirectorDashboard = () => {
     if (salesReps.length === 0) return { name: "No reps", score: 0 };
     
     return salesReps.reduce((top, rep) => {
-      const allScores = [...rep.month1, ...rep.month2, ...rep.month3];
+      const allScores = [...rep.scores.month1, ...rep.scores.month2, ...rep.scores.month3];
       const avgScore = calculateAverage(allScores);
       return avgScore > top.score ? { name: rep.name, score: avgScore } : top;
     }, { name: "", score: 0 });
@@ -88,6 +158,14 @@ const DirectorDashboard = () => {
     if (score >= 3) return 'bg-[#FFEB9C]';
     return 'bg-[#FFC7CE]';
   };
+
+  if (isLoading) {
+    return (
+      <CustomAppLayout>
+        <div className="p-6">Loading...</div>
+      </CustomAppLayout>
+    );
+  }
 
   return (
     <CustomAppLayout>
@@ -144,13 +222,13 @@ const DirectorDashboard = () => {
                     {salesReps.map((rep) => (
                       <TableRow key={rep.id}>
                         <TableCell className="font-medium">{rep.name}</TableCell>
-                        {rep[month as keyof Pick<SalesRep, 'month1' | 'month2' | 'month3'>].map((score, scoreIndex) => (
+                        {rep.scores[month as keyof typeof rep.scores].map((score, scoreIndex) => (
                           <TableCell key={scoreIndex} className={getScoreColor(score)}>
                             {score || '-'}
                           </TableCell>
                         ))}
-                        <TableCell className={getScoreColor(calculateAverage(rep[month as keyof Pick<SalesRep, 'month1' | 'month2' | 'month3'>]))}>
-                          {calculateAverage(rep[month as keyof Pick<SalesRep, 'month1' | 'month2' | 'month3'>])}
+                        <TableCell className={getScoreColor(calculateAverage(rep.scores[month as keyof typeof rep.scores]))}>
+                          {calculateAverage(rep.scores[month as keyof typeof rep.scores])}
                         </TableCell>
                       </TableRow>
                     ))}
