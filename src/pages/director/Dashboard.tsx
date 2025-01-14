@@ -31,7 +31,10 @@ const DirectorDashboard = () => {
           .select('user_id')
           .eq('role', 'sales_rep');
 
-        if (roleError) throw roleError;
+        if (roleError) {
+          console.error('Error fetching roles:', roleError);
+          throw roleError;
+        }
 
         if (!roleData?.length) {
           setSalesReps([]);
@@ -45,7 +48,10 @@ const DirectorDashboard = () => {
           .select('id, full_name, email')
           .in('id', roleData.map(role => role.user_id));
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error('Error fetching profiles:', profileError);
+          throw profileError;
+        }
 
         // Get assessment scores for all sales reps
         const { data: scoresData, error: scoresError } = await supabase
@@ -53,7 +59,10 @@ const DirectorDashboard = () => {
           .select('sales_rep_id, month, score')
           .in('sales_rep_id', roleData.map(role => role.user_id));
 
-        if (scoresError) throw scoresError;
+        if (scoresError) {
+          console.error('Error fetching scores:', scoresError);
+          throw scoresError;
+        }
 
         // Combine the data
         const repsWithScores = profileData.map(profile => ({
