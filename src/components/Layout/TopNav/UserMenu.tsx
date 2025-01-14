@@ -1,6 +1,5 @@
-import { LogOut, User } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { LogOut } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,9 +8,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface UserProfile {
   full_name: string | null;
@@ -29,42 +29,69 @@ export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
 
   const handleSignOut = async () => {
     try {
-      // Clear any stored data first
-      localStorage.clear();
+      // First check if we have a valid session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Session error occurred. Please try again."
+        });
+        return;
+      }
+
+      // If no session exists, just clear storage and redirect
+      if (!session) {
+        localStorage.clear();
+        navigate('/auth');
+        return;
+      }
+
+      // If we have a valid session, attempt to sign out
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
+      if (error) {
+        console.error('Error signing out:', error);
+        toast({
+          variant: "destructive",
+          title: "Error signing out",
+          description: error.message
+        });
+      }
+
+      // Always clear local storage and redirect, even if there was an error
+      localStorage.clear();
       navigate('/auth');
     } catch (error) {
-      console.error('Error signing out:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to sign out. Please try again."
-      });
-      // Force navigation to auth page even if there's an error
+      console.error('Unexpected error during sign out:', error);
+      localStorage.clear();
       navigate('/auth');
     }
   };
 
-  if (isLoading) {
-    return (
-      <Button variant="ghost" size="sm" className="relative h-8 w-8 rounded-full">
-        <Avatar className="h-8 w-8">
-          <AvatarFallback>...</AvatarFallback>
-        </Avatar>
-      </Button>
-    );
-  }
+  const getInitials = (name: string | null) => {
+    if (!name) return 'U';
+    const nameParts = name.trim().split(' ');
+    if (nameParts.length === 0) return 'U';
+    
+    const initials = nameParts
+      .filter(part => part.length > 0)
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+    
+    return initials || 'U';
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>
-              {userProfile?.full_name?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
+        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+          <Avatar className="h-8 w-8 border border-gray-200">
+            <AvatarFallback className="bg-rampup-primary/10 text-rampup-primary">
+              {isLoading ? '...' : getInitials(userProfile?.full_name)}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -72,9 +99,11 @@ export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{userProfile?.full_name}</p>
+            <p className="text-sm font-medium leading-none">
+              {isLoading ? 'Loading...' : userProfile?.full_name || userProfile?.email?.split('@')[0] || 'User'}
+            </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {userProfile?.email}
+              {isLoading ? '...' : userProfile?.email}
             </p>
           </div>
         </DropdownMenuLabel>
