@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
 interface SalesRep {
   id: string;
@@ -43,82 +44,79 @@ const assessments = {
   ]
 };
 
-const DirectorDashboard = () => {
-  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+const fetchSalesRepsData = async () => {
+  // Fetch all sales reps (users with sales_rep role)
+  const { data: salesRepsData, error: rolesError } = await supabase
+    .from('user_roles')
+    .select('user_id')
+    .eq('role', 'sales_rep');
 
-  useEffect(() => {
-    const fetchSalesReps = async () => {
-      try {
-        // Fetch all sales reps (users with sales_rep role)
-        const { data: salesRepsData, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('user_id')
-          .eq('role', 'sales_rep');
+  if (rolesError) throw rolesError;
 
-        if (rolesError) throw rolesError;
+  if (!salesRepsData) {
+    return [];
+  }
 
-        if (!salesRepsData) {
-          setSalesReps([]);
-          return;
-        }
+  // Fetch profiles for all sales reps
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', salesRepsData.map(rep => rep.user_id));
 
-        // Fetch profiles for all sales reps
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', salesRepsData.map(rep => rep.user_id));
+  if (profilesError) throw profilesError;
 
-        if (profilesError) throw profilesError;
+  // Fetch assessment scores for all sales reps
+  const { data: scores, error: scoresError } = await supabase
+    .from('assessment_scores')
+    .select('*')
+    .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
 
-        // Fetch assessment scores for all sales reps
-        const { data: scores, error: scoresError } = await supabase
-          .from('assessment_scores')
-          .select('*')
-          .in('sales_rep_id', salesRepsData.map(rep => rep.user_id));
+  if (scoresError) throw scoresError;
 
-        if (scoresError) throw scoresError;
-
-        // Process and combine the data
-        const processedReps = profiles.map(profile => {
-          const repScores = scores.filter(score => score.sales_rep_id === profile.id);
-          
-          const monthScores = {
-            month1: new Array(5).fill(0),
-            month2: new Array(6).fill(0),
-            month3: new Array(6).fill(0)
-          };
-
-          repScores.forEach(score => {
-            const month = score.month as keyof typeof monthScores;
-            if (monthScores[month] && score.assessment_index !== null) {
-              monthScores[month][score.assessment_index] = Number(score.score) || 0;
-            }
-          });
-
-          return {
-            id: profile.id,
-            name: profile.full_name || 'Unknown',
-            scores: monthScores
-          };
-        });
-
-        setSalesReps(processedReps);
-      } catch (error) {
-        console.error('Error fetching sales reps data:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load sales representatives data"
-        });
-      } finally {
-        setIsLoading(false);
-      }
+  // Process and combine the data
+  return profiles.map(profile => {
+    const repScores = scores.filter(score => score.sales_rep_id === profile.id);
+    
+    const monthScores = {
+      month1: new Array(5).fill(0),
+      month2: new Array(6).fill(0),
+      month3: new Array(6).fill(0)
     };
 
-    fetchSalesReps();
-  }, [toast]);
+    repScores.forEach(score => {
+      const month = score.month as keyof typeof monthScores;
+      if (monthScores[month] && score.assessment_index !== null) {
+        monthScores[month][score.assessment_index] = Number(score.score) || 0;
+      }
+    });
+
+    return {
+      id: profile.id,
+      name: profile.full_name || 'Unknown',
+      scores: monthScores
+    };
+  });
+};
+
+const DirectorDashboard = () => {
+  const { toast } = useToast();
+
+  const { data: salesReps = [], isLoading, error } = useQuery({
+    queryKey: ['salesReps'],
+    queryFn: fetchSalesRepsData,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    retry: 2
+  });
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load sales representatives data"
+      });
+    }
+  }, [error, toast]);
 
   const calculateAverage = (scores: number[]) => {
     const validScores = scores.filter(score => score > 0);
