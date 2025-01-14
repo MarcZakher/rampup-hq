@@ -1,22 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Auth as SupabaseAuth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { AuthError, AuthApiError } from '@supabase/supabase-js';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AuthForm } from '@/components/auth/AuthForm';
+import { getErrorMessage } from '@/utils/auth';
 
 const Auth = () => {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState("");
-  const [selectedRole, setSelectedRole] = useState<string>("sales_rep");
 
   useEffect(() => {
     const checkSession = async () => {
@@ -24,7 +15,6 @@ const Auth = () => {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Session check error:', error);
-          // Clear any invalid session data
           await supabase.auth.signOut();
           return;
         }
@@ -40,7 +30,7 @@ const Auth = () => {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event, session); // Debug log
+      console.log('Auth state change:', event, session);
       
       if (event === 'SIGNED_IN') {
         if (session) {
@@ -57,10 +47,9 @@ const Auth = () => {
         }
       }
       if (event === 'SIGNED_OUT') {
-        // Clear any stored session data
         localStorage.removeItem('supabase.auth.token');
         navigate('/auth');
-        setErrorMessage(""); // Clear errors on sign out
+        setErrorMessage("");
       }
     });
 
@@ -68,28 +57,6 @@ const Auth = () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
-
-  const getErrorMessage = (error: AuthError) => {
-    console.error('Auth error:', error); // Debug log
-    
-    if (error instanceof AuthApiError) {
-      switch (error.code) {
-        case 'invalid_credentials':
-          return 'Invalid email or password. Please check your credentials and try again.';
-        case 'email_not_confirmed':
-          return 'Please verify your email address before signing in.';
-        case 'user_not_found':
-          return 'No user found with these credentials.';
-        case 'invalid_grant':
-          return 'Invalid login credentials.';
-        case 'refresh_token_not_found':
-          return 'Your session has expired. Please sign in again.';
-        default:
-          return `Authentication error: ${error.message}`;
-      }
-    }
-    return error.message;
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rampup-light via-white to-white py-12 px-4 sm:px-6 lg:px-8">
@@ -107,79 +74,7 @@ const Auth = () => {
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
-        <div className="mt-8">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Select your role
-            </label>
-            <Select
-              value={selectedRole}
-              onValueChange={(value) => setSelectedRole(value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sales_rep">Sales Representative</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="director">Director</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <SupabaseAuth
-            supabaseClient={supabase}
-            appearance={{
-              theme: ThemeSupa,
-              variables: {
-                default: {
-                  colors: {
-                    brand: '#9b87f5',
-                    brandAccent: '#7E69AB',
-                    brandButtonText: 'white',
-                    defaultButtonBackground: '#F8F9FA',
-                    defaultButtonBackgroundHover: '#E9ECEF',
-                    inputBackground: 'white',
-                    inputBorder: '#E9ECEF',
-                    inputBorderHover: '#9b87f5',
-                    inputBorderFocus: '#7E69AB',
-                  },
-                  borderWidths: {
-                    buttonBorderWidth: '1px',
-                    inputBorderWidth: '1px',
-                  },
-                  radii: {
-                    borderRadiusButton: '0.5rem',
-                    buttonBorderRadius: '0.5rem',
-                    inputBorderRadius: '0.5rem',
-                  },
-                },
-              },
-              style: {
-                button: {
-                  border: '1px solid transparent',
-                  borderRadius: '0.5rem',
-                  padding: '0.625rem 1.25rem',
-                  transition: 'all 0.2s ease-in-out',
-                },
-                anchor: {
-                  color: '#7E69AB',
-                  textDecoration: 'none',
-                  fontWeight: '500',
-                },
-                container: {
-                  borderRadius: '0.75rem',
-                },
-                input: {
-                  borderRadius: '0.5rem',
-                },
-              },
-            }}
-            providers={[]}
-            additionalData={{
-              role: selectedRole
-            }}
-          />
-        </div>
+        <AuthForm />
       </div>
     </div>
   );
