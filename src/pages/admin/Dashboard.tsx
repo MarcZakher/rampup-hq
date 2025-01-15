@@ -21,6 +21,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Database } from "@/integrations/supabase/types";
 
 type AssessmentCriteriaTemplate = Database["public"]["Tables"]["assessment_criteria_templates"]["Row"];
+type Json = Database["public"]["Tables"]["assessment_criteria_templates"]["Row"]["criteria_list"];
 
 interface CriteriaForm {
   name: string;
@@ -63,9 +64,9 @@ export default function AdminDashboard() {
       return (data as AssessmentCriteriaTemplate[]).map((template) => ({
         id: template.id,
         assessment_name: template.assessment_name,
-        criteria_list: template.criteria_list as CriteriaForm[],
+        criteria_list: template.criteria_list as unknown as CriteriaForm[],
         created_at: template.created_at,
-      })) as AssessmentTemplate[];
+      }));
     },
   });
 
@@ -86,8 +87,8 @@ export default function AdminDashboard() {
     try {
       const { error } = await supabase.from("assessment_criteria_templates").insert({
         assessment_name: data.assessment_name,
-        criteria_list: data.criteria,
-      } as AssessmentCriteriaTemplate);
+        criteria_list: data.criteria as unknown as Json,
+      });
 
       if (error) throw error;
 
