@@ -60,11 +60,14 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
     },
   });
 
-  const handleScoreChange = (criteriaId: string, score: string) => {
-    setScores(prev => ({
-      ...prev,
-      [criteriaId]: Number(score)
-    }));
+  const handleScoreChange = (criteriaId: string, value: string) => {
+    const score = Number(value);
+    if (score >= 1 && score <= 5) {
+      setScores(prev => ({
+        ...prev,
+        [criteriaId]: score
+      }));
+    }
   };
 
   const handleArrayFieldAdd = (
@@ -190,7 +193,7 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
           {selectedTemplate && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Assessment Criteria</h3>
-              {selectedTemplate.criteria_list.map((criteria: { id: string; name: string }) => (
+              {selectedTemplate.criteria_list.map((criteria) => (
                 <div key={criteria.id} className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
                     {criteria.name}
@@ -304,11 +307,11 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
               </div>
             ))}
           </div>
-        </div>
 
-        <Button onClick={handleSubmit} className="w-full">
-          Submit Feedback
-        </Button>
+          <Button onClick={handleSubmit} className="w-full">
+            Submit Feedback
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
