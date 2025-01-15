@@ -20,7 +20,7 @@ import {
 
 interface AssessmentFormProps {
   onSubmit: (data: AssessmentFormData) => void;
-  initialData?: AssessmentFormData;
+  initialData?: AssessmentFormData & { id?: string };
   onCancel: () => void;
 }
 
@@ -32,16 +32,24 @@ export interface AssessmentFormData {
 
 export function AssessmentForm({ onSubmit, initialData, onCancel }: AssessmentFormProps) {
   const form = useForm<AssessmentFormData>({
-    defaultValues: initialData || {
+    defaultValues: initialData ? {
+      title: initialData.title,
+      description: initialData.description,
+      period: initialData.period,
+    } : {
       title: "",
       description: "",
       period: "month_1",
     },
   });
 
+  const handleSubmit = (data: AssessmentFormData) => {
+    onSubmit(data);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="title"
