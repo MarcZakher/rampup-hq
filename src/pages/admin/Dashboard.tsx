@@ -563,6 +563,8 @@ export default function AdminDashboard() {
                 criteria={criteria || []}
                 onEdit={setEditingCriteria}
                 onDelete={handleDeleteCriteria}
+                onAdd={handleCriteriaSubmit}
+                selectedAssessment={selectedAssessment}
               />
             </div>
           </SheetContent>
