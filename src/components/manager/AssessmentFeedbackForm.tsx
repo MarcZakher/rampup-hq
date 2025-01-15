@@ -23,6 +23,21 @@ import { useToast } from '@/hooks/use-toast';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+interface SalesRep {
+  id: string;
+  full_name: string;
+}
+
+interface Assessment {
+  id: string;
+  title: string;
+}
+
+interface Criteria {
+  id: string;
+  title: string;
+}
+
 const formSchema = z.object({
   salesRepId: z.string().min(1, 'Sales representative is required'),
   assessmentId: z.string().min(1, 'Assessment is required'),
