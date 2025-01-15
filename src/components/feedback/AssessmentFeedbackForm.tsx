@@ -30,8 +30,13 @@ type AssessmentCriteria = {
   name: string;
 };
 
-type AssessmentTemplate = Database['public']['Tables']['assessment_criteria_templates']['Row'] & {
+type AssessmentTemplate = {
+  id: string;
+  assessment_name: string;
   criteria_list: AssessmentCriteria[];
+  month: number;
+  created_at: string;
+  updated_at: string;
 };
 
 export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProps) => {
