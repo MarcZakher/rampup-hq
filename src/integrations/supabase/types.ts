@@ -103,29 +103,38 @@ export type Database = {
       }
       feedback_submissions: {
         Row: {
+          areas_for_improvement: string[]
           created_at: string
-          feedback_data: Json
           id: string
           manager_id: string
+          observed_strengths: string[]
+          recommended_actions: string[]
           sales_rep_id: string
+          scores: Json
           template_id: string
           updated_at: string
         }
         Insert: {
+          areas_for_improvement?: string[]
           created_at?: string
-          feedback_data: Json
           id?: string
           manager_id: string
+          observed_strengths?: string[]
+          recommended_actions?: string[]
           sales_rep_id: string
+          scores?: Json
           template_id: string
           updated_at?: string
         }
         Update: {
+          areas_for_improvement?: string[]
           created_at?: string
-          feedback_data?: Json
           id?: string
           manager_id?: string
+          observed_strengths?: string[]
+          recommended_actions?: string[]
           sales_rep_id?: string
+          scores?: Json
           template_id?: string
           updated_at?: string
         }
