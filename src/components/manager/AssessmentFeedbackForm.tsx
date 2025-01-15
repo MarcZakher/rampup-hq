@@ -78,6 +78,7 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
     queryKey: ['submission', submissionId],
     queryFn: async () => {
       if (!submissionId) return null;
+      console.log('Fetching submission:', submissionId);
       const { data, error } = await supabase
         .from('assessment_submissions')
         .select(`
@@ -90,7 +91,11 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
         .eq('id', submissionId)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching submission:', error);
+        throw error;
+      }
+      console.log('Fetched submission:', data);
       return data;
     },
     enabled: !!submissionId,
@@ -99,6 +104,7 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
   // Set form values when editing existing submission
   useEffect(() => {
     if (existingSubmission) {
+      console.log('Setting form values from existing submission:', existingSubmission);
       const criteriaScores = {};
       existingSubmission.criteria_scores.forEach((score: any) => {
         criteriaScores[score.criteria_id] = score.score;
@@ -111,7 +117,7 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
         observedStrengths: existingSubmission.observed_strengths,
         areasForImprovement: existingSubmission.areas_for_improvement,
         recommendedActions: existingSubmission.recommended_actions,
-        feedback: existingSubmission.feedback,
+        feedback: existingSubmission.feedback || '',
       });
       setSelectedAssessment(existingSubmission.assessment_id);
     }
@@ -165,6 +171,7 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      console.log('Starting update with data:', data);
       if (!submissionId) throw new Error('No submission ID provided');
       
       const user = await supabase.auth.getUser();
@@ -173,6 +180,7 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
       const scores = Object.values(data.criteriaScores);
       const totalScore = scores.reduce((a, b) => a + b, 0) / scores.length;
 
+      console.log('Updating submission:', submissionId);
       // Update submission
       const { error: submissionError } = await supabase
         .from('assessment_submissions')
@@ -184,30 +192,45 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
           observed_strengths: data.observedStrengths,
           areas_for_improvement: data.areasForImprovement,
           recommended_actions: data.recommendedActions,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', submissionId);
 
-      if (submissionError) throw submissionError;
+      if (submissionError) {
+        console.error('Submission update error:', submissionError);
+        throw submissionError;
+      }
 
-      // Update criteria scores
-      const { error: scoresError } = await supabase
+      console.log('Deleting old criteria scores');
+      // Delete old criteria scores
+      const { error: deleteError } = await supabase
         .from('assessment_criteria_scores')
         .delete()
         .eq('submission_id', submissionId);
 
-      if (scoresError) throw scoresError;
+      if (deleteError) {
+        console.error('Delete scores error:', deleteError);
+        throw deleteError;
+      }
 
+      console.log('Inserting new criteria scores');
+      // Insert new criteria scores
       const criteriaScores = Object.entries(data.criteriaScores).map(([criteriaId, score]) => ({
         submission_id: submissionId,
         criteria_id: criteriaId,
         score,
       }));
 
-      const { error: newScoresError } = await supabase
+      const { error: insertError } = await supabase
         .from('assessment_criteria_scores')
         .insert(criteriaScores);
 
-      if (newScoresError) throw newScoresError;
+      if (insertError) {
+        console.error('Insert scores error:', insertError);
+        throw insertError;
+      }
+
+      console.log('Update completed successfully');
     },
     onSuccess: () => {
       toast({
