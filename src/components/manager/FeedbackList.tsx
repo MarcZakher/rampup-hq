@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Pencil, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface FeedbackSubmission {
   id: string;
@@ -96,6 +97,12 @@ export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
     setExpandedId(expandedId === id ? null : id);
   };
 
+  const getScoreColor = (score: number) => {
+    if (score >= 4) return "border-assessment-green bg-assessment-green/10";
+    if (score >= 3) return "border-assessment-yellow bg-assessment-yellow/10";
+    return "border-assessment-red bg-assessment-red/10";
+  };
+
   if (isLoading) {
     return <div>Loading submissions...</div>;
   }
@@ -103,7 +110,10 @@ export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
   return (
     <div className="space-y-4">
       {submissions?.map((submission) => (
-        <Card key={submission.id}>
+        <Card 
+          key={submission.id}
+          className={cn("transition-colors", getScoreColor(submission.total_score))}
+        >
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
               <div>

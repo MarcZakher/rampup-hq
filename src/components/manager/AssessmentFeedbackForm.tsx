@@ -45,7 +45,7 @@ const formSchema = z.object({
   observedStrengths: z.string().min(1, 'Observed strengths are required'),
   areasForImprovement: z.string().min(1, 'Areas for improvement are required'),
   recommendedActions: z.string().min(1, 'Recommended actions are required'),
-  feedback: z.string().min(1, 'Additional feedback is required'),
+  feedback: z.string().optional(), // Made feedback optional
 });
 
 type FormData = z.infer<typeof formSchema>;
