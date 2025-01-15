@@ -13,7 +13,7 @@ import {
 const menuItems = [
   { title: 'Home', icon: Home, url: '/' },
   { title: 'Sales Reps', icon: Users, url: '/sales-reps' },
-  { title: 'Assessments', icon: ClipboardList, url: '/assessments' },
+  { title: 'Assessments', icon: ClipboardList, url: '/manager/assessments' },
   { title: 'Performance Analytics', icon: LineChart, url: '/director/analytics' },
   { title: 'Settings', icon: Settings, url: '/settings' },
 ];
