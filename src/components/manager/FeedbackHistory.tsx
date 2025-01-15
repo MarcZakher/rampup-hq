@@ -36,7 +36,7 @@ interface QueryResponse {
   recommended_actions: string | null;
   created_at: string;
   sales_rep_id: string;
-  sales_rep_profile: {
+  profiles: {
     full_name: string | null;
   } | null;
 }
@@ -58,9 +58,7 @@ export const FeedbackHistory = () => {
           recommended_actions,
           created_at,
           sales_rep_id,
-          sales_rep_profile:sales_rep_id (
-            full_name
-          )
+          profiles!assessment_submissions_sales_rep_id_fkey(full_name)
         `)
         .eq('manager_id', (await supabase.auth.getUser()).data.user?.id)
         .order('created_at', { ascending: false });
@@ -69,7 +67,7 @@ export const FeedbackHistory = () => {
 
       return (submissions as QueryResponse[]).map(submission => ({
         id: submission.id,
-        sales_rep_name: submission.sales_rep_profile?.full_name || 'Unknown',
+        sales_rep_name: submission.profiles?.full_name || 'Unknown',
         total_score: submission.total_score,
         feedback: submission.feedback,
         observed_strengths: submission.observed_strengths,
