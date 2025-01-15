@@ -3,6 +3,7 @@ import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import DirectorDashboard from '@/pages/director/Dashboard';
 import ManagerDashboard from '@/pages/manager/Dashboard';
+import ManagerAssessments from '@/pages/manager/Assessments';
 import AnalyticsPage from '@/pages/director/Analytics';
 import SalesRepDashboard from '@/pages/sales-rep/Dashboard';
 import TrainingJourney from '@/pages/sales-rep/TrainingJourney';
@@ -31,6 +32,10 @@ export const routes: RouteObject[] = [
   {
     path: '/manager/dashboard',
     element: <ProtectedRoute><ManagerDashboard /></ProtectedRoute>
+  },
+  {
+    path: '/manager/assessments',
+    element: <ProtectedRoute><ManagerAssessments /></ProtectedRoute>
   },
   {
     path: '/admin/dashboard',

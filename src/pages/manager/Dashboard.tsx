@@ -6,8 +6,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
-import { AssessmentFeedbackForm } from '@/components/feedback/AssessmentFeedbackForm';
-import { supabase } from '@/integrations/supabase/client';
 
 interface SalesRep {
   id: number;
@@ -55,10 +53,6 @@ const ManagerDashboard = () => {
     const savedReps = localStorage.getItem(STORAGE_KEY);
     if (savedReps) {
       setSalesReps(JSON.parse(savedReps));
-    } else {
-      // If no saved data, use the initial data
-      setSalesReps(initialSalesReps);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialSalesReps));
     }
   }, []);
 
@@ -129,13 +123,6 @@ const ManagerDashboard = () => {
     return 'bg-[#FFC7CE]';
   };
 
-  // Combine all assessments for the feedback form
-  const allAssessments = [
-    ...assessments.month1,
-    ...assessments.month2,
-    ...assessments.month3
-  ];
-
   return (
     <AppLayout>
       <div className="space-y-6 p-6">
@@ -154,18 +141,6 @@ const ManagerDashboard = () => {
             </Button>
           </div>
         </div>
-
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Assessment Feedback</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AssessmentFeedbackForm
-              salesReps={salesReps.map(rep => ({ id: rep.id.toString(), name: rep.name }))}
-              assessments={allAssessments}
-            />
-          </CardContent>
-        </Card>
 
         <div className="space-y-6">
           {['month1', 'month2', 'month3'].map((month, monthIndex) => (
