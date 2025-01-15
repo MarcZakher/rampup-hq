@@ -6,7 +6,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
-import { FeedbackHistory } from '@/components/manager/FeedbackHistory';
 
 interface SalesRep {
   id: number;
@@ -142,8 +141,6 @@ const ManagerDashboard = () => {
             </Button>
           </div>
         </div>
-
-        <FeedbackHistory />
 
         <div className="space-y-6">
           {['month1', 'month2', 'month3'].map((month, monthIndex) => (
