@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -66,13 +65,10 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
   });
 
   const handleScoreChange = (criteriaId: string, value: string) => {
-    const score = Number(value);
-    if (score >= 1 && score <= 5) {
-      setScores(prev => ({
-        ...prev,
-        [criteriaId]: score
-      }));
-    }
+    setScores(prev => ({
+      ...prev,
+      [criteriaId]: parseInt(value, 10)
+    }));
   };
 
   const handleArrayFieldAdd = (
@@ -209,15 +205,21 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
                   <label className="block text-sm font-medium text-gray-700">
                     {criteria.name}
                   </label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="5"
-                    value={scores[criteria.id] || ''}
-                    onChange={(e) => handleScoreChange(criteria.id, e.target.value)}
-                    placeholder="Score (1-5)"
-                    className="w-full"
-                  />
+                  <Select
+                    value={scores[criteria.id]?.toString() || ''}
+                    onValueChange={(value) => handleScoreChange(criteria.id, value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a score (1-5)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5].map((score) => (
+                        <SelectItem key={score} value={score.toString()}>
+                          {score}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               ))}
             </div>
