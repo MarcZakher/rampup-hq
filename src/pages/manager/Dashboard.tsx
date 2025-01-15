@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
+import { AssessmentFeedbackForm } from '@/components/feedback/AssessmentFeedbackForm';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SalesRep {
   id: number;
@@ -225,6 +227,15 @@ const ManagerDashboard = () => {
             </Button>
           </div>
         </div>
+
+        <AssessmentFeedbackForm 
+          salesReps={salesReps.map(rep => ({ id: rep.id.toString(), name: rep.name }))}
+          assessments={[
+            ...assessments.month1.map(a => ({ name: a.name, shortName: a.shortName })),
+            ...assessments.month2.map(a => ({ name: a.name, shortName: a.shortName })),
+            ...assessments.month3.map(a => ({ name: a.name, shortName: a.shortName }))
+          ]}
+        />
 
         <div className="space-y-6">
           {['month1', 'month2', 'month3'].map((month, monthIndex) => (
