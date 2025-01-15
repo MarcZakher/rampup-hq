@@ -11,6 +11,7 @@ import {
 import { Edit, Trash } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CriteriaForm, CriteriaFormData } from "./CriteriaForm";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Criteria {
   id: string;
@@ -68,41 +69,43 @@ export function CriteriaList({
 
       {criteria.length > 0 ? (
         <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {criteria.map((criterion) => (
-                <TableRow key={criterion.id}>
-                  <TableCell>{criterion.title}</TableCell>
-                  <TableCell>{criterion.description}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(criterion)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onDelete(criterion.id)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <ScrollArea className="h-[400px] w-full">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="sticky top-0 bg-background">Title</TableHead>
+                  <TableHead className="sticky top-0 bg-background">Description</TableHead>
+                  <TableHead className="sticky top-0 bg-background w-[100px]">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {criteria.map((criterion) => (
+                  <TableRow key={criterion.id}>
+                    <TableCell>{criterion.title}</TableCell>
+                    <TableCell>{criterion.description}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(criterion)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onDelete(criterion.id)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         </div>
       ) : selectedAssessment ? (
         <div className="text-center py-8 text-muted-foreground">
