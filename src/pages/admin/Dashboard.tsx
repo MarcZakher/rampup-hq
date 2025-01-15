@@ -33,16 +33,10 @@ interface AssessmentForm {
   criteria: CriteriaForm[];
 }
 
-interface AssessmentTemplate {
-  id: string;
-  assessment_name: string;
-  criteria_list: CriteriaForm[];
-  created_at: string;
-}
-
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [isAddingAssessment, setIsAddingAssessment] = useState(false);
+  const [editingAssessment, setEditingAssessment] = useState<AssessmentCriteriaTemplate | null>(null);
   const form = useForm<AssessmentForm>({
     defaultValues: {
       assessment_name: "",
@@ -60,12 +54,12 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
-      // Transform the data to match our frontend type
       return (data as AssessmentCriteriaTemplate[]).map((template) => ({
         id: template.id,
         assessment_name: template.assessment_name,
         criteria_list: template.criteria_list as unknown as CriteriaForm[],
         created_at: template.created_at,
+        updated_at: template.updated_at,
       }));
     },
   });
@@ -83,27 +77,56 @@ export default function AdminDashboard() {
     );
   };
 
+  const handleEdit = (assessment: AssessmentCriteriaTemplate) => {
+    setEditingAssessment(assessment);
+    form.reset({
+      assessment_name: assessment.assessment_name,
+      criteria: assessment.criteria_list as unknown as CriteriaForm[],
+    });
+    setIsAddingAssessment(true);
+  };
+
   const onSubmit = async (data: AssessmentForm) => {
     try {
-      const { error } = await supabase.from("assessment_criteria_templates").insert({
-        assessment_name: data.assessment_name,
-        criteria_list: data.criteria as unknown as Json,
-      });
+      if (editingAssessment) {
+        const { error } = await supabase
+          .from("assessment_criteria_templates")
+          .update({
+            assessment_name: data.assessment_name,
+            criteria_list: data.criteria as unknown as Json,
+          })
+          .eq("id", editingAssessment.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Assessment template created successfully",
-      });
+        toast({
+          title: "Success",
+          description: "Assessment template updated successfully",
+        });
+      } else {
+        const { error } = await supabase.from("assessment_criteria_templates").insert({
+          assessment_name: data.assessment_name,
+          criteria_list: data.criteria as unknown as Json,
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Assessment template created successfully",
+        });
+      }
 
       setIsAddingAssessment(false);
+      setEditingAssessment(null);
       form.reset();
       refetch();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create assessment template",
+        description: editingAssessment 
+          ? "Failed to update assessment template"
+          : "Failed to create assessment template",
         variant: "destructive",
       });
     }
@@ -133,12 +156,20 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSheetOpenChange = (open: boolean) => {
+    setIsAddingAssessment(open);
+    if (!open) {
+      setEditingAssessment(null);
+      form.reset();
+    }
+  };
+
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Assessment Management</h1>
-          <Sheet open={isAddingAssessment} onOpenChange={setIsAddingAssessment}>
+          <Sheet open={isAddingAssessment} onOpenChange={handleSheetOpenChange}>
             <SheetTrigger asChild>
               <Button>
                 <Plus className="mr-2" />
@@ -147,7 +178,9 @@ export default function AdminDashboard() {
             </SheetTrigger>
             <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
               <SheetHeader>
-                <SheetTitle>Create New Assessment</SheetTitle>
+                <SheetTitle>
+                  {editingAssessment ? "Edit Assessment" : "Create New Assessment"}
+                </SheetTitle>
               </SheetHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-6">
@@ -214,7 +247,7 @@ export default function AdminDashboard() {
                   </div>
 
                   <Button type="submit" className="w-full">
-                    Create Assessment
+                    {editingAssessment ? "Update Assessment" : "Create Assessment"}
                   </Button>
                 </form>
               </Form>
@@ -242,7 +275,11 @@ export default function AdminDashboard() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleEdit(assessment)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
