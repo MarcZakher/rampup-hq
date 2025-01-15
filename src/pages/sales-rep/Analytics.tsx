@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ASSESSMENTS } from "@/lib/constants/assessments";
+import { AssessmentFeedback } from "@/components/Analytics/AssessmentFeedback";
 
 // Mock logged-in user - in a real app, this would come from auth
 const MOCK_LOGGED_IN_USER = "Amina Boualem";
@@ -86,6 +87,8 @@ export default function SalesRepAnalytics() {
               <TrainingProgress progress={monthlyProgress} />
             </CardContent>
           </Card>
+
+          <AssessmentFeedback />
 
           <Card>
             <CardHeader>
