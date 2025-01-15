@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,14 +20,26 @@ interface SalesRep {
 
 interface AssessmentFeedbackFormProps {
   salesReps: SalesRep[];
-  assessments: { name: string; shortName: string }[];
 }
 
-export const AssessmentFeedbackForm = ({ salesReps, assessments }: AssessmentFeedbackFormProps) => {
+export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProps) => {
   const [selectedRep, setSelectedRep] = useState<string>('');
   const [selectedAssessment, setSelectedAssessment] = useState<string>('');
   const [feedback, setFeedback] = useState('');
   const { toast } = useToast();
+
+  const { data: assessments } = useQuery({
+    queryKey: ['assessmentTemplates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('assessment_criteria_templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleSubmit = async () => {
     if (!selectedRep || !selectedAssessment || !feedback.trim()) {
@@ -102,9 +115,9 @@ export const AssessmentFeedbackForm = ({ salesReps, assessments }: AssessmentFee
               <SelectValue placeholder="Select an assessment" />
             </SelectTrigger>
             <SelectContent>
-              {assessments.map((assessment, index) => (
-                <SelectItem key={index} value={assessment.name}>
-                  {assessment.name}
+              {assessments?.map((assessment) => (
+                <SelectItem key={assessment.id} value={assessment.id}>
+                  {assessment.assessment_name}
                 </SelectItem>
               ))}
             </SelectContent>
