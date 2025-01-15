@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -23,11 +23,16 @@ interface FeedbackSubmission {
   };
   total_score: number;
   created_at: string;
+  feedback: string;
+  observed_strengths: string;
+  areas_for_improvement: string;
+  recommended_actions: string;
 }
 
 export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data: submissions, isLoading } = useQuery({
     queryKey: ["feedback-submissions"],
@@ -38,6 +43,10 @@ export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
           id,
           total_score,
           created_at,
+          feedback,
+          observed_strengths,
+          areas_for_improvement,
+          recommended_actions,
           assessment:assessments(title),
           sales_rep:profiles!assessment_submissions_sales_rep_id_fkey(full_name)
         `)
@@ -50,10 +59,20 @@ export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // First delete related criteria scores
+      const { error: scoresError } = await supabase
+        .from("assessment_criteria_scores")
+        .delete()
+        .eq("submission_id", id);
+      
+      if (scoresError) throw scoresError;
+
+      // Then delete the submission
       const { error } = await supabase
         .from("assessment_submissions")
         .delete()
         .eq("id", id);
+      
       if (error) throw error;
     },
     onSuccess: () => {
@@ -72,6 +91,10 @@ export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
       });
     },
   });
+
+  const toggleExpand = (id: string) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
 
   if (isLoading) {
     return <div>Loading submissions...</div>;
@@ -110,16 +133,55 @@ export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => toggleExpand(submission.id)}
+                >
+                  {expandedId === submission.id ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-sm mb-2">
               <span>Score: {submission.total_score.toFixed(1)}</span>
               <span>
                 {format(new Date(submission.created_at), "MMM d, yyyy")}
               </span>
             </div>
+            {expandedId === submission.id && (
+              <div className="space-y-4 mt-4 text-sm">
+                {submission.observed_strengths && (
+                  <div>
+                    <h4 className="font-semibold">Observed Strengths:</h4>
+                    <p className="text-gray-600">{submission.observed_strengths}</p>
+                  </div>
+                )}
+                {submission.areas_for_improvement && (
+                  <div>
+                    <h4 className="font-semibold">Areas for Improvement:</h4>
+                    <p className="text-gray-600">{submission.areas_for_improvement}</p>
+                  </div>
+                )}
+                {submission.recommended_actions && (
+                  <div>
+                    <h4 className="font-semibold">Recommended Actions:</h4>
+                    <p className="text-gray-600">{submission.recommended_actions}</p>
+                  </div>
+                )}
+                {submission.feedback && (
+                  <div>
+                    <h4 className="font-semibold">Additional Feedback:</h4>
+                    <p className="text-gray-600">{submission.feedback}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       ))}
