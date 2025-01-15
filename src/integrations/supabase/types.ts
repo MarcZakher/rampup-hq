@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      assessment_criteria_templates: {
+        Row: {
+          assessment_name: string
+          created_at: string
+          criteria_list: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_name: string
+          created_at?: string
+          criteria_list: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_name?: string
+          created_at?: string
+          criteria_list?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assessment_scores: {
         Row: {
           assessment_index: number
