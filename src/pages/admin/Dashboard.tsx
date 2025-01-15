@@ -65,7 +65,7 @@ export default function AdminDashboard() {
 
       return data.map((template) => ({
         ...template,
-        criteria_list: template.criteria_list as CriteriaForm[],
+        criteria_list: (template.criteria_list as unknown as CriteriaForm[]),
       }));
     },
   });
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
     setEditingAssessment(assessment);
     form.reset({
       assessment_name: assessment.assessment_name,
-      criteria: assessment.criteria_list as CriteriaForm[],
+      criteria: (assessment.criteria_list as unknown as CriteriaForm[]),
       month: assessment.month.toString(),
     });
     setIsAddingAssessment(true);
@@ -310,7 +310,7 @@ export default function AdminDashboard() {
                 <TableRow key={assessment.id}>
                   <TableCell>{assessment.assessment_name}</TableCell>
                   <TableCell>Month {assessment.month}</TableCell>
-                  <TableCell>{(assessment.criteria_list as CriteriaForm[]).length}</TableCell>
+                  <TableCell>{(assessment.criteria_list as unknown as CriteriaForm[]).length}</TableCell>
                   <TableCell>
                     {new Date(assessment.created_at).toLocaleDateString()}
                   </TableCell>
