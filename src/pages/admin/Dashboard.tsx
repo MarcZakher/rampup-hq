@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
-import { Database, Json } from "@/integrations/supabase/types";
+import { Database } from "@/integrations/supabase/types";
 import {
   Select,
   SelectContent,
@@ -27,130 +27,116 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type AssessmentCriteriaTemplate = Database["public"]["Tables"]["assessment_criteria_templates"]["Row"];
+type TrainingModule = Database["public"]["Tables"]["training_journey_modules"]["Row"];
 
-interface CriteriaForm {
-  id?: string;
-  name: string;
+interface ModuleForm {
+  title: string;
   description: string;
-}
-
-interface AssessmentForm {
-  assessment_name: string;
-  criteria: CriteriaForm[];
-  month: string;
+  period: Database["public"]["Enums"]["training_period"];
+  duration: string;
+  platform: string;
+  sort_order: number;
 }
 
 export default function AdminDashboard() {
   const { toast } = useToast();
-  const [isAddingAssessment, setIsAddingAssessment] = useState(false);
-  const [editingAssessment, setEditingAssessment] = useState<AssessmentCriteriaTemplate | null>(null);
-  const form = useForm<AssessmentForm>({
+  const [isAddingModule, setIsAddingModule] = useState(false);
+  const [editingModule, setEditingModule] = useState<TrainingModule | null>(null);
+  const form = useForm<ModuleForm>({
     defaultValues: {
-      assessment_name: "",
-      criteria: [{ name: "", description: "" }],
-      month: "1",
+      title: "",
+      description: "",
+      period: "month_1",
+      duration: "",
+      platform: "",
+      sort_order: 0,
     },
   });
 
-  const { data: assessments, refetch } = useQuery({
-    queryKey: ["assessmentTemplates"],
+  const { data: modules, refetch } = useQuery({
+    queryKey: ["trainingModules"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("assessment_criteria_templates")
+        .from("training_journey_modules")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("sort_order", { ascending: true });
 
       if (error) throw error;
-
-      return data.map((template) => ({
-        ...template,
-        criteria_list: (template.criteria_list as unknown) as CriteriaForm[],
-      }));
+      return data;
     },
   });
 
-  const addCriteria = () => {
-    const currentCriteria = form.getValues("criteria");
-    form.setValue("criteria", [...currentCriteria, { name: "", description: "" }]);
-  };
-
-  const removeCriteria = (index: number) => {
-    const currentCriteria = form.getValues("criteria");
-    form.setValue(
-      "criteria",
-      currentCriteria.filter((_, i) => i !== index)
-    );
-  };
-
-  const handleEdit = (assessment: AssessmentCriteriaTemplate) => {
-    setEditingAssessment(assessment);
+  const handleEdit = (module: TrainingModule) => {
+    setEditingModule(module);
     form.reset({
-      assessment_name: assessment.assessment_name,
-      criteria: (assessment.criteria_list as unknown) as CriteriaForm[],
-      month: assessment.month.toString(),
+      title: module.title,
+      description: module.description,
+      period: module.period,
+      duration: module.duration,
+      platform: module.platform || "",
+      sort_order: module.sort_order,
     });
-    setIsAddingAssessment(true);
+    setIsAddingModule(true);
   };
 
-  const onSubmit = async (data: AssessmentForm) => {
+  const onSubmit = async (data: ModuleForm) => {
     try {
-      const criteriaList = data.criteria.map(({ name, description }) => ({
-        id: crypto.randomUUID(),
-        name,
-        description,
-      }));
-
-      if (editingAssessment) {
+      if (editingModule) {
         const { error } = await supabase
-          .from("assessment_criteria_templates")
+          .from("training_journey_modules")
           .update({
-            assessment_name: data.assessment_name,
-            criteria_list: criteriaList as unknown as Json,
-            month: parseInt(data.month),
+            title: data.title,
+            description: data.description,
+            period: data.period,
+            duration: data.duration,
+            platform: data.platform,
+            sort_order: data.sort_order,
           })
-          .eq("id", editingAssessment.id);
+          .eq("id", editingModule.id);
 
         if (error) throw error;
 
         toast({
           title: "Success",
-          description: "Assessment template updated successfully",
+          description: "Training module updated successfully",
         });
       } else {
-        const { error } = await supabase.from("assessment_criteria_templates").insert({
-          assessment_name: data.assessment_name,
-          criteria_list: criteriaList as unknown as Json,
-          month: parseInt(data.month),
+        const { error } = await supabase.from("training_journey_modules").insert({
+          title: data.title,
+          description: data.description,
+          period: data.period,
+          duration: data.duration,
+          platform: data.platform,
+          sort_order: data.sort_order,
         });
 
         if (error) throw error;
 
         toast({
           title: "Success",
-          description: "Assessment template created successfully",
+          description: "Training module created successfully",
         });
       }
 
-      setIsAddingAssessment(false);
-      setEditingAssessment(null);
+      setIsAddingModule(false);
+      setEditingModule(null);
       form.reset();
       refetch();
     } catch (error) {
       toast({
         title: "Error",
-        description: editingAssessment 
-          ? "Failed to update assessment template"
-          : "Failed to create assessment template",
+        description: editingModule 
+          ? "Failed to update training module"
+          : "Failed to create training module",
         variant: "destructive",
       });
     }
   };
 
-  const deleteAssessment = async (id: string) => {
+  const deleteModule = async (id: string) => {
     try {
       const { error } = await supabase
-        .from("assessment_criteria_templates")
+        .from("training_journey_modules")
         .delete()
         .eq("id", id);
 
@@ -158,23 +144,23 @@ export default function AdminDashboard() {
 
       toast({
         title: "Success",
-        description: "Assessment template deleted successfully",
+        description: "Training module deleted successfully",
       });
 
       refetch();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete assessment template",
+        description: "Failed to delete training module",
         variant: "destructive",
       });
     }
   };
 
   const handleSheetOpenChange = (open: boolean) => {
-    setIsAddingAssessment(open);
+    setIsAddingModule(open);
     if (!open) {
-      setEditingAssessment(null);
+      setEditingModule(null);
       form.reset();
     }
   };
@@ -183,28 +169,28 @@ export default function AdminDashboard() {
     <CustomAppLayout>
       <div className="container mx-auto py-8 space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Assessment Management</h1>
-          <Sheet open={isAddingAssessment} onOpenChange={handleSheetOpenChange}>
+          <h1 className="text-3xl font-bold">Training Module Management</h1>
+          <Sheet open={isAddingModule} onOpenChange={handleSheetOpenChange}>
             <SheetTrigger asChild>
               <Button>
                 <Plus className="mr-2" />
-                Add Assessment
+                Add Module
               </Button>
             </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+            <SheetContent className="w-full sm:max-w-lg">
               <SheetHeader>
                 <SheetTitle>
-                  {editingAssessment ? "Edit Assessment" : "Create New Assessment"}
+                  {editingModule ? "Edit Module" : "Create New Module"}
                 </SheetTitle>
               </SheetHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-6">
                   <FormField
                     control={form.control}
-                    name="assessment_name"
+                    name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Assessment Name</FormLabel>
+                        <FormLabel>Title</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -214,79 +200,85 @@ export default function AdminDashboard() {
 
                   <FormField
                     control={form.control}
-                    name="month"
+                    name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Month</FormLabel>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="period"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Period</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select month" />
+                              <SelectValue placeholder="Select period" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {[1, 2, 3, 4, 5, 6].map((month) => (
-                              <SelectItem key={month} value={month.toString()}>
-                                Month {month}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="month_1">Month 1</SelectItem>
+                            <SelectItem value="month_2">Month 2</SelectItem>
+                            <SelectItem value="month_3">Month 3</SelectItem>
+                            <SelectItem value="month_4">Month 4</SelectItem>
                           </SelectContent>
                         </Select>
                       </FormItem>
                     )}
                   />
 
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-medium">Criteria</h3>
-                      <Button type="button" variant="outline" onClick={addCriteria}>
-                        <Plus className="mr-2" />
-                        Add Criteria
-                      </Button>
-                    </div>
+                  <FormField
+                    control={form.control}
+                    name="duration"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Duration</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., 2 hours" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
 
-                    {form.watch("criteria").map((_, index) => (
-                      <div key={index} className="space-y-4 p-4 border rounded-lg">
-                        <FormField
-                          control={form.control}
-                          name={`criteria.${index}.name`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Criteria Name</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`criteria.${index}.description`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Description</FormLabel>
-                              <FormControl>
-                                <Textarea {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        {index > 0 && (
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={() => removeCriteria(index)}
-                          >
-                            <Trash className="mr-2" />
-                            Remove Criteria
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="platform"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Platform</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., Zoom, Google Meet" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="sort_order"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sort Order</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field} 
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
 
                   <Button type="submit" className="w-full">
-                    {editingAssessment ? "Update Assessment" : "Create Assessment"}
+                    {editingModule ? "Update Module" : "Create Module"}
                   </Button>
                 </form>
               </Form>
@@ -298,35 +290,35 @@ export default function AdminDashboard() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Assessment Name</TableHead>
-                <TableHead>Month</TableHead>
-                <TableHead>Number of Criteria</TableHead>
-                <TableHead>Created At</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Period</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Platform</TableHead>
+                <TableHead>Sort Order</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assessments?.map((assessment) => (
-                <TableRow key={assessment.id}>
-                  <TableCell>{assessment.assessment_name}</TableCell>
-                  <TableCell>Month {assessment.month}</TableCell>
-                  <TableCell>{((assessment.criteria_list as unknown) as CriteriaForm[]).length}</TableCell>
-                  <TableCell>
-                    {new Date(assessment.created_at).toLocaleDateString()}
-                  </TableCell>
+              {modules?.map((module) => (
+                <TableRow key={module.id}>
+                  <TableCell>{module.title}</TableCell>
+                  <TableCell>Month {module.period.split("_")[1]}</TableCell>
+                  <TableCell>{module.duration}</TableCell>
+                  <TableCell>{module.platform}</TableCell>
+                  <TableCell>{module.sort_order}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={() => handleEdit(assessment)}
+                        onClick={() => handleEdit(module)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => deleteAssessment(assessment.id)}
+                        onClick={() => deleteModule(module.id)}
                       >
                         <Trash className="h-4 w-4" />
                       </Button>
