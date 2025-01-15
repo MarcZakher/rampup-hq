@@ -43,8 +43,8 @@ export const FeedbackHistory = () => {
           areas_for_improvement,
           recommended_actions,
           created_at,
-          sales_rep:sales_rep_id(
-            profile:profiles(
+          sales_rep:sales_rep_id (
+            profiles (
               full_name
             )
           )
@@ -56,7 +56,7 @@ export const FeedbackHistory = () => {
 
       return submissions.map(submission => ({
         id: submission.id,
-        sales_rep_name: submission.sales_rep?.profile?.full_name || 'Unknown',
+        sales_rep_name: submission.sales_rep?.profiles?.full_name || 'Unknown',
         total_score: submission.total_score,
         feedback: submission.feedback,
         observed_strengths: submission.observed_strengths,
