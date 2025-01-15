@@ -1,48 +1,45 @@
-import { Home, Users, LineChart, ClipboardList, Settings } from 'lucide-react';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
-
-const menuItems = [
-  { title: 'Home', icon: Home, url: '/' },
-  { title: 'Sales Reps', icon: Users, url: '/sales-reps' },
-  { title: 'Assessments', icon: ClipboardList, url: '/manager/assessments' },
-  { title: 'Performance Analytics', icon: LineChart, url: '/director/analytics' },
-  { title: 'Settings', icon: Settings, url: '/settings' },
-];
+import { Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { FileText, LayoutDashboard } from "lucide-react";
 
 export function AppSidebar() {
+  const location = useLocation();
+
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
   return (
-    <Sidebar>
-      <SidebarContent>
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-primary">RampUP</h1>
+    <div className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200">
+      <div className="flex flex-col h-full">
+        <div className="flex-1 py-6 space-y-1">
+          <Link
+            to="/manager/dashboard"
+            className={cn(
+              "flex items-center px-6 py-3 text-sm font-medium transition-colors",
+              isActive("/manager/dashboard")
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            )}
+          >
+            <LayoutDashboard className="w-5 h-5 mr-3" />
+            Dashboard
+          </Link>
+          <Link
+            to="/manager/assessments"
+            className={cn(
+              "flex items-center px-6 py-3 text-sm font-medium transition-colors",
+              isActive("/manager/assessments")
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            )}
+          >
+            <FileText className="w-5 h-5 mr-3" />
+            Assessments
+          </Link>
         </div>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-3">
-                      <item.icon className="w-5 h-5" />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+      </div>
+    </div>
   );
 }
