@@ -29,18 +29,22 @@ export const AssessmentFeedback = () => {
   const [selectedFeedback, setSelectedFeedback] = useState<AssessmentFeedback | null>(null);
 
   // First, get Amina's profile ID
-  const { data: profileId, isLoading: isLoadingProfile } = useQuery({
+  const { data: profileId, isLoading: isLoadingProfile, error: profileError } = useQuery({
     queryKey: ["amina-profile"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
         .select("id")
         .eq('email', 'amina.boualem@example.com')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching profile:", error);
         throw error;
+      }
+
+      if (!data) {
+        throw new Error("Profile not found for Amina Boualem");
       }
 
       return data.id;
@@ -77,7 +81,7 @@ export const AssessmentFeedback = () => {
 
       return data as AssessmentFeedback[];
     },
-    enabled: !!profileId, // Only run this query when we have the profileId
+    enabled: !!profileId,
   });
 
   const getScoreColor = (score: number) => {
@@ -88,6 +92,10 @@ export const AssessmentFeedback = () => {
 
   if (isLoadingProfile || isLoadingFeedbacks) {
     return <div>Loading feedback...</div>;
+  }
+
+  if (profileError) {
+    return <div>Error: Profile not found for Amina Boualem</div>;
   }
 
   if (!feedbacks?.length) {
