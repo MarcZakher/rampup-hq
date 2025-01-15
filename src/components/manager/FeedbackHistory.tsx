@@ -58,7 +58,7 @@ export const FeedbackHistory = () => {
           recommended_actions,
           created_at,
           sales_rep_id,
-          sales_rep:profiles!assessment_submissions_sales_rep_id_fkey(full_name)
+          sales_rep:profiles(full_name)
         `)
         .eq('manager_id', (await supabase.auth.getUser()).data.user?.id)
         .order('created_at', { ascending: false });
