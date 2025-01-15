@@ -152,6 +152,12 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
 
   const selectedTemplate = assessments?.find(a => a.id === selectedAssessment);
 
+  // Reset scores when selecting a new assessment
+  const handleAssessmentChange = (value: string) => {
+    setSelectedAssessment(value);
+    setScores({}); // Reset scores when changing assessment
+  };
+
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -181,7 +187,7 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Select Assessment
             </label>
-            <Select value={selectedAssessment} onValueChange={setSelectedAssessment}>
+            <Select value={selectedAssessment} onValueChange={handleAssessmentChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select an assessment" />
               </SelectTrigger>
