@@ -7,6 +7,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import {
   Select,
@@ -19,6 +20,20 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
+import * as z from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const formSchema = z.object({
+  salesRepId: z.string().min(1, 'Sales representative is required'),
+  assessmentId: z.string().min(1, 'Assessment is required'),
+  criteriaScores: z.record(z.number().min(1).max(5)),
+  observedStrengths: z.string().min(1, 'Observed strengths are required'),
+  areasForImprovement: z.string().min(1, 'Areas for improvement are required'),
+  recommendedActions: z.string().min(1, 'Recommended actions are required'),
+  feedback: z.string().min(1, 'Additional feedback is required'),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 interface SalesRep {
   id: string;
@@ -35,20 +50,22 @@ interface Criteria {
   title: string;
 }
 
-interface FeedbackFormData {
-  salesRepId: string;
-  assessmentId: string;
-  criteriaScores: { [key: string]: number };
-  observedStrengths: string;
-  areasForImprovement: string;
-  recommendedActions: string;
-  feedback: string;
-}
-
 export function AssessmentFeedbackForm() {
   const [selectedAssessment, setSelectedAssessment] = useState<string>('');
   const { toast } = useToast();
-  const form = useForm<FeedbackFormData>();
+  
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      salesRepId: '',
+      assessmentId: '',
+      criteriaScores: {},
+      observedStrengths: '',
+      areasForImprovement: '',
+      recommendedActions: '',
+      feedback: '',
+    },
+  });
 
   // Fetch sales reps
   const { data: salesReps } = useQuery({
@@ -97,8 +114,11 @@ export function AssessmentFeedbackForm() {
 
   // Submit feedback
   const submitMutation = useMutation({
-    mutationFn: async (data: FeedbackFormData) => {
-      // Calculate total score (average of all criteria scores)
+    mutationFn: async (data: FormData) => {
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) throw new Error('No authenticated user found');
+
+      // Calculate total score
       const scores = Object.values(data.criteriaScores);
       const totalScore = scores.reduce((a, b) => a + b, 0) / scores.length;
 
@@ -108,7 +128,7 @@ export function AssessmentFeedbackForm() {
         .insert({
           assessment_id: data.assessmentId,
           sales_rep_id: data.salesRepId,
-          manager_id: (await supabase.auth.getUser()).data.user?.id,
+          manager_id: user.data.user.id,
           total_score: totalScore,
           feedback: data.feedback,
           observed_strengths: data.observedStrengths,
@@ -132,6 +152,8 @@ export function AssessmentFeedbackForm() {
         .insert(criteriaScores);
 
       if (scoresError) throw scoresError;
+      
+      return submission;
     },
     onSuccess: () => {
       toast({
@@ -142,16 +164,32 @@ export function AssessmentFeedbackForm() {
       setSelectedAssessment('');
     },
     onError: (error) => {
+      console.error('Submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to submit assessment feedback",
+        description: "Failed to submit assessment feedback. Please try again.",
         variant: "destructive",
       });
-      console.error('Submission error:', error);
     },
   });
 
-  const onSubmit = (data: FeedbackFormData) => {
+  const onSubmit = (data: FormData) => {
+    // Validate that all criteria have scores
+    if (criteria && criteria.length > 0) {
+      const hasAllScores = criteria.every(criterion => 
+        data.criteriaScores[criterion.id] !== undefined
+      );
+      
+      if (!hasAllScores) {
+        toast({
+          title: "Validation Error",
+          description: "Please provide scores for all criteria",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     submitMutation.mutate(data);
   };
 
@@ -178,6 +216,7 @@ export function AssessmentFeedbackForm() {
                   ))}
                 </SelectContent>
               </Select>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -208,6 +247,7 @@ export function AssessmentFeedbackForm() {
                   ))}
                 </SelectContent>
               </Select>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -234,6 +274,7 @@ export function AssessmentFeedbackForm() {
                     ))}
                   </SelectContent>
                 </Select>
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -248,6 +289,7 @@ export function AssessmentFeedbackForm() {
               <FormControl>
                 <Textarea {...field} placeholder="Enter observed strengths" />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -261,6 +303,7 @@ export function AssessmentFeedbackForm() {
               <FormControl>
                 <Textarea {...field} placeholder="Enter areas for improvement" />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -274,6 +317,7 @@ export function AssessmentFeedbackForm() {
               <FormControl>
                 <Textarea {...field} placeholder="Enter recommended actions" />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -287,12 +331,17 @@ export function AssessmentFeedbackForm() {
               <FormControl>
                 <Textarea {...field} placeholder="Enter additional feedback" />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full">
-          Submit Feedback
+        <Button 
+          type="submit" 
+          className="w-full"
+          disabled={submitMutation.isPending}
+        >
+          {submitMutation.isPending ? 'Submitting...' : 'Submit Feedback'}
         </Button>
       </form>
     </Form>
