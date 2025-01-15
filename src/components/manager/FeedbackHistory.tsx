@@ -36,9 +36,9 @@ interface QueryResponse {
   recommended_actions: string | null;
   created_at: string;
   sales_rep_id: string;
-  profiles: {
+  sales_rep: {
     full_name: string | null;
-  };
+  } | null;
 }
 
 export const FeedbackHistory = () => {
@@ -58,7 +58,7 @@ export const FeedbackHistory = () => {
           recommended_actions,
           created_at,
           sales_rep_id,
-          profiles (
+          sales_rep:sales_rep_id(
             full_name
           )
         `)
@@ -69,7 +69,7 @@ export const FeedbackHistory = () => {
 
       return submissions.map((submission: QueryResponse) => ({
         id: submission.id,
-        sales_rep_name: submission.profiles?.full_name || 'Unknown',
+        sales_rep_name: submission.sales_rep?.full_name || 'Unknown',
         total_score: submission.total_score,
         feedback: submission.feedback,
         observed_strengths: submission.observed_strengths,
