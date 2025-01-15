@@ -27,7 +27,7 @@ interface FeedbackDetails {
   created_at: string;
 }
 
-interface QueryResponse {
+type QueryResponse = {
   id: string;
   total_score: number;
   feedback: string | null;
@@ -67,7 +67,7 @@ export const FeedbackHistory = () => {
 
       if (error) throw error;
 
-      return submissions.map((submission: QueryResponse) => ({
+      return (submissions as QueryResponse[]).map((submission) => ({
         id: submission.id,
         sales_rep_name: submission.sales_rep?.full_name || 'Unknown',
         total_score: submission.total_score,
