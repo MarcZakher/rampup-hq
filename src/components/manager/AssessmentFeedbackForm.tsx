@@ -115,6 +115,8 @@ export function AssessmentFeedbackForm() {
   // Submit feedback
   const submitMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      console.log('Starting submission with data:', data);
+      
       const user = await supabase.auth.getUser();
       if (!user.data.user) throw new Error('No authenticated user found');
 
@@ -122,38 +124,55 @@ export function AssessmentFeedbackForm() {
       const scores = Object.values(data.criteriaScores);
       const totalScore = scores.reduce((a, b) => a + b, 0) / scores.length;
 
-      // Create assessment submission
-      const { data: submission, error: submissionError } = await supabase
-        .from('assessment_submissions')
-        .insert({
-          assessment_id: data.assessmentId,
-          sales_rep_id: data.salesRepId,
-          manager_id: user.data.user.id,
-          total_score: totalScore,
-          feedback: data.feedback,
-          observed_strengths: data.observedStrengths,
-          areas_for_improvement: data.areasForImprovement,
-          recommended_actions: data.recommendedActions,
-        })
-        .select()
-        .single();
+      console.log('Calculated total score:', totalScore);
 
-      if (submissionError) throw submissionError;
+      try {
+        // Create assessment submission
+        const { data: submission, error: submissionError } = await supabase
+          .from('assessment_submissions')
+          .insert({
+            assessment_id: data.assessmentId,
+            sales_rep_id: data.salesRepId,
+            manager_id: user.data.user.id,
+            total_score: totalScore,
+            feedback: data.feedback,
+            observed_strengths: data.observedStrengths,
+            areas_for_improvement: data.areasForImprovement,
+            recommended_actions: data.recommendedActions,
+          })
+          .select()
+          .single();
 
-      // Create criteria scores
-      const criteriaScores = Object.entries(data.criteriaScores).map(([criteriaId, score]) => ({
-        submission_id: submission.id,
-        criteria_id: criteriaId,
-        score,
-      }));
+        if (submissionError) {
+          console.error('Submission error:', submissionError);
+          throw submissionError;
+        }
 
-      const { error: scoresError } = await supabase
-        .from('assessment_criteria_scores')
-        .insert(criteriaScores);
+        console.log('Created submission:', submission);
 
-      if (scoresError) throw scoresError;
-      
-      return submission;
+        // Create criteria scores
+        const criteriaScores = Object.entries(data.criteriaScores).map(([criteriaId, score]) => ({
+          submission_id: submission.id,
+          criteria_id: criteriaId,
+          score,
+        }));
+
+        console.log('Inserting criteria scores:', criteriaScores);
+
+        const { error: scoresError } = await supabase
+          .from('assessment_criteria_scores')
+          .insert(criteriaScores);
+
+        if (scoresError) {
+          console.error('Scores error:', scoresError);
+          throw scoresError;
+        }
+
+        return submission;
+      } catch (error) {
+        console.error('Error in mutation:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -174,6 +193,8 @@ export function AssessmentFeedbackForm() {
   });
 
   const onSubmit = (data: FormData) => {
+    console.log('Form submitted with data:', data);
+    
     // Validate that all criteria have scores
     if (criteria && criteria.length > 0) {
       const hasAllScores = criteria.every(criterion => 
