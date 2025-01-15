@@ -88,31 +88,40 @@ export type Database = {
       }
       assessment_submissions: {
         Row: {
+          areas_for_improvement: string | null
           assessment_id: string | null
           created_at: string
           feedback: string | null
           id: string
           manager_id: string | null
+          observed_strengths: string | null
+          recommended_actions: string | null
           sales_rep_id: string | null
           total_score: number
           updated_at: string
         }
         Insert: {
+          areas_for_improvement?: string | null
           assessment_id?: string | null
           created_at?: string
           feedback?: string | null
           id?: string
           manager_id?: string | null
+          observed_strengths?: string | null
+          recommended_actions?: string | null
           sales_rep_id?: string | null
           total_score: number
           updated_at?: string
         }
         Update: {
+          areas_for_improvement?: string | null
           assessment_id?: string | null
           created_at?: string
           feedback?: string | null
           id?: string
           manager_id?: string | null
+          observed_strengths?: string | null
+          recommended_actions?: string | null
           sales_rep_id?: string | null
           total_score?: number
           updated_at?: string
