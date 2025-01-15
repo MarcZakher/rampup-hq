@@ -28,9 +28,9 @@ import {
 } from "@/components/ui/select";
 
 type AssessmentCriteriaTemplate = Database["public"]["Tables"]["assessment_criteria_templates"]["Row"];
-type Json = Database["public"]["Tables"]["assessment_criteria_templates"]["Row"]["criteria_list"];
 
 interface CriteriaForm {
+  id?: string;
   name: string;
   description: string;
 }
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
 
       return (data as AssessmentCriteriaTemplate[]).map((template) => ({
         ...template,
-        criteria_list: template.criteria_list as unknown as CriteriaForm[],
+        criteria_list: template.criteria_list as CriteriaForm[],
       }));
     },
   });
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
     setEditingAssessment(assessment);
     form.reset({
       assessment_name: assessment.assessment_name,
-      criteria: assessment.criteria_list as unknown as CriteriaForm[],
+      criteria: assessment.criteria_list as CriteriaForm[],
       month: assessment.month.toString(),
     });
     setIsAddingAssessment(true);
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
           .from("assessment_criteria_templates")
           .update({
             assessment_name: data.assessment_name,
-            criteria_list: criteriaList,
+            criteria_list: criteriaList as unknown as Database["public"]["Tables"]["assessment_criteria_templates"]["Update"]["criteria_list"],
             month: parseInt(data.month),
           })
           .eq("id", editingAssessment.id);
@@ -120,7 +120,7 @@ export default function AdminDashboard() {
       } else {
         const { error } = await supabase.from("assessment_criteria_templates").insert({
           assessment_name: data.assessment_name,
-          criteria_list: criteriaList,
+          criteria_list: criteriaList as unknown as Database["public"]["Tables"]["assessment_criteria_templates"]["Insert"]["criteria_list"],
           month: parseInt(data.month),
         });
 
@@ -310,7 +310,7 @@ export default function AdminDashboard() {
                 <TableRow key={assessment.id}>
                   <TableCell>{assessment.assessment_name}</TableCell>
                   <TableCell>Month {assessment.month}</TableCell>
-                  <TableCell>{(assessment.criteria_list as unknown as CriteriaForm[]).length}</TableCell>
+                  <TableCell>{(assessment.criteria_list as CriteriaForm[]).length}</TableCell>
                   <TableCell>
                     {new Date(assessment.created_at).toLocaleDateString()}
                   </TableCell>
