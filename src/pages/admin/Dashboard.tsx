@@ -18,16 +18,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/components/ui/use-toast";
+import { Database } from "@/integrations/supabase/types";
 
-interface AssessmentTemplate {
-  id: string;
-  assessment_name: string;
-  criteria_list: {
-    name: string;
-    description: string;
-  }[];
-  created_at: string;
-}
+type AssessmentCriteriaTemplate = Database["public"]["Tables"]["assessment_criteria_templates"]["Row"];
 
 interface CriteriaForm {
   name: string;
@@ -37,6 +30,13 @@ interface CriteriaForm {
 interface AssessmentForm {
   assessment_name: string;
   criteria: CriteriaForm[];
+}
+
+interface AssessmentTemplate {
+  id: string;
+  assessment_name: string;
+  criteria_list: CriteriaForm[];
+  created_at: string;
 }
 
 export default function AdminDashboard() {
@@ -58,7 +58,14 @@ export default function AdminDashboard() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as AssessmentTemplate[];
+
+      // Transform the data to match our frontend type
+      return (data as AssessmentCriteriaTemplate[]).map((template) => ({
+        id: template.id,
+        assessment_name: template.assessment_name,
+        criteria_list: template.criteria_list as CriteriaForm[],
+        created_at: template.created_at,
+      })) as AssessmentTemplate[];
     },
   });
 
@@ -80,7 +87,7 @@ export default function AdminDashboard() {
       const { error } = await supabase.from("assessment_criteria_templates").insert({
         assessment_name: data.assessment_name,
         criteria_list: data.criteria,
-      });
+      } as AssessmentCriteriaTemplate);
 
       if (error) throw error;
 
