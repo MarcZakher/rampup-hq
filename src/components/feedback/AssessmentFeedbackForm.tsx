@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Plus, Minus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/integrations/supabase/types';
+import { Database, Json } from '@/integrations/supabase/types';
 
 interface SalesRep {
   id: string;
@@ -27,15 +27,11 @@ interface AssessmentFeedbackFormProps {
 type AssessmentCriteria = {
   id: string;
   name: string;
+  description: string;
 };
 
-type AssessmentTemplate = {
-  id: string;
-  assessment_name: string;
+type AssessmentTemplate = Database['public']['Tables']['assessment_criteria_templates']['Row'] & {
   criteria_list: AssessmentCriteria[];
-  month: number;
-  created_at: string;
-  updated_at: string;
 };
 
 export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProps) => {
@@ -57,17 +53,20 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
 
       if (error) throw error;
       
-      return (data || []).map(template => ({
+      return data.map(template => ({
         ...template,
-        criteria_list: template.criteria_list as AssessmentCriteria[]
-      })) as AssessmentTemplate[];
+        criteria_list: (template.criteria_list as unknown) as AssessmentCriteria[]
+      }));
     },
   });
 
   const handleScoreChange = (criteriaId: string, value: string) => {
+    const score = parseFloat(value);
+    if (isNaN(score) || score < 1 || score > 5) return;
+    
     setScores(prev => ({
       ...prev,
-      [criteriaId]: parseInt(value, 10)
+      [criteriaId]: score
     }));
   };
 
@@ -103,7 +102,7 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
     if (!selectedRep || !selectedAssessment) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Please select a sales representative and an assessment",
         variant: "destructive"
       });
       return;
@@ -116,7 +115,7 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
           sales_rep_id: selectedRep,
           manager_id: (await supabase.auth.getUser()).data.user?.id,
           template_id: selectedAssessment,
-          scores,
+          scores: scores as Json,
           observed_strengths: strengths.filter(s => s.trim()),
           areas_for_improvement: improvements.filter(s => s.trim()),
           recommended_actions: actions.filter(s => s.trim())
@@ -148,12 +147,6 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
 
   const selectedTemplate = assessments?.find(a => a.id === selectedAssessment);
 
-  // Reset scores when selecting a new assessment
-  const handleAssessmentChange = (value: string) => {
-    setSelectedAssessment(value);
-    setScores({}); // Reset scores when changing assessment
-  };
-
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -183,7 +176,7 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Select Assessment
             </label>
-            <Select value={selectedAssessment} onValueChange={handleAssessmentChange}>
+            <Select value={selectedAssessment} onValueChange={setSelectedAssessment}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select an assessment" />
               </SelectTrigger>
@@ -204,6 +197,7 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
                 <div key={criteria.id} className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
                     {criteria.name}
+                    <p className="text-sm text-gray-500">{criteria.description}</p>
                   </label>
                   <Select
                     value={scores[criteria.id]?.toString() || ''}
