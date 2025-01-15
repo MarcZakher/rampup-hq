@@ -15,6 +15,7 @@ export type Database = {
           created_at: string
           criteria_list: Json
           id: string
+          month: number
           updated_at: string
         }
         Insert: {
@@ -22,6 +23,7 @@ export type Database = {
           created_at?: string
           criteria_list: Json
           id?: string
+          month?: number
           updated_at?: string
         }
         Update: {
@@ -29,6 +31,7 @@ export type Database = {
           created_at?: string
           criteria_list?: Json
           id?: string
+          month?: number
           updated_at?: string
         }
         Relationships: []

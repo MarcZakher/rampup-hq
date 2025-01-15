@@ -19,6 +19,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type AssessmentCriteriaTemplate = Database["public"]["Tables"]["assessment_criteria_templates"]["Row"];
 type Json = Database["public"]["Tables"]["assessment_criteria_templates"]["Row"]["criteria_list"];
@@ -31,6 +38,7 @@ interface CriteriaForm {
 interface AssessmentForm {
   assessment_name: string;
   criteria: CriteriaForm[];
+  month: string;
 }
 
 export default function AdminDashboard() {
@@ -41,6 +49,7 @@ export default function AdminDashboard() {
     defaultValues: {
       assessment_name: "",
       criteria: [{ name: "", description: "" }],
+      month: "1",
     },
   });
 
@@ -79,23 +88,25 @@ export default function AdminDashboard() {
     form.reset({
       assessment_name: assessment.assessment_name,
       criteria: assessment.criteria_list as unknown as CriteriaForm[],
+      month: assessment.month.toString(),
     });
     setIsAddingAssessment(true);
   };
 
   const onSubmit = async (data: AssessmentForm) => {
     try {
-      const criteriaList: { [key: string]: string }[] = data.criteria.map(({ name, description }) => ({
+      const criteriaList = data.criteria.map(({ name, description }) => ({
         name,
         description,
-      }));
+      })) as Json;
 
       if (editingAssessment) {
         const { error } = await supabase
           .from("assessment_criteria_templates")
           .update({
             assessment_name: data.assessment_name,
-            criteria_list: criteriaList as Json,
+            criteria_list: criteriaList,
+            month: parseInt(data.month),
           })
           .eq("id", editingAssessment.id);
 
@@ -108,7 +119,8 @@ export default function AdminDashboard() {
       } else {
         const { error } = await supabase.from("assessment_criteria_templates").insert({
           assessment_name: data.assessment_name,
-          criteria_list: criteriaList as Json,
+          criteria_list: criteriaList,
+          month: parseInt(data.month),
         });
 
         if (error) throw error;
@@ -199,6 +211,30 @@ export default function AdminDashboard() {
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="month"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Month</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select month" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {[1, 2, 3, 4, 5, 6].map((month) => (
+                              <SelectItem key={month} value={month.toString()}>
+                                Month {month}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-medium">Criteria</h3>
@@ -262,6 +298,7 @@ export default function AdminDashboard() {
             <TableHeader>
               <TableRow>
                 <TableHead>Assessment Name</TableHead>
+                <TableHead>Month</TableHead>
                 <TableHead>Number of Criteria</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
@@ -271,6 +308,7 @@ export default function AdminDashboard() {
               {assessments?.map((assessment) => (
                 <TableRow key={assessment.id}>
                   <TableCell>{assessment.assessment_name}</TableCell>
+                  <TableCell>Month {assessment.month}</TableCell>
                   <TableCell>{(assessment.criteria_list as unknown as CriteriaForm[]).length}</TableCell>
                   <TableCell>
                     {new Date(assessment.created_at).toLocaleDateString()}
