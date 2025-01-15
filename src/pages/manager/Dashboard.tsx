@@ -23,18 +23,18 @@ const assessments = {
     { name: 'SA program', shortName: 'SA' },
     { name: 'Shadow capture', shortName: 'Shadow' },
     { name: 'Deliver 3 Proof points', shortName: 'Proof' },
-    { name: 'Account Tiering on territory + Workload & Contact Researches on 2 accs', shortName: 'Tiering' }
+    { name: 'Account Tiering', shortName: 'Tiering' }
   ],
   month2: [
     { name: 'PG plan', shortName: 'PG' },
     { name: 'SA program', shortName: 'SA' },
     { name: 'NBM Role play', shortName: 'NBM' },
     { name: '1st meeting excellence deck', shortName: '1st Meeting' },
-    { name: 'Pitch/Trap setting questions versus main competitors in region: PostGre, DynamoDB..', shortName: 'Pitch' },
+    { name: 'Pitch/Trap setting questions', shortName: 'Pitch' },
     { name: 'Account plan 1', shortName: 'Account' }
   ],
   month3: [
-    { name: 'COM: Review of one LoS through discovery capture sheet', shortName: 'COM' },
+    { name: 'COM Review', shortName: 'COM' },
     { name: 'SA program', shortName: 'SA' },
     { name: 'Champion plan', shortName: 'Champion' },
     { name: 'Deal review', shortName: 'Deal' },
@@ -42,86 +42,6 @@ const assessments = {
     { name: 'Pitch PS', shortName: 'Pitch PS' }
   ]
 };
-
-const initialSalesReps: SalesRep[] = [
-  {
-    id: 1,
-    name: "Charlie Hobbs",
-    month1: [1.8, 2, 0, 3, 3],
-    month2: [3, 2, 2, 2, 2, 2.5],
-    month3: [2.5, 2, 0, 2.5, 0, 0]
-  },
-  {
-    id: 2,
-    name: "Amina Boualem",
-    month1: [4.0, 3, 3, 4, 3.5],
-    month2: [3, 3, 3, 3, 3.5, 0],
-    month3: [2.5, 4, 3, 2, 3.5, 3]
-  },
-  {
-    id: 3,
-    name: "Tayfun Kurtbas",
-    month1: [2.3, 3, 3, 3, 3],
-    month2: [3, 3, 2, 2, 3, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 4,
-    name: "Katrien VanHeusden",
-    month1: [2.0, 0, 0, 3, 2.5],
-    month2: [2, 3, 2, 3, 2, 0],
-    month3: [2, 2, 1, 0, 0, 0]
-  },
-  {
-    id: 5,
-    name: "Derynne Wittes",
-    month1: [2.2, 0, 3, 3, 4.5],
-    month2: [0, 0, 3, 3.5, 0, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 6,
-    name: "Ziad Ayman",
-    month1: [3.0, 0, 3, 3.25, 3.5],
-    month2: [3.5, 0, 0, 4, 3.5, 4],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 7,
-    name: "Karl Chayeb",
-    month1: [3.5, 0, 3, 3.5, 3],
-    month2: [3, 0, 3, 3.5, 0, 3.5],
-    month3: [4, 0, 0, 3, 4, 0]
-  },
-  {
-    id: 8,
-    name: "Jose Konopnicki",
-    month1: [4.0, 0, 3, 3.075, 3.5],
-    month2: [3, 0, 4, 4, 4, 4],
-    month3: [4, 0, 0, 3.5, 3.5, 0]
-  },
-  {
-    id: 9,
-    name: "Emma Hellqvist",
-    month1: [3.0, 0, 0, 4, 4],
-    month2: [3, 0, 3.5, 3, 3, 4],
-    month3: [0, 0, 0, 4.5, 0, 0]
-  },
-  {
-    id: 10,
-    name: "Jake Curtis",
-    month1: [0.0, 0, 0, 4, 0],
-    month2: [0, 0, 0, 0, 0, 0],
-    month3: [0, 0, 0, 0, 0, 0]
-  },
-  {
-    id: 11,
-    name: "Riccardo Profiti",
-    month1: [3.5, 4, 2.5, 3.875, 3],
-    month2: [3, 4, 3, 3.5, 2.25, 0],
-    month3: [3, 0, 0, 4, 3.75, 0]
-  }
-];
 
 const STORAGE_KEY = 'manager_dashboard_sales_reps';
 
@@ -209,6 +129,13 @@ const ManagerDashboard = () => {
     return 'bg-[#FFC7CE]';
   };
 
+  // Combine all assessments for the feedback form
+  const allAssessments = [
+    ...assessments.month1,
+    ...assessments.month2,
+    ...assessments.month3
+  ];
+
   return (
     <AppLayout>
       <div className="space-y-6 p-6">
@@ -228,14 +155,17 @@ const ManagerDashboard = () => {
           </div>
         </div>
 
-        <AssessmentFeedbackForm 
-          salesReps={salesReps.map(rep => ({ id: rep.id.toString(), name: rep.name }))}
-          assessments={[
-            ...assessments.month1.map(a => ({ name: a.name, shortName: a.shortName })),
-            ...assessments.month2.map(a => ({ name: a.name, shortName: a.shortName })),
-            ...assessments.month3.map(a => ({ name: a.name, shortName: a.shortName }))
-          ]}
-        />
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Assessment Feedback</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AssessmentFeedbackForm
+              salesReps={salesReps.map(rep => ({ id: rep.id.toString(), name: rep.name }))}
+              assessments={allAssessments}
+            />
+          </CardContent>
+        </Card>
 
         <div className="space-y-6">
           {['month1', 'month2', 'month3'].map((month, monthIndex) => (
