@@ -134,6 +134,20 @@ export type Database = {
             referencedRelation: "assessments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "assessment_submissions_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_submissions_sales_rep_id_fkey"
+            columns: ["sales_rep_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       assessments: {
