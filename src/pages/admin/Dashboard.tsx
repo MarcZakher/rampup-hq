@@ -85,21 +85,17 @@ export default function AdminDashboard() {
 
   const onSubmit = async (data: AssessmentForm) => {
     try {
-      // Convert CriteriaForm[] to Json type by creating a plain object array
-      const criteriaList = data.criteria.map(({ name, description }) => ({
+      const criteriaList: { [key: string]: string }[] = data.criteria.map(({ name, description }) => ({
         name,
         description,
       }));
-
-      // Explicitly type the criteria list as Json
-      const criteriaListJson = criteriaList as unknown as Json;
 
       if (editingAssessment) {
         const { error } = await supabase
           .from("assessment_criteria_templates")
           .update({
             assessment_name: data.assessment_name,
-            criteria_list: criteriaListJson,
+            criteria_list: criteriaList as Json,
           })
           .eq("id", editingAssessment.id);
 
@@ -112,7 +108,7 @@ export default function AdminDashboard() {
       } else {
         const { error } = await supabase.from("assessment_criteria_templates").insert({
           assessment_name: data.assessment_name,
-          criteria_list: criteriaListJson,
+          criteria_list: criteriaList as Json,
         });
 
         if (error) throw error;
