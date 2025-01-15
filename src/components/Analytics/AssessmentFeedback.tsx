@@ -27,36 +27,12 @@ interface AssessmentFeedback {
 
 export const AssessmentFeedback = () => {
   const [selectedFeedback, setSelectedFeedback] = useState<AssessmentFeedback | null>(null);
+  const AMINA_UUID = "3d3a496e-892b-4705-a9ef-8bf3ea0314ea";
 
-  // First, get Amina's profile ID
-  const { data: profileId, isLoading: isLoadingProfile, error: profileError } = useQuery({
-    queryKey: ["amina-profile"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq('email', 'amina.boualem@example.com')
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching profile:", error);
-        throw error;
-      }
-
-      if (!data) {
-        throw new Error("Profile not found for Amina Boualem");
-      }
-
-      return data.id;
-    },
-  });
-
-  // Then use the profile ID to fetch submissions
+  // Fetch submissions directly using Amina's UUID
   const { data: feedbacks, isLoading: isLoadingFeedbacks } = useQuery({
-    queryKey: ["assessment-feedbacks", profileId],
+    queryKey: ["assessment-feedbacks", AMINA_UUID],
     queryFn: async () => {
-      if (!profileId) return [];
-
       const { data, error } = await supabase
         .from("assessment_submissions")
         .select(`
@@ -71,7 +47,7 @@ export const AssessmentFeedback = () => {
             title
           )
         `)
-        .eq('sales_rep_id', profileId)
+        .eq('sales_rep_id', AMINA_UUID)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -81,7 +57,6 @@ export const AssessmentFeedback = () => {
 
       return data as AssessmentFeedback[];
     },
-    enabled: !!profileId,
   });
 
   const getScoreColor = (score: number) => {
@@ -90,12 +65,8 @@ export const AssessmentFeedback = () => {
     return "border-assessment-red bg-assessment-red/10";
   };
 
-  if (isLoadingProfile || isLoadingFeedbacks) {
+  if (isLoadingFeedbacks) {
     return <div>Loading feedback...</div>;
-  }
-
-  if (profileError) {
-    return <div>Error: Profile not found for Amina Boualem</div>;
   }
 
   if (!feedbacks?.length) {
