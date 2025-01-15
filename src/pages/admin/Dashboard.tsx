@@ -63,9 +63,9 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
-      return (data as AssessmentCriteriaTemplate[]).map((template) => ({
+      return data.map((template) => ({
         ...template,
-        criteria_list: template.criteria_list as unknown as CriteriaForm[],
+        criteria_list: template.criteria_list as CriteriaForm[],
       }));
     },
   });
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
     setEditingAssessment(assessment);
     form.reset({
       assessment_name: assessment.assessment_name,
-      criteria: assessment.criteria_list as unknown as CriteriaForm[],
+      criteria: assessment.criteria_list as CriteriaForm[],
       month: assessment.month.toString(),
     });
     setIsAddingAssessment(true);
