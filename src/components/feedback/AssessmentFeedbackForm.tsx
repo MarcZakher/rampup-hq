@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Plus, Minus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
 
 interface SalesRep {
   id: string;
@@ -23,6 +24,15 @@ interface SalesRep {
 interface AssessmentFeedbackFormProps {
   salesReps: SalesRep[];
 }
+
+type AssessmentCriteria = {
+  id: string;
+  name: string;
+};
+
+type AssessmentTemplate = Database['public']['Tables']['assessment_criteria_templates']['Row'] & {
+  criteria_list: AssessmentCriteria[];
+};
 
 export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProps) => {
   const [selectedRep, setSelectedRep] = useState<string>('');
@@ -42,7 +52,11 @@ export const AssessmentFeedbackForm = ({ salesReps }: AssessmentFeedbackFormProp
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      
+      return (data || []).map(template => ({
+        ...template,
+        criteria_list: template.criteria_list as AssessmentCriteria[]
+      })) as AssessmentTemplate[];
     },
   });
 

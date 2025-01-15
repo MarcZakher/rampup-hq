@@ -96,9 +96,10 @@ export default function AdminDashboard() {
   const onSubmit = async (data: AssessmentForm) => {
     try {
       const criteriaList = data.criteria.map(({ name, description }) => ({
+        id: crypto.randomUUID(),
         name,
         description,
-      })) as Json;
+      }));
 
       if (editingAssessment) {
         const { error } = await supabase
