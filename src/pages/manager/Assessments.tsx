@@ -38,24 +38,6 @@ const Assessments = () => {
     fetchSalesReps();
   }, []);
 
-  const assessments = [
-    { name: 'Discovery meeting roleplay pitch', shortName: 'Discovery' },
-    { name: 'SA program', shortName: 'SA' },
-    { name: 'Shadow capture', shortName: 'Shadow' },
-    { name: 'Deliver 3 Proof points', shortName: 'Proof' },
-    { name: 'Account Tiering', shortName: 'Tiering' },
-    { name: 'PG plan', shortName: 'PG' },
-    { name: 'NBM Role play', shortName: 'NBM' },
-    { name: '1st meeting excellence deck', shortName: '1st Meeting' },
-    { name: 'Pitch/Trap setting questions', shortName: 'Pitch' },
-    { name: 'Account plan 1', shortName: 'Account' },
-    { name: 'COM Review', shortName: 'COM' },
-    { name: 'Champion plan', shortName: 'Champion' },
-    { name: 'Deal review', shortName: 'Deal' },
-    { name: 'TFW prep and execution', shortName: 'TFW' },
-    { name: 'Pitch PS', shortName: 'Pitch PS' }
-  ];
-
   return (
     <AppLayout>
       <div className="p-6">
@@ -65,10 +47,7 @@ const Assessments = () => {
             <CardTitle>Assessment Feedback</CardTitle>
           </CardHeader>
           <CardContent>
-            <AssessmentFeedbackForm
-              salesReps={salesReps}
-              assessments={assessments}
-            />
+            <AssessmentFeedbackForm salesReps={salesReps} />
           </CardContent>
         </Card>
       </div>

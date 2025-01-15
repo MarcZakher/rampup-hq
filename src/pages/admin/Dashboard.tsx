@@ -85,12 +85,14 @@ export default function AdminDashboard() {
 
   const onSubmit = async (data: AssessmentForm) => {
     try {
+      const criteriaListJson = data.criteria as unknown as Json;
+
       if (editingAssessment) {
         const { error } = await supabase
           .from("assessment_criteria_templates")
           .update({
             assessment_name: data.assessment_name,
-            criteria_list: data.criteria as unknown as Json,
+            criteria_list: criteriaListJson,
           })
           .eq("id", editingAssessment.id);
 
@@ -103,7 +105,7 @@ export default function AdminDashboard() {
       } else {
         const { error } = await supabase.from("assessment_criteria_templates").insert({
           assessment_name: data.assessment_name,
-          criteria_list: data.criteria as unknown as Json,
+          criteria_list: criteriaListJson,
         });
 
         if (error) throw error;
