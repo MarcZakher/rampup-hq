@@ -28,9 +28,31 @@ interface AssessmentFeedback {
 export const AssessmentFeedback = () => {
   const [selectedFeedback, setSelectedFeedback] = useState<AssessmentFeedback | null>(null);
 
-  const { data: feedbacks, isLoading } = useQuery({
-    queryKey: ["assessment-feedbacks"],
+  // First, get Amina's profile ID
+  const { data: profileId, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ["amina-profile"],
     queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq('email', 'amina.boualem@example.com')
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        throw error;
+      }
+
+      return data.id;
+    },
+  });
+
+  // Then use the profile ID to fetch submissions
+  const { data: feedbacks, isLoading: isLoadingFeedbacks } = useQuery({
+    queryKey: ["assessment-feedbacks", profileId],
+    queryFn: async () => {
+      if (!profileId) return [];
+
       const { data, error } = await supabase
         .from("assessment_submissions")
         .select(`
@@ -45,7 +67,7 @@ export const AssessmentFeedback = () => {
             title
           )
         `)
-        .eq('sales_rep_id', 'amina.boualem@example.com') // Filter for Amina's submissions
+        .eq('sales_rep_id', profileId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -55,6 +77,7 @@ export const AssessmentFeedback = () => {
 
       return data as AssessmentFeedback[];
     },
+    enabled: !!profileId, // Only run this query when we have the profileId
   });
 
   const getScoreColor = (score: number) => {
@@ -63,7 +86,7 @@ export const AssessmentFeedback = () => {
     return "border-assessment-red bg-assessment-red/10";
   };
 
-  if (isLoading) {
+  if (isLoadingProfile || isLoadingFeedbacks) {
     return <div>Loading feedback...</div>;
   }
 
