@@ -86,10 +86,10 @@ export default function AdminDashboard() {
   const onSubmit = async (data: AssessmentForm) => {
     try {
       // Convert CriteriaForm[] to Json type by creating a plain object array
-      const criteriaListJson = data.criteria.map(({ name, description }) => ({
+      const criteriaListJson: Json = data.criteria.map(({ name, description }) => ({
         name,
         description,
-      })) as Json;
+      }));
 
       if (editingAssessment) {
         const { error } = await supabase
