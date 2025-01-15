@@ -27,6 +27,21 @@ interface FeedbackDetails {
   created_at: string;
 }
 
+interface QueryResponse {
+  id: string;
+  total_score: number;
+  feedback: string | null;
+  observed_strengths: string | null;
+  areas_for_improvement: string | null;
+  recommended_actions: string | null;
+  created_at: string;
+  sales_rep: {
+    profiles: {
+      full_name: string | null;
+    } | null;
+  } | null;
+}
+
 export const FeedbackHistory = () => {
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackDetails | null>(null);
 
@@ -54,7 +69,7 @@ export const FeedbackHistory = () => {
 
       if (error) throw error;
 
-      return submissions.map(submission => ({
+      return (submissions as QueryResponse[]).map(submission => ({
         id: submission.id,
         sales_rep_name: submission.sales_rep?.profiles?.full_name || 'Unknown',
         total_score: submission.total_score,
