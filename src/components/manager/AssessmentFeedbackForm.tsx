@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -35,24 +35,15 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-interface SalesRep {
-  id: string;
-  full_name: string;
+interface AssessmentFeedbackFormProps {
+  submissionId?: string | null;
+  onCancel: () => void;
+  onSuccess: () => void;
 }
 
-interface Assessment {
-  id: string;
-  title: string;
-}
-
-interface Criteria {
-  id: string;
-  title: string;
-}
-
-export function AssessmentFeedbackForm() {
-  const [selectedAssessment, setSelectedAssessment] = useState<string>('');
+export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: AssessmentFeedbackFormProps) {
   const { toast } = useToast();
+  const [selectedAssessment, setSelectedAssessment] = useState<string>('');
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -66,6 +57,50 @@ export function AssessmentFeedbackForm() {
       feedback: '',
     },
   });
+
+  // Fetch existing submission if editing
+  const { data: existingSubmission } = useQuery({
+    queryKey: ['submission', submissionId],
+    queryFn: async () => {
+      if (!submissionId) return null;
+      const { data, error } = await supabase
+        .from('assessment_submissions')
+        .select(`
+          *,
+          criteria_scores:assessment_criteria_scores(
+            criteria_id,
+            score
+          )
+        `)
+        .eq('id', submissionId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!submissionId,
+  });
+
+  // Set form values when editing existing submission
+  useEffect(() => {
+    if (existingSubmission) {
+      const criteriaScores = {};
+      existingSubmission.criteria_scores.forEach((score: any) => {
+        criteriaScores[score.criteria_id] = score.score;
+      });
+
+      form.reset({
+        salesRepId: existingSubmission.sales_rep_id,
+        assessmentId: existingSubmission.assessment_id,
+        criteriaScores,
+        observedStrengths: existingSubmission.observed_strengths,
+        areasForImprovement: existingSubmission.areas_for_improvement,
+        recommendedActions: existingSubmission.recommended_actions,
+        feedback: existingSubmission.feedback,
+      });
+      setSelectedAssessment(existingSubmission.assessment_id);
+    }
+  }, [existingSubmission, form]);
 
   // Fetch sales reps
   const { data: salesReps } = useQuery({
@@ -112,7 +147,70 @@ export function AssessmentFeedbackForm() {
     enabled: !!selectedAssessment,
   });
 
-  // Submit feedback
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: async (data: FormData) => {
+      if (!submissionId) throw new Error('No submission ID provided');
+      
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) throw new Error('No authenticated user found');
+
+      const scores = Object.values(data.criteriaScores);
+      const totalScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+
+      // Update submission
+      const { error: submissionError } = await supabase
+        .from('assessment_submissions')
+        .update({
+          assessment_id: data.assessmentId,
+          sales_rep_id: data.salesRepId,
+          total_score: totalScore,
+          feedback: data.feedback,
+          observed_strengths: data.observedStrengths,
+          areas_for_improvement: data.areasForImprovement,
+          recommended_actions: data.recommendedActions,
+        })
+        .eq('id', submissionId);
+
+      if (submissionError) throw submissionError;
+
+      // Update criteria scores
+      const { error: scoresError } = await supabase
+        .from('assessment_criteria_scores')
+        .delete()
+        .eq('submission_id', submissionId);
+
+      if (scoresError) throw scoresError;
+
+      const criteriaScores = Object.entries(data.criteriaScores).map(([criteriaId, score]) => ({
+        submission_id: submissionId,
+        criteria_id: criteriaId,
+        score,
+      }));
+
+      const { error: newScoresError } = await supabase
+        .from('assessment_criteria_scores')
+        .insert(criteriaScores);
+
+      if (newScoresError) throw newScoresError;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Feedback updated successfully",
+      });
+      onSuccess();
+    },
+    onError: (error) => {
+      console.error('Update error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update feedback",
+        variant: "destructive",
+      });
+    },
+  });
+
   const submitMutation = useMutation({
     mutationFn: async (data: FormData) => {
       console.log('Starting submission with data:', data);
@@ -195,7 +293,6 @@ export function AssessmentFeedbackForm() {
   const onSubmit = (data: FormData) => {
     console.log('Form submitted with data:', data);
     
-    // Validate that all criteria have scores
     if (criteria && criteria.length > 0) {
       const hasAllScores = criteria.every(criterion => 
         data.criteriaScores[criterion.id] !== undefined
@@ -211,8 +308,14 @@ export function AssessmentFeedbackForm() {
       }
     }
 
-    submitMutation.mutate(data);
+    if (submissionId) {
+      updateMutation.mutate(data);
+    } else {
+      submitMutation.mutate(data);
+    }
   };
+
+  // ... keep existing code (form JSX)
 
   return (
     <Form {...form}>
@@ -356,14 +459,17 @@ export function AssessmentFeedbackForm() {
             </FormItem>
           )}
         />
-
-        <Button 
-          type="submit" 
-          className="w-full"
-          disabled={submitMutation.isPending}
-        >
-          {submitMutation.isPending ? 'Submitting...' : 'Submit Feedback'}
-        </Button>
+        <div className="flex justify-end space-x-2">
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={updateMutation.isPending || submitMutation.isPending}
+          >
+            {submissionId ? 'Update Feedback' : 'Submit Feedback'}
+          </Button>
+        </div>
       </form>
     </Form>
   );
