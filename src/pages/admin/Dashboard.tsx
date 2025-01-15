@@ -55,11 +55,8 @@ export default function AdminDashboard() {
       if (error) throw error;
 
       return (data as AssessmentCriteriaTemplate[]).map((template) => ({
-        id: template.id,
-        assessment_name: template.assessment_name,
+        ...template,
         criteria_list: template.criteria_list as unknown as CriteriaForm[],
-        created_at: template.created_at,
-        updated_at: template.updated_at,
       }));
     },
   });
@@ -269,7 +266,7 @@ export default function AdminDashboard() {
               {assessments?.map((assessment) => (
                 <TableRow key={assessment.id}>
                   <TableCell>{assessment.assessment_name}</TableCell>
-                  <TableCell>{assessment.criteria_list.length}</TableCell>
+                  <TableCell>{(assessment.criteria_list as unknown as CriteriaForm[]).length}</TableCell>
                   <TableCell>
                     {new Date(assessment.created_at).toLocaleDateString()}
                   </TableCell>
