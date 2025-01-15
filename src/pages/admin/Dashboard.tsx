@@ -10,26 +10,8 @@ import { AssessmentForm, AssessmentFormData } from "@/components/admin/Assessmen
 import { CriteriaForm, CriteriaFormData } from "@/components/admin/CriteriaForm";
 import { AssessmentList } from "@/components/admin/AssessmentList";
 import { CriteriaList } from "@/components/admin/CriteriaList";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useForm } from "react-hook-form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Edit, Trash } from "lucide-react";
+import { SalesRepForm } from "@/components/admin/SalesRepForm";
+import { SalesRepList } from "@/components/admin/SalesRepList";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -40,6 +22,7 @@ export default function AdminDashboard() {
   const [editingAssessment, setEditingAssessment] = useState<any>(null);
   const [editingCriteria, setEditingCriteria] = useState<any>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<any>(null);
+  const [isAddingSalesRep, setIsAddingSalesRep] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -321,6 +304,28 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteSalesRep = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Sales rep deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8 space-y-12">
@@ -532,43 +537,42 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <Sheet open={isManagingCriteria} onOpenChange={setIsManagingCriteria}>
-          <SheetContent className="w-full sm:max-w-lg">
-            <SheetHeader>
-              <SheetTitle>
-                Manage Criteria for {selectedAssessment?.title}
-              </SheetTitle>
-            </SheetHeader>
-            <div className="mt-6 space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">Criteria List</h2>
-                <Button
-                  onClick={() => {
-                    setEditingCriteria(null);
-                  }}
-                >
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold">Sales Rep Management</h1>
+            <Sheet open={isAddingSalesRep} onOpenChange={setIsAddingSalesRep}>
+              <SheetTrigger asChild>
+                <Button>
                   <Plus className="mr-2" />
-                  Add Criteria
+                  Add Sales Rep
                 </Button>
-              </div>
+              </SheetTrigger>
+              <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                  <SheetTitle>Create New Sales Rep</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  <SalesRepForm
+                    onSuccess={() => {
+                      setIsAddingSalesRep(false);
+                    }}
+                    onCancel={() => setIsAddingSalesRep(false)}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
 
-              {editingCriteria === null && (
-                <CriteriaForm
-                  onSubmit={handleCriteriaSubmit}
-                  onCancel={() => setEditingCriteria(undefined)}
-                />
-              )}
-
-              <CriteriaList
-                criteria={criteria || []}
-                onEdit={setEditingCriteria}
-                onDelete={handleDeleteCriteria}
-                onAdd={handleCriteriaSubmit}
-                selectedAssessment={selectedAssessment}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
+          <SalesRepList
+            onEdit={() => {
+              toast({
+                title: "Info",
+                description: "Editing functionality coming soon",
+              });
+            }}
+            onDelete={handleDeleteSalesRep}
+          />
+        </div>
       </div>
     </CustomAppLayout>
   );

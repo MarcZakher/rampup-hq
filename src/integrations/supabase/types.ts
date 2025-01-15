@@ -328,7 +328,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_sales_rep: {
+        Args: {
+          email: string
+          temp_password: string
+          full_name: string
+          manager_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       assessment_period: "month_1" | "month_2" | "month_3" | "month_4"
