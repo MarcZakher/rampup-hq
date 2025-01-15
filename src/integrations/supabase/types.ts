@@ -9,6 +9,151 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      assessment_criteria: {
+        Row: {
+          assessment_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_criteria_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_criteria_scores: {
+        Row: {
+          created_at: string
+          criteria_id: string | null
+          id: string
+          score: number
+          submission_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criteria_id?: string | null
+          id?: string
+          score: number
+          submission_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criteria_id?: string | null
+          id?: string
+          score?: number
+          submission_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_criteria_scores_criteria_id_fkey"
+            columns: ["criteria_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_criteria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_criteria_scores_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_submissions: {
+        Row: {
+          assessment_id: string | null
+          created_at: string
+          feedback: string | null
+          id: string
+          manager_id: string | null
+          sales_rep_id: string | null
+          total_score: number
+          updated_at: string
+        }
+        Insert: {
+          assessment_id?: string | null
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          manager_id?: string | null
+          sales_rep_id?: string | null
+          total_score: number
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string | null
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          manager_id?: string | null
+          sales_rep_id?: string | null
+          total_score?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_submissions_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessments: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          period: Database["public"]["Enums"]["assessment_period"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          period: Database["public"]["Enums"]["assessment_period"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          period?: Database["public"]["Enums"]["assessment_period"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       meeting_analyses: {
         Row: {
           ai_feedback: string | null
@@ -155,6 +300,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      assessment_period: "month_1" | "month_2" | "month_3" | "month_4"
       meeting_type: "discovery" | "new_business"
       training_period: "month_1" | "month_2" | "month_3" | "month_4"
       user_role: "sales_rep" | "manager" | "director"
