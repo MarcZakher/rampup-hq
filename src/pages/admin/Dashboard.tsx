@@ -106,7 +106,7 @@ export default function AdminDashboard() {
           .from("assessment_criteria_templates")
           .update({
             assessment_name: data.assessment_name,
-            criteria_list: criteriaList,
+            criteria_list: criteriaList as unknown as Database["public"]["Tables"]["assessment_criteria_templates"]["Update"]["criteria_list"],
             month: parseInt(data.month),
           })
           .eq("id", editingAssessment.id);
@@ -120,7 +120,7 @@ export default function AdminDashboard() {
       } else {
         const { error } = await supabase.from("assessment_criteria_templates").insert({
           assessment_name: data.assessment_name,
-          criteria_list: criteriaList,
+          criteria_list: criteriaList as unknown as Database["public"]["Tables"]["assessment_criteria_templates"]["Insert"]["criteria_list"],
           month: parseInt(data.month),
         });
 
