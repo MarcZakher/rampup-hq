@@ -48,27 +48,78 @@ const STORAGE_KEY = 'manager_dashboard_sales_reps';
 const ManagerDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [newRepName, setNewRepName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check authentication status
+  // Check and maintain authentication status
   useEffect(() => {
+    let mounted = true;
+
     const checkAuth = async () => {
       try {
+        setIsLoading(true);
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error || !session) {
+        
+        if (error) {
           console.error('Session error:', error);
+          if (mounted) {
+            toast({
+              title: "Authentication Error",
+              description: "Please sign in again to continue.",
+              variant: "destructive",
+            });
+            localStorage.removeItem('supabase.auth.token');
+            navigate('/auth');
+          }
+          return;
+        }
+
+        if (!session) {
+          if (mounted) {
+            toast({
+              title: "Session Expired",
+              description: "Your session has expired. Please sign in again.",
+              variant: "destructive",
+            });
+            navigate('/auth');
+          }
+          return;
+        }
+
+        // Verify user role
+        const { data: userRoles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (rolesError || !userRoles || userRoles.role !== 'manager') {
+          if (mounted) {
+            toast({
+              title: "Access Denied",
+              description: "You don't have permission to access this page.",
+              variant: "destructive",
+            });
+            navigate('/auth');
+          }
+          return;
+        }
+
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        if (mounted) {
           toast({
-            title: "Session Expired",
-            description: "Please sign in again to continue.",
+            title: "Error",
+            description: "An unexpected error occurred. Please try again.",
             variant: "destructive",
           });
           navigate('/auth');
-          return;
         }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        navigate('/auth');
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -76,11 +127,20 @@ const ManagerDashboard = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
-        navigate('/auth');
+        localStorage.removeItem('supabase.auth.token');
+        if (mounted) {
+          navigate('/auth');
+        }
+      }
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate, toast]);
 
   // Load saved data on component mount
@@ -157,6 +217,16 @@ const ManagerDashboard = () => {
     if (score >= 3) return 'bg-[#FFEB9C]';
     return 'bg-[#FFC7CE]';
   };
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-screen">
+          <p>Loading...</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
