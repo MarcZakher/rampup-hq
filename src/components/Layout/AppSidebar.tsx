@@ -1,4 +1,4 @@
-import { Home, Users, LineChart, ClipboardList, Settings } from 'lucide-react';
+import { Home, Users, LineChart, ClipboardList, Settings, FileText } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -13,7 +13,7 @@ import {
 const menuItems = [
   { title: 'Home', icon: Home, url: '/' },
   { title: 'Sales Reps', icon: Users, url: '/sales-reps' },
-  { title: 'Assessments', icon: ClipboardList, url: '/manager/assessments' },
+  { title: 'Assessments', icon: FileText, url: '/manager/assessments' },
   { title: 'Performance Analytics', icon: LineChart, url: '/director/analytics' },
   { title: 'Settings', icon: Settings, url: '/settings' },
 ];
