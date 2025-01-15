@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
 
 type AssessmentCriteriaTemplate = Database["public"]["Tables"]["assessment_criteria_templates"]["Row"];
@@ -86,10 +86,13 @@ export default function AdminDashboard() {
   const onSubmit = async (data: AssessmentForm) => {
     try {
       // Convert CriteriaForm[] to Json type by creating a plain object array
-      const criteriaListJson: Json = data.criteria.map(({ name, description }) => ({
+      const criteriaList = data.criteria.map(({ name, description }) => ({
         name,
         description,
       }));
+
+      // Explicitly type the criteria list as Json
+      const criteriaListJson = criteriaList as unknown as Json;
 
       if (editingAssessment) {
         const { error } = await supabase
