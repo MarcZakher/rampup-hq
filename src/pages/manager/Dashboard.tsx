@@ -46,19 +46,14 @@ const ManagerDashboard = () => {
     queryFn: async () => {
       try {
         const { data: { user }, error: sessionError } = await supabase.auth.getUser();
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          throw sessionError;
-        }
+        if (sessionError) throw sessionError;
 
         if (!user) {
-          console.error('No authenticated user found');
           throw new Error('No authenticated user found');
         }
 
         console.log('Current user:', user.id);
 
-        // Get all sales reps managed by this manager using the correct relationship hint
         const { data: salesRepsData, error: repsError } = await supabase
           .from('user_roles')
           .select(`
@@ -69,22 +64,23 @@ const ManagerDashboard = () => {
             )
           `)
           .eq('manager_id', user.id)
-          .eq('role', 'sales_rep');
+          .eq('role', 'sales_rep')
+          .single();
 
         if (repsError) {
           console.error('Error fetching sales reps:', repsError);
           throw repsError;
         }
 
-        console.log('Sales reps data:', salesRepsData);
-
-        return salesRepsData?.map(rep => ({
-          id: rep.user_id,
-          name: rep.profiles?.full_name || rep.profiles?.email || 'Unnamed Rep',
+        // Transform the data into the expected format
+        return salesRepsData ? [{
+          id: salesRepsData.user_id,
+          name: salesRepsData.profiles?.full_name || salesRepsData.profiles?.email || 'Unnamed Rep',
           month1: new Array(assessments.month1.length).fill(0),
           month2: new Array(assessments.month2.length).fill(0),
           month3: new Array(assessments.month3.length).fill(0)
-        })) || [];
+        }] : [];
+
       } catch (error) {
         console.error('Error in fetchSalesReps:', error);
         toast({
@@ -94,7 +90,8 @@ const ManagerDashboard = () => {
         });
         return [];
       }
-    }
+    },
+    retry: 1
   });
 
   useEffect(() => {
@@ -114,7 +111,7 @@ const ManagerDashboard = () => {
     }
 
     const newRep: SalesRep = {
-      id: crypto.randomUUID(), // Using UUID instead of Date.now()
+      id: crypto.randomUUID(),
       name: newRepName,
       month1: new Array(assessments.month1.length).fill(0),
       month2: new Array(assessments.month2.length).fill(0),
