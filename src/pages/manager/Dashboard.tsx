@@ -41,52 +41,52 @@ const ManagerDashboard = () => {
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
 
+  // First, get the current user's session
   const { data: managedReps, isLoading: isLoadingReps } = useQuery({
     queryKey: ['salesReps'],
     queryFn: async () => {
       try {
         const { data: { user }, error: sessionError } = await supabase.auth.getUser();
-        if (sessionError) throw sessionError;
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          throw sessionError;
+        }
 
         if (!user) {
+          console.error('No authenticated user found');
           throw new Error('No authenticated user found');
         }
 
-        // First get the manager's role
-        const { data: managerRole, error: managerError } = await supabase
-          .from('user_roles')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('role', 'manager')
-          .single();
+        console.log('Current user:', user.id);
 
-        if (managerError) {
-          console.error('Error fetching manager role:', managerError);
-          throw managerError;
-        }
-
-        // Then get the sales reps managed by this manager
+        // Get all sales reps managed by this manager
         const { data: salesRepsData, error: repsError } = await supabase
           .from('user_roles')
           .select(`
             user_id,
-            profiles!user_roles_user_id_fkey_profiles (
+            manager_id,
+            role,
+            user:user_id (
               id,
-              full_name,
-              email
+              profiles!profiles_id_fkey (
+                full_name,
+                email
+              )
             )
           `)
-          .eq('role', 'sales_rep')
-          .eq('manager_id', user.id);
+          .eq('manager_id', user.id)
+          .eq('role', 'sales_rep');
 
         if (repsError) {
           console.error('Error fetching sales reps:', repsError);
           throw repsError;
         }
 
+        console.log('Sales reps data:', salesRepsData);
+
         return salesRepsData?.map(rep => ({
-          id: rep.profiles?.id || '',
-          name: rep.profiles?.full_name || rep.profiles?.email || 'Unnamed Rep',
+          id: rep.user?.id || '',
+          name: rep.user?.profiles?.full_name || rep.user?.profiles?.email || 'Unnamed Rep',
           month1: new Array(assessments.month1.length).fill(0),
           month2: new Array(assessments.month2.length).fill(0),
           month3: new Array(assessments.month3.length).fill(0)
