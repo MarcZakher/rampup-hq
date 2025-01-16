@@ -29,8 +29,8 @@ export function SalesRepList({ onEdit, onDelete }: SalesRepListProps) {
             full_name,
             email
           ),
-          manager:manager_id (
-            full_name:profiles!id(full_name)
+          manager:profiles!user_roles_manager_id_fkey (
+            full_name
           )
         `)
         .eq("role", "sales_rep");
