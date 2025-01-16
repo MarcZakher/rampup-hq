@@ -54,6 +54,7 @@ const ManagerDashboard = () => {
 
         console.log('Current user:', user.id);
 
+        // Fetch sales reps using the simplified query
         const { data: salesRepsData, error: repsError } = await supabase
           .from('user_roles')
           .select(`
