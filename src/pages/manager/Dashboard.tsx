@@ -1,22 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { Trash2, UserPlus } from 'lucide-react';
 
 interface SalesRep {
-  id: string;
+  id: number;
   name: string;
-  assessmentScores: {
-    month1: number[];
-    month2: number[];
-    month3: number[];
-  };
+  month1: number[];
+  month2: number[];
+  month3: number[];
 }
 
 const assessments = {
@@ -45,79 +41,80 @@ const assessments = {
   ]
 };
 
+const STORAGE_KEY = 'manager_dashboard_sales_reps';
+
 const ManagerDashboard = () => {
-  const { toast } = useToast();
+  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [newRepName, setNewRepName] = useState('');
+  const { toast } = useToast();
 
-  const { data: salesReps = [], isLoading } = useQuery({
-    queryKey: ['sales-reps-scores'],
-    queryFn: async () => {
-      // First get the current user's company_id
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No authenticated user');
-
-      const { data: userProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) throw profileError;
-      if (!userProfile?.company_id) throw new Error('No company_id found for user');
-
-      const { data: salesReps, error: salesRepsError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          profiles:user_id (
-            id,
-            full_name,
-            email
-          )
-        `)
-        .eq('role', 'sales_rep')
-        .eq('company_id', userProfile.company_id);
-
-      if (salesRepsError) throw salesRepsError;
-
-      const salesRepsData = await Promise.all(
-        salesReps.map(async (userRole) => {
-          const { data: submissions, error: submissionsError } = await supabase
-            .from('assessment_submissions')
-            .select('total_score, assessment:assessments(period)')
-            .eq('sales_rep_id', userRole.user_id)
-            .eq('company_id', userProfile.company_id);
-
-          if (submissionsError) throw submissionsError;
-
-          const scores = {
-            month1: new Array(assessments.month1.length).fill(0),
-            month2: new Array(assessments.month2.length).fill(0),
-            month3: new Array(assessments.month3.length).fill(0)
-          };
-
-          submissions?.forEach((submission) => {
-            if (submission.assessment?.period) {
-              const period = submission.assessment.period;
-              const monthKey = period.replace('_', '') as keyof typeof scores;
-              const monthIndex = parseInt(period.split('_')[1]) - 1;
-              if (monthIndex >= 0 && monthIndex < scores[monthKey].length) {
-                scores[monthKey][monthIndex] = submission.total_score;
-              }
-            }
-          });
-
-          return {
-            id: userRole.user_id,
-            name: userRole.profiles?.full_name || userRole.profiles?.email || 'Unknown',
-            assessmentScores: scores
-          };
-        })
-      );
-
-      return salesRepsData.filter((rep): rep is SalesRep => rep !== null);
+  // Load saved data on component mount
+  useEffect(() => {
+    const savedReps = localStorage.getItem(STORAGE_KEY);
+    if (savedReps) {
+      setSalesReps(JSON.parse(savedReps));
     }
-  });
+  }, []);
+
+  // Save data whenever salesReps changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(salesReps));
+  }, [salesReps]);
+
+  const addSalesRep = () => {
+    if (!newRepName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a name for the sales representative",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newRep: SalesRep = {
+      id: Date.now(),
+      name: newRepName,
+      month1: new Array(assessments.month1.length).fill(0),
+      month2: new Array(assessments.month2.length).fill(0),
+      month3: new Array(assessments.month3.length).fill(0)
+    };
+
+    setSalesReps([...salesReps, newRep]);
+    setNewRepName('');
+    toast({
+      title: "Success",
+      description: "Sales representative added successfully"
+    });
+  };
+
+  const removeSalesRep = (id: number) => {
+    setSalesReps(salesReps.filter(rep => rep.id !== id));
+    toast({
+      title: "Success",
+      description: "Sales representative removed successfully"
+    });
+  };
+
+  const updateScore = (repId: number, month: 'month1' | 'month2' | 'month3', index: number, value: string) => {
+    const score = parseFloat(value);
+    if (isNaN(score) || score < 0 || score > 5) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid score between 0 and 5",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSalesReps(salesReps.map(rep => {
+      if (rep.id === repId) {
+        const newScores = [...rep[month]];
+        newScores[index] = score;
+        return { ...rep, [month]: newScores };
+      }
+      return rep;
+    }));
+  };
 
   const getScoreColor = (score: number) => {
     if (score === 0) return 'bg-white';
@@ -125,10 +122,6 @@ const ManagerDashboard = () => {
     if (score >= 3) return 'bg-[#FFEB9C]';
     return 'bg-[#FFC7CE]';
   };
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <AppLayout>
@@ -142,12 +135,7 @@ const ManagerDashboard = () => {
               onChange={(e) => setNewRepName(e.target.value)}
               className="w-64"
             />
-            <Button onClick={() => {
-              toast({
-                title: "Feature coming soon",
-                description: "Adding new sales reps will be available in a future update."
-              });
-            }}>
+            <Button onClick={addSalesRep}>
               <UserPlus className="mr-2 h-4 w-4" />
               Add Sales Rep
             </Button>
@@ -170,17 +158,35 @@ const ManagerDashboard = () => {
                           {assessment.shortName}
                         </TableHead>
                       ))}
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {salesReps.map((rep) => (
                       <TableRow key={rep.id}>
                         <TableCell className="font-medium">{rep.name}</TableCell>
-                        {rep.assessmentScores[month as keyof typeof assessments].map((score, scoreIndex) => (
+                        {rep[month as keyof Pick<SalesRep, 'month1' | 'month2' | 'month3'>].map((score, scoreIndex) => (
                           <TableCell key={scoreIndex} className={getScoreColor(score)}>
-                            {score || '-'}
+                            <Input
+                              type="number"
+                              min="0"
+                              max="5"
+                              step="0.5"
+                              value={score || ''}
+                              onChange={(e) => updateScore(rep.id, month as 'month1' | 'month2' | 'month3', scoreIndex, e.target.value)}
+                              className="w-16 text-center"
+                            />
                           </TableCell>
                         ))}
+                        <TableCell>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removeSalesRep(rep.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
