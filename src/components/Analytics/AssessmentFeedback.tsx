@@ -27,11 +27,9 @@ interface AssessmentFeedback {
 
 export const AssessmentFeedback = () => {
   const [selectedFeedback, setSelectedFeedback] = useState<AssessmentFeedback | null>(null);
-  const AMINA_UUID = "3d3a496e-892b-4705-a9ef-8bf3ea0314ea";
 
-  // Fetch submissions directly using Amina's UUID
-  const { data: feedbacks, isLoading: isLoadingFeedbacks } = useQuery({
-    queryKey: ["assessment-feedbacks", AMINA_UUID],
+  const { data: feedbacks, isLoading } = useQuery({
+    queryKey: ["assessment-feedbacks"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("assessment_submissions")
@@ -47,7 +45,7 @@ export const AssessmentFeedback = () => {
             title
           )
         `)
-        .eq('sales_rep_id', AMINA_UUID)
+        .eq('sales_rep_id', 'amina.boualem@example.com') // Filter for Amina's submissions
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -65,7 +63,7 @@ export const AssessmentFeedback = () => {
     return "border-assessment-red bg-assessment-red/10";
   };
 
-  if (isLoadingFeedbacks) {
+  if (isLoading) {
     return <div>Loading feedback...</div>;
   }
 

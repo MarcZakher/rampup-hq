@@ -1,55 +1,113 @@
-import { useState } from "react";
-import { CustomAppLayout } from "@/components/Layout/CustomAppLayout";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { CustomAppLayout } from "@/components/Layout/CustomAppLayout";
 import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { AssessmentForm, AssessmentFormData } from "@/components/admin/AssessmentForm";
+import { CriteriaForm, CriteriaFormData } from "@/components/admin/CriteriaForm";
 import { AssessmentList } from "@/components/admin/AssessmentList";
-import { TrainingModuleForm } from "@/components/admin/training/TrainingModuleForm";
-import { TrainingModuleList } from "@/components/admin/training/TrainingModuleList";
-import { SalesRepForm } from "@/components/admin/SalesRepForm";
-import { SalesRepList } from "@/components/admin/SalesRepList";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-
-interface Assessment {
-  id: string;
-  title: string;
-  description: string | null;
-  period: "month_1" | "month_2" | "month_3" | "month_4";
-}
+import { CriteriaList } from "@/components/admin/CriteriaList";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Edit, Trash } from "lucide-react";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isAddingModule, setIsAddingModule] = useState(false);
   const [isAddingAssessment, setIsAddingAssessment] = useState(false);
-  const [isAddingSalesRep, setIsAddingSalesRep] = useState(false);
+  const [isManagingCriteria, setIsManagingCriteria] = useState(false);
   const [editingModule, setEditingModule] = useState(null);
-  const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null);
-  const [editingSalesRep, setEditingSalesRep] = useState<any>(null);
-  const [selectedAssessment, setSelectedAssessment] = useState<{ id: string; title: string } | null>(null);
+  const [editingAssessment, setEditingAssessment] = useState<any>(null);
+  const [editingCriteria, setEditingCriteria] = useState<any>(null);
+  const [selectedAssessment, setSelectedAssessment] = useState<any>(null);
 
-  // Fetch assessments
-  const { data: assessments = [] } = useQuery<Assessment[]>({
-    queryKey: ['assessments'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('assessments')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching assessments:', error);
-        throw error;
-      }
-
-      return data || [];
+  const form = useForm({
+    defaultValues: {
+      title: "",
+      description: "",
+      period: "month_1",
+      duration: "",
+      platform: "",
+      sort_order: 0,
     },
   });
 
-  const handleModuleSubmit = async (data: any) => {
+  const { data: modules, refetch: refetchModules } = useQuery({
+    queryKey: ["trainingModules"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("training_journey_modules")
+        .select("*")
+        .order("sort_order", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: assessments, refetch: refetchAssessments } = useQuery({
+    queryKey: ["assessments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assessments")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: criteria, refetch: refetchCriteria } = useQuery({
+    queryKey: ["criteria", selectedAssessment?.id],
+    queryFn: async () => {
+      if (!selectedAssessment?.id) return [];
+      const { data, error } = await supabase
+        .from("assessment_criteria")
+        .select("*")
+        .eq("assessment_id", selectedAssessment.id)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedAssessment?.id,
+  });
+
+  const handleEdit = (module: any) => {
+    setEditingModule(module);
+    form.reset({
+      title: module.title,
+      description: module.description,
+      period: module.period,
+      duration: module.duration,
+      platform: module.platform || "",
+      sort_order: module.sort_order,
+    });
+    setIsAddingModule(true);
+  };
+
+  const onSubmit = async (data: any) => {
     try {
       if (editingModule) {
         const { error } = await supabase
@@ -90,7 +148,9 @@ export default function AdminDashboard() {
 
       setIsAddingModule(false);
       setEditingModule(null);
-    } catch (error: any) {
+      form.reset();
+      refetchModules();
+    } catch (error) {
       toast({
         title: "Error",
         description: editingModule 
@@ -114,6 +174,8 @@ export default function AdminDashboard() {
         title: "Success",
         description: "Training module deleted successfully",
       });
+
+      refetchModules();
     } catch (error) {
       toast({
         title: "Error",
@@ -128,11 +190,7 @@ export default function AdminDashboard() {
       if (editingAssessment) {
         const { error } = await supabase
           .from("assessments")
-          .update({
-            title: data.title,
-            description: data.description,
-            period: data.period,
-          })
+          .update(data)
           .eq("id", editingAssessment.id);
 
         if (error) throw error;
@@ -144,11 +202,7 @@ export default function AdminDashboard() {
       } else {
         const { error } = await supabase
           .from("assessments")
-          .insert({
-            title: data.title,
-            description: data.description,
-            period: data.period,
-          });
+          .insert(data);
 
         if (error) throw error;
 
@@ -158,11 +212,10 @@ export default function AdminDashboard() {
         });
       }
 
-      queryClient.invalidateQueries({ queryKey: ['assessments'] });
       setIsAddingAssessment(false);
       setEditingAssessment(null);
-    } catch (error: any) {
-      console.error('Error saving assessment:', error);
+      refetchAssessments();
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to save assessment",
@@ -184,13 +237,77 @@ export default function AdminDashboard() {
         title: "Success",
         description: "Assessment deleted successfully",
       });
-      
-      queryClient.invalidateQueries({ queryKey: ['assessments'] });
+
+      refetchAssessments();
     } catch (error) {
-      console.error('Error deleting assessment:', error);
       toast({
         title: "Error",
         description: "Failed to delete assessment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCriteriaSubmit = async (data: CriteriaFormData) => {
+    try {
+      if (editingCriteria) {
+        const { error } = await supabase
+          .from("assessment_criteria")
+          .update(data)
+          .eq("id", editingCriteria.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Criteria updated successfully",
+        });
+      } else {
+        const { error } = await supabase
+          .from("assessment_criteria")
+          .insert({
+            ...data,
+            assessment_id: selectedAssessment.id,
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Criteria created successfully",
+        });
+      }
+
+      setEditingCriteria(null);
+      refetchCriteria();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save criteria",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCriteria = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("assessment_criteria")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Criteria deleted successfully",
+      });
+
+      refetchCriteria();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete criteria",
         variant: "destructive",
       });
     }
@@ -200,43 +317,17 @@ export default function AdminDashboard() {
     setIsAddingModule(open);
     if (!open) {
       setEditingModule(null);
-    }
-  };
-
-  const handleManageCriteria = (assessment: { id: string; title: string }) => {
-    setSelectedAssessment(assessment);
-  };
-
-  const handleDeleteSalesRep = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Sales rep deleted successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete sales rep",
-        variant: "destructive",
-      });
+      form.reset();
     }
   };
 
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8 space-y-12">
-        {/* Training Module Management Section */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Training Module Management</h1>
-            <Sheet open={isAddingModule} onOpenChange={setIsAddingModule}>
+            <Sheet open={isAddingModule} onOpenChange={handleSheetOpenChange}>
               <SheetTrigger asChild>
                 <Button>
                   <Plus className="mr-2" />
@@ -249,72 +340,154 @@ export default function AdminDashboard() {
                     {editingModule ? "Edit Module" : "Create New Module"}
                   </SheetTitle>
                 </SheetHeader>
-                <div className="mt-6">
-                  <TrainingModuleForm
-                    initialData={editingModule}
-                    onSubmit={handleModuleSubmit}
-                    onCancel={() => {
-                      setIsAddingModule(false);
-                      setEditingModule(null);
-                    }}
-                  />
-                </div>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-6">
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="period"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Period</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select period" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="month_1">Month 1</SelectItem>
+                              <SelectItem value="month_2">Month 2</SelectItem>
+                              <SelectItem value="month_3">Month 3</SelectItem>
+                              <SelectItem value="month_4">Month 4</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="duration"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Duration</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., 2 hours" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="platform"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Platform</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Zoom, Google Meet" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="sort_order"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Sort Order</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              {...field} 
+                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button type="submit" className="w-full">
+                      {editingModule ? "Update Module" : "Create Module"}
+                    </Button>
+                  </form>
+                </Form>
               </SheetContent>
             </Sheet>
           </div>
 
-          <TrainingModuleList
-            onEdit={(module) => {
-              setEditingModule(module);
-              setIsAddingModule(true);
-            }}
-            onDelete={deleteModule}
-          />
-        </div>
-
-        {/* Sales Rep Management Section */}
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Sales Rep Management</h1>
-            <Sheet open={isAddingSalesRep} onOpenChange={setIsAddingSalesRep}>
-              <SheetTrigger asChild>
-                <Button>
-                  <Plus className="mr-2" />
-                  Add Sales Rep
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-lg">
-                <SheetHeader>
-                  <SheetTitle>
-                    {editingSalesRep ? "Edit Sales Rep" : "Create New Sales Rep"}
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="mt-6">
-                  <SalesRepForm
-                    onSuccess={() => {
-                      setIsAddingSalesRep(false);
-                      setEditingSalesRep(null);
-                    }}
-                    onCancel={() => {
-                      setIsAddingSalesRep(false);
-                      setEditingSalesRep(null);
-                    }}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Period</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Platform</TableHead>
+                  <TableHead>Sort Order</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {modules?.map((module) => (
+                  <TableRow key={module.id}>
+                    <TableCell>{module.title}</TableCell>
+                    <TableCell>Month {module.period.split("_")[1]}</TableCell>
+                    <TableCell>{module.duration}</TableCell>
+                    <TableCell>{module.platform}</TableCell>
+                    <TableCell>{module.sort_order}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleEdit(module)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteModule(module.id)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-
-          <SalesRepList
-            onEdit={(salesRep) => {
-              setEditingSalesRep(salesRep);
-              setIsAddingSalesRep(true);
-            }}
-            onDelete={handleDeleteSalesRep}
-          />
         </div>
 
-        {/* Assessment Management Section */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Assessment Management</h1>
@@ -346,15 +519,56 @@ export default function AdminDashboard() {
           </div>
 
           <AssessmentList
-            assessments={assessments}
+            assessments={assessments || []}
             onEdit={(assessment) => {
               setEditingAssessment(assessment);
               setIsAddingAssessment(true);
             }}
             onDelete={handleDeleteAssessment}
-            onManageCriteria={handleManageCriteria}
+            onManageCriteria={(assessment) => {
+              setSelectedAssessment(assessment);
+              setIsManagingCriteria(true);
+            }}
           />
         </div>
+
+        <Sheet open={isManagingCriteria} onOpenChange={setIsManagingCriteria}>
+          <SheetContent className="w-full sm:max-w-lg">
+            <SheetHeader>
+              <SheetTitle>
+                Manage Criteria for {selectedAssessment?.title}
+              </SheetTitle>
+            </SheetHeader>
+            <div className="mt-6 space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold">Criteria List</h2>
+                <Button
+                  onClick={() => {
+                    setEditingCriteria(null);
+                  }}
+                >
+                  <Plus className="mr-2" />
+                  Add Criteria
+                </Button>
+              </div>
+
+              {editingCriteria === null && (
+                <CriteriaForm
+                  onSubmit={handleCriteriaSubmit}
+                  onCancel={() => setEditingCriteria(undefined)}
+                />
+              )}
+
+              <CriteriaList
+                criteria={criteria || []}
+                onEdit={setEditingCriteria}
+                onDelete={handleDeleteCriteria}
+                onAdd={handleCriteriaSubmit}
+                selectedAssessment={selectedAssessment}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </CustomAppLayout>
   );

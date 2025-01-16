@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface SalesRep {
   id: number;
@@ -48,100 +46,7 @@ const STORAGE_KEY = 'manager_dashboard_sales_reps';
 const ManagerDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [newRepName, setNewRepName] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const navigate = useNavigate();
-
-  // Check and maintain authentication status
-  useEffect(() => {
-    let mounted = true;
-
-    const checkAuth = async () => {
-      try {
-        setIsLoading(true);
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Session error:', error);
-          if (mounted) {
-            toast({
-              title: "Authentication Error",
-              description: "Please sign in again to continue.",
-              variant: "destructive",
-            });
-            localStorage.removeItem('supabase.auth.token');
-            navigate('/auth');
-          }
-          return;
-        }
-
-        if (!session) {
-          if (mounted) {
-            toast({
-              title: "Session Expired",
-              description: "Your session has expired. Please sign in again.",
-              variant: "destructive",
-            });
-            navigate('/auth');
-          }
-          return;
-        }
-
-        // Verify user role
-        const { data: userRoles, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .single();
-
-        if (rolesError || !userRoles || userRoles.role !== 'manager') {
-          if (mounted) {
-            toast({
-              title: "Access Denied",
-              description: "You don't have permission to access this page.",
-              variant: "destructive",
-            });
-            navigate('/auth');
-          }
-          return;
-        }
-
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        if (mounted) {
-          toast({
-            title: "Error",
-            description: "An unexpected error occurred. Please try again.",
-            variant: "destructive",
-          });
-          navigate('/auth');
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        localStorage.removeItem('supabase.auth.token');
-        if (mounted) {
-          navigate('/auth');
-        }
-      }
-      if (event === 'TOKEN_REFRESHED') {
-        console.log('Token refreshed successfully');
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [navigate, toast]);
 
   // Load saved data on component mount
   useEffect(() => {
@@ -217,16 +122,6 @@ const ManagerDashboard = () => {
     if (score >= 3) return 'bg-[#FFEB9C]';
     return 'bg-[#FFC7CE]';
   };
-
-  if (isLoading) {
-    return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-screen">
-          <p>Loading...</p>
-        </div>
-      </AppLayout>
-    );
-  }
 
   return (
     <AppLayout>
