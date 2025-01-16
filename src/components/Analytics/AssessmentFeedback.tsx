@@ -45,7 +45,7 @@ export const AssessmentFeedback = () => {
             title
           )
         `)
-        .eq('sales_rep_id', '3d3a496e-892b-4705-a9ef-8bf3ea0314ea') // Filter for Amina's submissions
+        .eq('sales_rep_id', 'amina.boualem@example.com') // Filter for Amina's submissions
         .order('created_at', { ascending: false });
 
       if (error) {
