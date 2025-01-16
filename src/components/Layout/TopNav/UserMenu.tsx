@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSessionContext } from '@supabase/auth-helpers-react';
 
 interface UserProfile {
   full_name: string | null;
@@ -26,26 +27,20 @@ interface UserMenuProps {
 export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { session, isLoading: isSessionLoading } = useSessionContext();
 
   const handleSignOut = async () => {
     try {
-      // First check if we have a valid session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Session check error:', sessionError);
-        // If there's no valid session, just redirect to auth
-        navigate('/auth');
-        return;
-      }
-
       if (!session) {
-        // No session found, redirect to auth
+        // No active session, redirect to auth
         navigate('/auth');
         return;
       }
 
-      // If we have a valid session, try to sign out
+      // Clear any local storage items
+      localStorage.clear();
+      
+      // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error.message);
@@ -57,9 +52,6 @@ export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
         return;
       }
 
-      // Clear any local storage items if needed
-      localStorage.removeItem('supabase.auth.token');
-      
       // Redirect to auth page
       navigate('/auth');
       
@@ -70,7 +62,6 @@ export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
 
     } catch (error) {
       console.error('Unexpected error during sign out:', error);
-      // Force redirect to auth page in case of any unexpected errors
       navigate('/auth');
     }
   };
@@ -96,7 +87,7 @@ export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8 border border-gray-200">
             <AvatarFallback className="bg-rampup-primary/10 text-rampup-primary">
-              {isLoading ? '...' : getInitials(userProfile?.full_name)}
+              {isLoading || isSessionLoading ? '...' : getInitials(userProfile?.full_name)}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -105,10 +96,10 @@ export function UserMenu({ userProfile, isLoading }: UserMenuProps) {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {isLoading ? 'Loading...' : userProfile?.full_name || userProfile?.email?.split('@')[0] || 'User'}
+              {isLoading || isSessionLoading ? 'Loading...' : userProfile?.full_name || userProfile?.email?.split('@')[0] || 'User'}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {isLoading ? '...' : userProfile?.email}
+              {isLoading || isSessionLoading ? '...' : userProfile?.email}
             </p>
           </div>
         </DropdownMenuLabel>
