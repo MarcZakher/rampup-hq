@@ -23,7 +23,7 @@ const DirectorDashboard = () => {
         .from('user_roles')
         .select(`
           user_id,
-          profiles:user_id (
+          profiles!user_roles_user_id_fkey_profiles (
             full_name
           )
         `)
