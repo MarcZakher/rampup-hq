@@ -73,7 +73,7 @@ const ManagerDashboard = () => {
           .from('user_roles')
           .select(`
             user_id,
-            profiles (
+            profiles:user_roles_user_id_fkey_profiles (
               full_name,
               email
             )
