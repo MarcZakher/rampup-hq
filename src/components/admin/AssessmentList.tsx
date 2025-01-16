@@ -42,7 +42,7 @@ export function AssessmentList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {assessments.map((assessment) => (
+          {assessments?.map((assessment) => (
             <TableRow key={assessment.id}>
               <TableCell>{assessment.title}</TableCell>
               <TableCell>Month {assessment.period.split("_")[1]}</TableCell>

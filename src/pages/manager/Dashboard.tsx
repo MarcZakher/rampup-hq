@@ -50,10 +50,36 @@ const ManagerDashboard = () => {
 
   // Load saved data on component mount
   useEffect(() => {
-    const savedReps = localStorage.getItem(STORAGE_KEY);
-    if (savedReps) {
-      setSalesReps(JSON.parse(savedReps));
-    }
+    const fetchSalesReps = async () => {
+      const { data: userRoles, error } = await supabase
+        .from('user_roles')
+        .select(`
+          user_id,
+          profiles!user_roles_user_id_fkey_profiles (
+            id,
+            full_name
+          )
+        `)
+        .eq('role', 'sales_rep');
+
+      if (error) {
+        console.error('Error fetching sales reps:', error);
+        return;
+      }
+
+      if (userRoles) {
+        const reps = userRoles.map(role => ({
+          id: role.profiles?.id || 0,
+          name: role.profiles?.full_name || '',
+          month1: new Array(assessments.month1.length).fill(0),
+          month2: new Array(assessments.month2.length).fill(0),
+          month3: new Array(assessments.month3.length).fill(0)
+        }));
+        setSalesReps(reps);
+      }
+    };
+
+    fetchSalesReps();
   }, []);
 
   // Save data whenever salesReps changes

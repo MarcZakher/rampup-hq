@@ -38,6 +38,7 @@ export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
   const { data: submissions, isLoading } = useQuery({
     queryKey: ["feedback-submissions"],
     queryFn: async () => {
+      console.log("Fetching feedback submissions");
       const { data, error } = await supabase
         .from("assessment_submissions")
         .select(`
@@ -49,11 +50,15 @@ export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
           areas_for_improvement,
           recommended_actions,
           assessment:assessments(title),
-          sales_rep:profiles!assessment_submissions_sales_rep_id_fkey(full_name)
+          sales_rep:profiles(full_name)
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching submissions:", error);
+        throw error;
+      }
+      console.log("Fetched submissions:", data);
       return data as FeedbackSubmission[];
     },
   });
