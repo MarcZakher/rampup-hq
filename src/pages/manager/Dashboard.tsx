@@ -7,14 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-
-interface SalesRep {
-  id: number;
-  name: string;
-  month1: number[];
-  month2: number[];
-  month3: number[];
-}
+import type { SalesRep } from '@/lib/types/analytics';
 
 const assessments = {
   month1: [
@@ -49,7 +42,6 @@ const ManagerDashboard = () => {
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
 
-  // Load saved data on component mount
   useEffect(() => {
     const fetchSalesReps = async () => {
       const { data: userRoles, error } = await supabase
@@ -69,8 +61,8 @@ const ManagerDashboard = () => {
       }
 
       if (userRoles) {
-        const reps = userRoles.map(role => ({
-          id: role.profiles?.id || 0,
+        const reps: SalesRep[] = userRoles.map(role => ({
+          id: role.profiles?.id || '',
           name: role.profiles?.full_name || '',
           month1: new Array(assessments.month1.length).fill(0),
           month2: new Array(assessments.month2.length).fill(0),
@@ -83,7 +75,6 @@ const ManagerDashboard = () => {
     fetchSalesReps();
   }, []);
 
-  // Save data whenever salesReps changes
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(salesReps));
   }, [salesReps]);
@@ -99,7 +90,7 @@ const ManagerDashboard = () => {
     }
 
     const newRep: SalesRep = {
-      id: Date.now(),
+      id: crypto.randomUUID(), // Using UUID instead of Date.now()
       name: newRepName,
       month1: new Array(assessments.month1.length).fill(0),
       month2: new Array(assessments.month2.length).fill(0),
@@ -114,7 +105,7 @@ const ManagerDashboard = () => {
     });
   };
 
-  const removeSalesRep = (id: number) => {
+  const removeSalesRep = (id: string) => {
     setSalesReps(salesReps.filter(rep => rep.id !== id));
     toast({
       title: "Success",
@@ -122,7 +113,7 @@ const ManagerDashboard = () => {
     });
   };
 
-  const updateScore = (repId: number, month: 'month1' | 'month2' | 'month3', index: number, value: string) => {
+  const updateScore = (repId: string, month: 'month1' | 'month2' | 'month3', index: number, value: string) => {
     const score = parseFloat(value);
     if (isNaN(score) || score < 0 || score > 5) {
       toast({

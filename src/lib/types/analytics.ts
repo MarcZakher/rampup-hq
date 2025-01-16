@@ -1,5 +1,5 @@
 export interface SalesRep {
-  id: number;
+  id: string;  // Changed from number to string to match Supabase UUID
   name: string;
   month1: number[];
   month2: number[];
