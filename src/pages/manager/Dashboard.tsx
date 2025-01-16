@@ -41,7 +41,6 @@ const ManagerDashboard = () => {
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
 
-  // First, get the current user's session
   const { data: managedReps, isLoading: isLoadingReps } = useQuery({
     queryKey: ['salesReps'],
     queryFn: async () => {
@@ -59,19 +58,14 @@ const ManagerDashboard = () => {
 
         console.log('Current user:', user.id);
 
-        // Get all sales reps managed by this manager
+        // Get all sales reps managed by this manager using a simpler query
         const { data: salesRepsData, error: repsError } = await supabase
           .from('user_roles')
           .select(`
             user_id,
-            manager_id,
-            role,
-            user:user_id (
-              id,
-              profiles!profiles_id_fkey (
-                full_name,
-                email
-              )
+            profiles (
+              full_name,
+              email
             )
           `)
           .eq('manager_id', user.id)
@@ -85,8 +79,8 @@ const ManagerDashboard = () => {
         console.log('Sales reps data:', salesRepsData);
 
         return salesRepsData?.map(rep => ({
-          id: rep.user?.id || '',
-          name: rep.user?.profiles?.full_name || rep.user?.profiles?.email || 'Unnamed Rep',
+          id: rep.user_id,
+          name: rep.profiles?.full_name || rep.profiles?.email || 'Unnamed Rep',
           month1: new Array(assessments.month1.length).fill(0),
           month2: new Array(assessments.month2.length).fill(0),
           month3: new Array(assessments.month3.length).fill(0)
