@@ -58,7 +58,7 @@ const ManagerDashboard = () => {
           .from('user_roles')
           .select(`
             user_id,
-            profiles:user_roles_user_id_fkey_profiles (
+            profiles:user_roles_user_id_fkey_profiles!inner (
               id,
               full_name,
               email
@@ -248,3 +248,5 @@ const ManagerDashboard = () => {
     </AppLayout>
   );
 };
+
+export default ManagerDashboard;
