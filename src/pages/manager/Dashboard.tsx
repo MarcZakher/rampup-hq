@@ -22,7 +22,7 @@ interface UserRoleWithProfile {
   profiles: {
     full_name: string | null;
     email: string | null;
-  } | null;
+  };
 }
 
 const assessments = {
@@ -73,13 +73,13 @@ const ManagerDashboard = () => {
           .from('user_roles')
           .select(`
             user_id,
-            profiles:user_id (
+            profiles (
               full_name,
               email
             )
           `)
           .eq('role', 'sales_rep')
-          .eq('manager_id', user.id) as { data: UserRoleWithProfile[] | null, error: any };
+          .eq('manager_id', user.id);
 
         if (repsError) {
           console.error('Error fetching sales reps:', repsError);
@@ -87,13 +87,13 @@ const ManagerDashboard = () => {
         }
 
         // Transform the data into the expected format
-        return salesRepsData ? salesRepsData.map(rep => ({
+        return (salesRepsData as UserRoleWithProfile[])?.map(rep => ({
           id: rep.user_id,
           name: rep.profiles?.full_name || rep.profiles?.email || 'Unnamed Rep',
           month1: new Array(assessments.month1.length).fill(0),
           month2: new Array(assessments.month2.length).fill(0),
           month3: new Array(assessments.month3.length).fill(0)
-        })) : [];
+        })) || [];
 
       } catch (error) {
         console.error('Error in fetchSalesReps:', error);
