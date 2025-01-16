@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { getCurrentUserCompanyId } from "@/utils/auth";
 
 type MeetingType = Database["public"]["Enums"]["meeting_type"];
 
@@ -33,10 +34,13 @@ export default function CoachingDashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
+      const company_id = await getCurrentUserCompanyId();
+
       const { error } = await supabase.from("meeting_analyses").insert({
         meeting_type: meetingType as MeetingType,
         transcript: transcript,
-        sales_rep_id: user.id
+        sales_rep_id: user.id,
+        company_id
       });
 
       if (error) throw error;

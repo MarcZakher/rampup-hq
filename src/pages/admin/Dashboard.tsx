@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
+import { getCurrentUserCompanyId } from "@/utils/auth";
 import {
   Select,
   SelectContent,
@@ -109,6 +110,8 @@ export default function AdminDashboard() {
 
   const onSubmit = async (data: any) => {
     try {
+      const company_id = await getCurrentUserCompanyId();
+      
       if (editingModule) {
         const { error } = await supabase
           .from("training_journey_modules")
@@ -130,6 +133,7 @@ export default function AdminDashboard() {
         });
       } else {
         const { error } = await supabase.from("training_journey_modules").insert({
+          company_id,
           title: data.title,
           description: data.description,
           period: data.period,
@@ -161,36 +165,17 @@ export default function AdminDashboard() {
     }
   };
 
-  const deleteModule = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("training_journey_modules")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Training module deleted successfully",
-      });
-
-      refetchModules();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete training module",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleAssessmentSubmit = async (data: AssessmentFormData) => {
     try {
+      const company_id = await getCurrentUserCompanyId();
+      
       if (editingAssessment) {
         const { error } = await supabase
           .from("assessments")
-          .update(data)
+          .update({
+            ...data,
+            company_id
+          })
           .eq("id", editingAssessment.id);
 
         if (error) throw error;
@@ -202,7 +187,10 @@ export default function AdminDashboard() {
       } else {
         const { error } = await supabase
           .from("assessments")
-          .insert(data);
+          .insert({
+            ...data,
+            company_id
+          });
 
         if (error) throw error;
 
@@ -224,36 +212,17 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDeleteAssessment = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("assessments")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Assessment deleted successfully",
-      });
-
-      refetchAssessments();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete assessment",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleCriteriaSubmit = async (data: CriteriaFormData) => {
     try {
+      const company_id = await getCurrentUserCompanyId();
+      
       if (editingCriteria) {
         const { error } = await supabase
           .from("assessment_criteria")
-          .update(data)
+          .update({
+            ...data,
+            company_id
+          })
           .eq("id", editingCriteria.id);
 
         if (error) throw error;
@@ -268,6 +237,7 @@ export default function AdminDashboard() {
           .insert({
             ...data,
             assessment_id: selectedAssessment.id,
+            company_id
           });
 
         if (error) throw error;
@@ -289,45 +259,13 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDeleteCriteria = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("assessment_criteria")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Criteria deleted successfully",
-      });
-
-      refetchCriteria();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete criteria",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSheetOpenChange = (open: boolean) => {
-    setIsAddingModule(open);
-    if (!open) {
-      setEditingModule(null);
-      form.reset();
-    }
-  };
-
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8 space-y-12">
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Training Module Management</h1>
-            <Sheet open={isAddingModule} onOpenChange={handleSheetOpenChange}>
+            <Sheet open={isAddingModule} onOpenChange={setIsAddingModule}>
               <SheetTrigger asChild>
                 <Button>
                   <Plus className="mr-2" />
