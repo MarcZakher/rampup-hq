@@ -8,22 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-
-interface SalesRep {
-  id: string;
-  name: string;
-  month1: number[];
-  month2: number[];
-  month3: number[];
-}
-
-interface UserRoleWithProfile {
-  user_id: string;
-  profiles: {
-    full_name: string | null;
-    email: string | null;
-  } | null;
-}
+import type { SalesRep } from '@/lib/types/analytics';
 
 const assessments = {
   month1: [
@@ -73,26 +58,28 @@ const ManagerDashboard = () => {
           .from('user_roles')
           .select(`
             user_id,
-            profiles:user_roles_user_id_fkey_profiles (
+            profiles!user_roles_user_id_fkey_profiles (
               full_name,
               email
             )
           `)
+          .eq('manager_id', user.id)
           .eq('role', 'sales_rep')
-          .eq('manager_id', user.id);
+          .single();
 
         if (repsError) {
           console.error('Error fetching sales reps:', repsError);
           throw repsError;
         }
 
-        return (salesRepsData as UserRoleWithProfile[])?.map(rep => ({
-          id: rep.user_id,
-          name: rep.profiles?.full_name || rep.profiles?.email || 'Unnamed Rep',
+        // Transform the data into the expected format
+        return salesRepsData ? [{
+          id: salesRepsData.user_id,
+          name: salesRepsData.profiles?.full_name || salesRepsData.profiles?.email || 'Unnamed Rep',
           month1: new Array(assessments.month1.length).fill(0),
           month2: new Array(assessments.month2.length).fill(0),
           month3: new Array(assessments.month3.length).fill(0)
-        })) || [];
+        }] : [];
 
       } catch (error) {
         console.error('Error in fetchSalesReps:', error);
@@ -104,6 +91,7 @@ const ManagerDashboard = () => {
         return [];
       }
     },
+    retry: 1
   });
 
   useEffect(() => {
