@@ -5,13 +5,20 @@ import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-import { AssessmentForm } from "@/components/admin/AssessmentForm";
+import { AssessmentForm, AssessmentFormData } from "@/components/admin/AssessmentForm";
 import { AssessmentList } from "@/components/admin/AssessmentList";
 import { TrainingModuleForm } from "@/components/admin/training/TrainingModuleForm";
 import { TrainingModuleList } from "@/components/admin/training/TrainingModuleList";
 import { SalesRepForm } from "@/components/admin/SalesRepForm";
 import { SalesRepList } from "@/components/admin/SalesRepList";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+interface Assessment {
+  id: string;
+  title: string;
+  description: string | null;
+  period: "month_1" | "month_2" | "month_3" | "month_4";
+}
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -20,12 +27,12 @@ export default function AdminDashboard() {
   const [isAddingAssessment, setIsAddingAssessment] = useState(false);
   const [isAddingSalesRep, setIsAddingSalesRep] = useState(false);
   const [editingModule, setEditingModule] = useState(null);
-  const [editingAssessment, setEditingAssessment] = useState<any>(null);
+  const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null);
   const [editingSalesRep, setEditingSalesRep] = useState<any>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<{ id: string; title: string } | null>(null);
 
   // Fetch assessments
-  const { data: assessments = [] } = useQuery({
+  const { data: assessments = [] } = useQuery<Assessment[]>({
     queryKey: ['assessments'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -38,7 +45,7 @@ export default function AdminDashboard() {
         throw error;
       }
 
-      return data;
+      return data || [];
     },
   });
 
@@ -116,12 +123,16 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAssessmentSubmit = async (data: any) => {
+  const handleAssessmentSubmit = async (data: AssessmentFormData) => {
     try {
       if (editingAssessment) {
         const { error } = await supabase
           .from("assessments")
-          .update(data)
+          .update({
+            title: data.title,
+            description: data.description,
+            period: data.period,
+          })
           .eq("id", editingAssessment.id);
 
         if (error) throw error;
@@ -133,7 +144,11 @@ export default function AdminDashboard() {
       } else {
         const { error } = await supabase
           .from("assessments")
-          .insert(data);
+          .insert({
+            title: data.title,
+            description: data.description,
+            period: data.period,
+          });
 
         if (error) throw error;
 
@@ -143,7 +158,6 @@ export default function AdminDashboard() {
         });
       }
 
-      // Invalidate and refetch assessments
       queryClient.invalidateQueries({ queryKey: ['assessments'] });
       setIsAddingAssessment(false);
       setEditingAssessment(null);
@@ -171,7 +185,6 @@ export default function AdminDashboard() {
         description: "Assessment deleted successfully",
       });
       
-      // Invalidate and refetch assessments
       queryClient.invalidateQueries({ queryKey: ['assessments'] });
     } catch (error) {
       console.error('Error deleting assessment:', error);
