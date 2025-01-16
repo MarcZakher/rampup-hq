@@ -259,6 +259,101 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteModule = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("training_journey_modules")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Training module deleted successfully",
+      });
+      refetchModules();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete training module",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAssessment = async (id: string) => {
+    try {
+      // First delete related criteria scores
+      const { error: scoresError } = await supabase
+        .from("assessment_criteria_scores")
+        .delete()
+        .eq("submission_id", id);
+      
+      if (scoresError) throw scoresError;
+
+      // Then delete related criteria
+      const { error: criteriaError } = await supabase
+        .from("assessment_criteria")
+        .delete()
+        .eq("assessment_id", id);
+      
+      if (criteriaError) throw criteriaError;
+
+      // Finally delete the assessment
+      const { error } = await supabase
+        .from("assessments")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Assessment deleted successfully",
+      });
+      refetchAssessments();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete assessment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCriteria = async (id: string) => {
+    try {
+      // First delete related scores
+      const { error: scoresError } = await supabase
+        .from("assessment_criteria_scores")
+        .delete()
+        .eq("criteria_id", id);
+      
+      if (scoresError) throw scoresError;
+
+      // Then delete the criteria
+      const { error } = await supabase
+        .from("assessment_criteria")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Criteria deleted successfully",
+      });
+      refetchCriteria();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete criteria",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8 space-y-12">
@@ -413,7 +508,7 @@ export default function AdminDashboard() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => deleteModule(module.id)}
+                          onClick={() => handleDeleteModule(module.id)}
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
