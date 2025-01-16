@@ -86,7 +86,6 @@ const ManagerDashboard = () => {
           throw repsError;
         }
 
-        // Transform the data into the expected format
         return (salesRepsData as UserRoleWithProfile[])?.map(rep => ({
           id: rep.user_id,
           name: rep.profiles?.full_name || rep.profiles?.email || 'Unnamed Rep',
