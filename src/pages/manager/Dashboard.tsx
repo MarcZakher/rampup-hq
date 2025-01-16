@@ -47,18 +47,30 @@ const ManagerDashboard = () => {
       try {
         const { data: { user }, error: sessionError } = await supabase.auth.getUser();
         if (sessionError) throw sessionError;
-        
-        console.log('Current user:', user);
 
         if (!user) {
           throw new Error('No authenticated user found');
         }
 
+        // First get the manager's role
+        const { data: managerRole, error: managerError } = await supabase
+          .from('user_roles')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('role', 'manager')
+          .single();
+
+        if (managerError) {
+          console.error('Error fetching manager role:', managerError);
+          throw managerError;
+        }
+
+        // Then get the sales reps managed by this manager
         const { data: salesRepsData, error: repsError } = await supabase
           .from('user_roles')
           .select(`
             user_id,
-            profiles:user_roles_user_id_fkey_profiles!inner (
+            profiles:user_roles_user_id_fkey_profiles (
               id,
               full_name,
               email
@@ -71,8 +83,6 @@ const ManagerDashboard = () => {
           console.error('Error fetching sales reps:', repsError);
           throw repsError;
         }
-
-        console.log('Fetched sales reps:', salesRepsData);
 
         return salesRepsData?.map(rep => ({
           id: rep.profiles?.id || '',
