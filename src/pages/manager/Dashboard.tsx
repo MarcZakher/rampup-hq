@@ -63,9 +63,8 @@ const ManagerDashboard = () => {
               email
             )
           `)
-          .eq('manager_id', user.id)
           .eq('role', 'sales_rep')
-          .single();
+          .eq('manager_id', user.id);
 
         if (repsError) {
           console.error('Error fetching sales reps:', repsError);
@@ -73,13 +72,13 @@ const ManagerDashboard = () => {
         }
 
         // Transform the data into the expected format
-        return salesRepsData ? [{
-          id: salesRepsData.user_id,
-          name: salesRepsData.profiles?.full_name || salesRepsData.profiles?.email || 'Unnamed Rep',
+        return salesRepsData ? salesRepsData.map(rep => ({
+          id: rep.user_id,
+          name: rep.profiles?.full_name || rep.profiles?.email || 'Unnamed Rep',
           month1: new Array(assessments.month1.length).fill(0),
           month2: new Array(assessments.month2.length).fill(0),
           month3: new Array(assessments.month3.length).fill(0)
-        }] : [];
+        })) : [];
 
       } catch (error) {
         console.error('Error in fetchSalesReps:', error);
