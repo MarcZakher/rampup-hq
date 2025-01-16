@@ -30,7 +30,7 @@ export function SalesRepForm({ onSuccess, onCancel }: SalesRepFormProps) {
         .from('user_roles')
         .select(`
           user_id,
-          profiles:user_id (
+          manager_profile:profiles!user_id(
             id,
             full_name,
             email
@@ -115,8 +115,11 @@ export function SalesRepForm({ onSuccess, onCancel }: SalesRepFormProps) {
           </SelectTrigger>
           <SelectContent>
             {managers?.map((manager) => (
-              <SelectItem key={manager.profiles.id} value={manager.profiles.id}>
-                {manager.profiles.full_name}
+              <SelectItem 
+                key={manager.manager_profile.id} 
+                value={manager.manager_profile.id}
+              >
+                {manager.manager_profile.full_name}
               </SelectItem>
             ))}
           </SelectContent>
