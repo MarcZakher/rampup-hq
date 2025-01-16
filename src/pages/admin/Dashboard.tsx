@@ -11,9 +11,11 @@ import { TrainingModuleForm } from "@/components/admin/training/TrainingModuleFo
 import { TrainingModuleList } from "@/components/admin/training/TrainingModuleList";
 import { SalesRepForm } from "@/components/admin/SalesRepForm";
 import { SalesRepList } from "@/components/admin/SalesRepList";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isAddingModule, setIsAddingModule] = useState(false);
   const [isAddingAssessment, setIsAddingAssessment] = useState(false);
   const [isAddingSalesRep, setIsAddingSalesRep] = useState(false);
@@ -21,6 +23,24 @@ export default function AdminDashboard() {
   const [editingAssessment, setEditingAssessment] = useState<any>(null);
   const [editingSalesRep, setEditingSalesRep] = useState<any>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<{ id: string; title: string } | null>(null);
+
+  // Fetch assessments
+  const { data: assessments = [] } = useQuery({
+    queryKey: ['assessments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('assessments')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching assessments:', error);
+        throw error;
+      }
+
+      return data;
+    },
+  });
 
   const handleModuleSubmit = async (data: any) => {
     try {
@@ -123,9 +143,12 @@ export default function AdminDashboard() {
         });
       }
 
+      // Invalidate and refetch assessments
+      queryClient.invalidateQueries({ queryKey: ['assessments'] });
       setIsAddingAssessment(false);
       setEditingAssessment(null);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error saving assessment:', error);
       toast({
         title: "Error",
         description: "Failed to save assessment",
@@ -147,7 +170,11 @@ export default function AdminDashboard() {
         title: "Success",
         description: "Assessment deleted successfully",
       });
+      
+      // Invalidate and refetch assessments
+      queryClient.invalidateQueries({ queryKey: ['assessments'] });
     } catch (error) {
+      console.error('Error deleting assessment:', error);
       toast({
         title: "Error",
         description: "Failed to delete assessment",
@@ -192,6 +219,7 @@ export default function AdminDashboard() {
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8 space-y-12">
+        {/* Training Module Management Section */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Training Module Management</h1>
@@ -231,6 +259,7 @@ export default function AdminDashboard() {
           />
         </div>
 
+        {/* Sales Rep Management Section */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Sales Rep Management</h1>
@@ -272,6 +301,7 @@ export default function AdminDashboard() {
           />
         </div>
 
+        {/* Assessment Management Section */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Assessment Management</h1>
@@ -303,7 +333,7 @@ export default function AdminDashboard() {
           </div>
 
           <AssessmentList
-            assessments={[]}
+            assessments={assessments}
             onEdit={(assessment) => {
               setEditingAssessment(assessment);
               setIsAddingAssessment(true);
