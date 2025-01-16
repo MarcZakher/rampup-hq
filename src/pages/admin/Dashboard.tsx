@@ -9,13 +9,17 @@ import { AssessmentForm } from "@/components/admin/AssessmentForm";
 import { AssessmentList } from "@/components/admin/AssessmentList";
 import { TrainingModuleForm } from "@/components/admin/training/TrainingModuleForm";
 import { TrainingModuleList } from "@/components/admin/training/TrainingModuleList";
+import { SalesRepForm } from "@/components/admin/SalesRepForm";
+import { SalesRepList } from "@/components/admin/SalesRepList";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [isAddingModule, setIsAddingModule] = useState(false);
   const [isAddingAssessment, setIsAddingAssessment] = useState(false);
+  const [isAddingSalesRep, setIsAddingSalesRep] = useState(false);
   const [editingModule, setEditingModule] = useState(null);
   const [editingAssessment, setEditingAssessment] = useState<any>(null);
+  const [editingSalesRep, setEditingSalesRep] = useState<any>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<{ id: string; title: string } | null>(null);
 
   const handleModuleSubmit = async (data: any) => {
@@ -163,13 +167,35 @@ export default function AdminDashboard() {
     setSelectedAssessment(assessment);
   };
 
+  const handleDeleteSalesRep = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Sales rep deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete sales rep",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8 space-y-12">
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Training Module Management</h1>
-            <Sheet open={isAddingModule} onOpenChange={handleSheetOpenChange}>
+            <Sheet open={isAddingModule} onOpenChange={setIsAddingModule}>
               <SheetTrigger asChild>
                 <Button>
                   <Plus className="mr-2" />
@@ -202,6 +228,47 @@ export default function AdminDashboard() {
               setIsAddingModule(true);
             }}
             onDelete={deleteModule}
+          />
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold">Sales Rep Management</h1>
+            <Sheet open={isAddingSalesRep} onOpenChange={setIsAddingSalesRep}>
+              <SheetTrigger asChild>
+                <Button>
+                  <Plus className="mr-2" />
+                  Add Sales Rep
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-full sm:max-w-lg">
+                <SheetHeader>
+                  <SheetTitle>
+                    {editingSalesRep ? "Edit Sales Rep" : "Create New Sales Rep"}
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  <SalesRepForm
+                    onSuccess={() => {
+                      setIsAddingSalesRep(false);
+                      setEditingSalesRep(null);
+                    }}
+                    onCancel={() => {
+                      setIsAddingSalesRep(false);
+                      setEditingSalesRep(null);
+                    }}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          <SalesRepList
+            onEdit={(salesRep) => {
+              setEditingSalesRep(salesRep);
+              setIsAddingSalesRep(true);
+            }}
+            onDelete={handleDeleteSalesRep}
           />
         </div>
 
