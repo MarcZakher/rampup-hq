@@ -22,7 +22,7 @@ interface UserRoleWithProfile {
   profiles: {
     full_name: string | null;
     email: string | null;
-  };
+  } | null;
 }
 
 const assessments = {
