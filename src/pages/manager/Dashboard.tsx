@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type { SalesRep } from '@/lib/types/analytics';
 
 const assessments = {
@@ -40,74 +40,60 @@ const ManagerDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  // Fetch the current manager's ID
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Error fetching session:', error);
-        throw error;
-      }
-      return session?.user;
-    },
-  });
-
-  // Fetch sales reps assigned to the current manager
+  // Fetch the current manager's data and their sales reps
   const { data: managedReps, isLoading: isLoadingReps } = useQuery({
-    queryKey: ['salesReps', currentUser?.id],
+    queryKey: ['salesReps'],
     queryFn: async () => {
-      if (!currentUser?.id) return [];
+      try {
+        // First, get the current user's session
+        const { data: { user }, error: sessionError } = await supabase.auth.getUser();
+        if (sessionError) throw sessionError;
+        
+        console.log('Current user:', user);
 
-      console.log('Fetching sales reps for manager:', currentUser.id);
-      
-      const { data: managerRole, error: roleError } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .single();
+        if (!user) {
+          throw new Error('No authenticated user found');
+        }
 
-      if (roleError) {
-        console.error('Error fetching manager role:', roleError);
-        throw roleError;
-      }
+        // Get the sales reps that this manager manages
+        const { data: salesRepsData, error: repsError } = await supabase
+          .from('user_roles')
+          .select(`
+            user_id,
+            profiles:user_id (
+              id,
+              full_name,
+              email
+            )
+          `)
+          .eq('role', 'sales_rep')
+          .eq('manager_id', user.id);
 
-      if (managerRole.role !== 'manager') {
-        console.error('User is not a manager');
+        if (repsError) {
+          console.error('Error fetching sales reps:', repsError);
+          throw repsError;
+        }
+
+        console.log('Fetched sales reps:', salesRepsData);
+
+        return salesRepsData?.map(rep => ({
+          id: rep.profiles?.id || '',
+          name: rep.profiles?.full_name || rep.profiles?.email || 'Unnamed Rep',
+          month1: new Array(assessments.month1.length).fill(0),
+          month2: new Array(assessments.month2.length).fill(0),
+          month3: new Array(assessments.month3.length).fill(0)
+        })) || [];
+      } catch (error) {
+        console.error('Error in fetchSalesReps:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch sales representatives",
+          variant: "destructive"
+        });
         return [];
       }
-
-      const { data: salesReps, error: repsError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          profiles!user_roles_user_id_fkey_profiles (
-            id,
-            full_name,
-            email
-          )
-        `)
-        .eq('role', 'sales_rep')
-        .eq('manager_id', currentUser.id);
-
-      if (repsError) {
-        console.error('Error fetching sales reps:', repsError);
-        throw repsError;
-      }
-
-      console.log('Fetched sales reps:', salesReps);
-
-      return salesReps.map(rep => ({
-        id: rep.profiles.id,
-        name: rep.profiles.full_name || rep.profiles.email || 'Unnamed Rep',
-        month1: new Array(assessments.month1.length).fill(0),
-        month2: new Array(assessments.month2.length).fill(0),
-        month3: new Array(assessments.month3.length).fill(0)
-      }));
-    },
-    enabled: !!currentUser?.id,
+    }
   });
 
   useEffect(() => {
