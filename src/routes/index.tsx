@@ -22,36 +22,51 @@ export const routes: RouteObject[] = [
     element: <Auth />
   },
   {
-    path: '/director/dashboard',
-    element: <ProtectedRoute><DirectorDashboard /></ProtectedRoute>
+    path: '/director',
+    children: [
+      {
+        path: 'dashboard',
+        element: <ProtectedRoute><DirectorDashboard /></ProtectedRoute>
+      },
+      {
+        path: 'analytics',
+        element: <ProtectedRoute><AnalyticsPage /></ProtectedRoute>
+      }
+    ]
   },
   {
-    path: '/director/analytics',
-    element: <ProtectedRoute><AnalyticsPage /></ProtectedRoute>
-  },
-  {
-    path: '/manager/dashboard',
-    element: <ProtectedRoute><ManagerDashboard /></ProtectedRoute>
-  },
-  {
-    path: '/manager/assessments',
-    element: <ProtectedRoute><AssessmentsPage /></ProtectedRoute>
+    path: '/manager',
+    children: [
+      {
+        path: 'dashboard',
+        element: <ProtectedRoute><ManagerDashboard /></ProtectedRoute>
+      },
+      {
+        path: 'assessments',
+        element: <ProtectedRoute><AssessmentsPage /></ProtectedRoute>
+      }
+    ]
   },
   {
     path: '/admin/dashboard',
     element: <ProtectedRoute><AdminDashboard /></ProtectedRoute>
   },
   {
-    path: '/sales-rep/dashboard',
-    element: <ProtectedRoute><SalesRepDashboard /></ProtectedRoute>
-  },
-  {
-    path: '/sales-rep/training',
-    element: <ProtectedRoute><TrainingJourney /></ProtectedRoute>
-  },
-  {
-    path: '/sales-rep/analytics',
-    element: <ProtectedRoute><SalesRepAnalytics /></ProtectedRoute>
+    path: '/sales-rep',
+    children: [
+      {
+        path: 'dashboard',
+        element: <ProtectedRoute><SalesRepDashboard /></ProtectedRoute>
+      },
+      {
+        path: 'training',
+        element: <ProtectedRoute><TrainingJourney /></ProtectedRoute>
+      },
+      {
+        path: 'analytics',
+        element: <ProtectedRoute><SalesRepAnalytics /></ProtectedRoute>
+      }
+    ]
   },
   {
     path: '/coaching/dashboard',
