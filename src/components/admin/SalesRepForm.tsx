@@ -27,16 +27,16 @@ export function SalesRepForm({ onSuccess, onCancel }: SalesRepFormProps) {
     queryKey: ['managers'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('user_roles')
+        .from('profiles')
         .select(`
-          user_id,
-          manager_profile:profiles!user_id(
-            id,
-            full_name,
-            email
+          id,
+          full_name,
+          email,
+          user_roles!inner (
+            role
           )
         `)
-        .eq('role', 'manager');
+        .eq('user_roles.role', 'manager');
       
       if (error) throw error;
       return data;
@@ -116,10 +116,10 @@ export function SalesRepForm({ onSuccess, onCancel }: SalesRepFormProps) {
           <SelectContent>
             {managers?.map((manager) => (
               <SelectItem 
-                key={manager.manager_profile.id} 
-                value={manager.manager_profile.id}
+                key={manager.id} 
+                value={manager.id}
               >
-                {manager.manager_profile.full_name}
+                {manager.full_name}
               </SelectItem>
             ))}
           </SelectContent>

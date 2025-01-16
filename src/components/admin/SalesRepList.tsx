@@ -21,18 +21,20 @@ export function SalesRepList({ onEdit, onDelete }: SalesRepListProps) {
     queryKey: ["salesReps"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_roles")
+        .from('profiles')
         .select(`
-          *,
-          user_profile:profiles!user_id(
-            full_name,
-            email
-          ),
-          manager:profiles!manager_id(
-            full_name
+          id,
+          full_name,
+          email,
+          user_roles!inner (
+            id,
+            manager_id,
+            manager:profiles!manager_id (
+              full_name
+            )
           )
         `)
-        .eq("role", "sales_rep");
+        .eq('user_roles.role', 'sales_rep');
 
       if (error) throw error;
       return data;
@@ -57,9 +59,9 @@ export function SalesRepList({ onEdit, onDelete }: SalesRepListProps) {
         <TableBody>
           {salesReps?.map((rep) => (
             <TableRow key={rep.id}>
-              <TableCell>{rep.user_profile?.full_name}</TableCell>
-              <TableCell>{rep.user_profile?.email}</TableCell>
-              <TableCell>{rep.manager?.full_name || 'Unassigned'}</TableCell>
+              <TableCell>{rep.full_name}</TableCell>
+              <TableCell>{rep.email}</TableCell>
+              <TableCell>{rep.user_roles[0]?.manager?.full_name || 'Unassigned'}</TableCell>
               <TableCell>
                 <div className="flex gap-2">
                   <Button
@@ -72,7 +74,7 @@ export function SalesRepList({ onEdit, onDelete }: SalesRepListProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onDelete(rep.id)}
+                    onClick={() => onDelete(rep.user_roles[0].id)}
                   >
                     <Trash className="h-4 w-4" />
                   </Button>
