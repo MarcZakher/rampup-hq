@@ -46,34 +46,43 @@ const DirectorDashboard = () => {
   const { data: salesReps = [], isLoading } = useQuery({
     queryKey: ['sales-reps-scores'],
     queryFn: async () => {
-      const { data: userRoles, error: userRolesError } = await supabase
+      // First get the current user's company_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
+
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+      if (!userProfile?.company_id) throw new Error('No company_id found for user');
+
+      const { data: salesReps, error: salesRepsError } = await supabase
         .from('user_roles')
         .select(`
           user_id,
-          user:user_roles_user_id_fkey_profiles (
+          profiles:user_id (
             id,
             full_name,
             email
           )
         `)
-        .eq('role', 'sales_rep');
+        .eq('role', 'sales_rep')
+        .eq('company_id', userProfile.company_id);
 
-      if (userRolesError) {
-        console.error('Error fetching sales reps:', userRolesError);
-        throw userRolesError;
-      }
+      if (salesRepsError) throw salesRepsError;
 
       const salesRepsData = await Promise.all(
-        userRoles.map(async (userRole) => {
+        salesReps.map(async (userRole) => {
           const { data: submissions, error: submissionsError } = await supabase
             .from('assessment_submissions')
             .select('total_score, assessment:assessments(period)')
-            .eq('sales_rep_id', userRole.user_id);
+            .eq('sales_rep_id', userRole.user_id)
+            .eq('company_id', userProfile.company_id);
 
-          if (submissionsError) {
-            console.error('Error fetching submissions:', submissionsError);
-            return null;
-          }
+          if (submissionsError) throw submissionsError;
 
           const scores = {
             month1: new Array(assessments.month1.length).fill(0),
@@ -94,7 +103,7 @@ const DirectorDashboard = () => {
 
           return {
             id: userRole.user_id,
-            name: userRole.user?.full_name || userRole.user?.email || 'Unknown',
+            name: userRole.profiles?.full_name || userRole.profiles?.email || 'Unknown',
             assessmentScores: scores
           };
         })
@@ -162,7 +171,7 @@ const DirectorDashboard = () => {
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard
             title="Total Sales Reps"
-            value={totalReps}
+            value={salesReps.length}
             icon={<Users className="h-4 w-4 text-muted-foreground" />}
           />
           <StatCard

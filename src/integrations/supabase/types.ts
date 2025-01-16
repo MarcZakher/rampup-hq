@@ -580,6 +580,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_company_admin: {
+        Args: {
+          email: string
+          temp_password: string
+          full_name: string
+          company_id: string
+        }
+        Returns: string
+      }
       create_sales_rep: {
         Args: {
           email: string
@@ -588,6 +597,12 @@ export type Database = {
           manager_id: string
         }
         Returns: string
+      }
+      is_director: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
