@@ -32,7 +32,7 @@ export function SalesRepForm({ onSuccess, onCancel }: SalesRepFormProps) {
           id,
           full_name,
           email,
-          user_roles!inner (
+          user_roles!user_roles_user_id_fkey_profiles (
             role
           )
         `)

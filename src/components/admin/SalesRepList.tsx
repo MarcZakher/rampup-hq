@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash } from "lucide-react";
 
 interface SalesRepListProps {
-  onEdit: (salesRep: any) => void;
+  onEdit: (rep: any) => void;
   onDelete: (id: string) => void;
 }
 
@@ -26,10 +26,10 @@ export function SalesRepList({ onEdit, onDelete }: SalesRepListProps) {
           id,
           full_name,
           email,
-          user_roles!inner (
+          user_roles!user_roles_user_id_fkey_profiles (
             id,
             manager_id,
-            manager:profiles!manager_id (
+            manager:profiles!user_roles_manager_id_fkey (
               full_name
             )
           )
