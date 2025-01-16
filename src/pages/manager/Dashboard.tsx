@@ -17,6 +17,14 @@ interface SalesRep {
   month3: number[];
 }
 
+interface UserRoleWithProfile {
+  user_id: string;
+  profiles: {
+    full_name: string | null;
+    email: string | null;
+  } | null;
+}
+
 const assessments = {
   month1: [
     { name: 'Discovery meeting roleplay pitch', shortName: 'Discovery' },
@@ -65,13 +73,13 @@ const ManagerDashboard = () => {
           .from('user_roles')
           .select(`
             user_id,
-            profiles:user_roles_user_id_fkey_profiles (
+            profiles:user_id (
               full_name,
               email
             )
           `)
           .eq('role', 'sales_rep')
-          .eq('manager_id', user.id);
+          .eq('manager_id', user.id) as { data: UserRoleWithProfile[] | null, error: any };
 
         if (repsError) {
           console.error('Error fetching sales reps:', repsError);
