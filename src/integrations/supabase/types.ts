@@ -598,6 +598,13 @@ export type Database = {
         }
         Returns: string
       }
+      has_company_access: {
+        Args: {
+          user_uuid: string
+          company_uuid: string
+        }
+        Returns: boolean
+      }
       is_director: {
         Args: {
           user_id: string
