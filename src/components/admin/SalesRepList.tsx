@@ -29,7 +29,7 @@ export function SalesRepList({ onEdit, onDelete }: SalesRepListProps) {
             full_name,
             email
           ),
-          manager:manager_id (
+          manager:profiles!manager_id (
             id,
             full_name
           )
