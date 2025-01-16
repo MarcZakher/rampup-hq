@@ -50,7 +50,7 @@ const DirectorDashboard = () => {
         .from('user_roles')
         .select(`
           user_id,
-          profiles:user_roles_user_id_fkey_profiles (
+          user:user_roles_user_id_fkey_profiles (
             id,
             full_name,
             email
@@ -85,13 +85,16 @@ const DirectorDashboard = () => {
             if (submission.assessment?.period) {
               const period = submission.assessment.period;
               const monthKey = period.replace('_', '') as keyof typeof scores;
-              scores[monthKey] = submission.total_score;
+              const monthIndex = parseInt(period.split('_')[1]) - 1;
+              if (monthIndex >= 0 && monthIndex < scores[monthKey].length) {
+                scores[monthKey][monthIndex] = submission.total_score;
+              }
             }
           });
 
           return {
             id: userRole.user_id,
-            name: userRole.profiles?.full_name || userRole.profiles?.email || 'Unknown',
+            name: userRole.user?.full_name || userRole.user?.email || 'Unknown',
             assessmentScores: scores
           };
         })

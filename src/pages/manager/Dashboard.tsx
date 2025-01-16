@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AppLayout } from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -56,7 +56,7 @@ const ManagerDashboard = () => {
         .from('user_roles')
         .select(`
           user_id,
-          profiles:user_roles_user_id_fkey_profiles (
+          user:user_roles_user_id_fkey_profiles (
             id,
             full_name,
             email
@@ -91,13 +91,16 @@ const ManagerDashboard = () => {
             if (submission.assessment?.period) {
               const period = submission.assessment.period;
               const monthKey = period.replace('_', '') as keyof typeof scores;
-              scores[monthKey] = submission.total_score;
+              const monthIndex = parseInt(period.split('_')[1]) - 1;
+              if (monthIndex >= 0 && monthIndex < scores[monthKey].length) {
+                scores[monthKey][monthIndex] = submission.total_score;
+              }
             }
           });
 
           return {
             id: userRole.user_id,
-            name: userRole.profiles?.full_name || userRole.profiles?.email || 'Unknown',
+            name: userRole.user?.full_name || userRole.user?.email || 'Unknown',
             assessmentScores: scores
           };
         })
