@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from '@tanstack/react-query';
 
 interface SalesRepFormProps {
   onSuccess: () => void;
@@ -17,6 +19,28 @@ export function SalesRepForm({ onSuccess, onCancel }: SalesRepFormProps) {
     email: '',
     fullName: '',
     password: '',
+    managerId: '',
+  });
+
+  // Fetch managers
+  const { data: managers } = useQuery({
+    queryKey: ['managers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select(`
+          user_id,
+          profiles:user_id (
+            id,
+            full_name,
+            email
+          )
+        `)
+        .eq('role', 'manager');
+      
+      if (error) throw error;
+      return data;
+    },
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,7 +52,7 @@ export function SalesRepForm({ onSuccess, onCancel }: SalesRepFormProps) {
         email: formData.email,
         temp_password: formData.password,
         full_name: formData.fullName,
-        manager_id: null // We'll implement manager assignment later
+        manager_id: formData.managerId || null
       });
 
       if (error) throw error;
@@ -79,6 +103,24 @@ export function SalesRepForm({ onSuccess, onCancel }: SalesRepFormProps) {
           onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
           required
         />
+      </div>
+      <div>
+        <Label htmlFor="manager">Assign Manager</Label>
+        <Select
+          value={formData.managerId}
+          onValueChange={(value) => setFormData(prev => ({ ...prev, managerId: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a manager" />
+          </SelectTrigger>
+          <SelectContent>
+            {managers?.map((manager) => (
+              <SelectItem key={manager.profiles.id} value={manager.profiles.id}>
+                {manager.profiles.full_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>

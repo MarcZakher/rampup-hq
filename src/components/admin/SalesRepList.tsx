@@ -28,6 +28,10 @@ export function SalesRepList({ onEdit, onDelete }: SalesRepListProps) {
             id,
             full_name,
             email
+          ),
+          manager:manager_id (
+            id,
+            full_name
           )
         `)
         .eq("role", "sales_rep");
@@ -48,6 +52,7 @@ export function SalesRepList({ onEdit, onDelete }: SalesRepListProps) {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
+            <TableHead>Manager</TableHead>
             <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -56,6 +61,7 @@ export function SalesRepList({ onEdit, onDelete }: SalesRepListProps) {
             <TableRow key={rep.id}>
               <TableCell>{rep.profiles?.full_name}</TableCell>
               <TableCell>{rep.profiles?.email}</TableCell>
+              <TableCell>{rep.manager?.full_name || 'Unassigned'}</TableCell>
               <TableCell>
                 <div className="flex gap-2">
                   <Button
