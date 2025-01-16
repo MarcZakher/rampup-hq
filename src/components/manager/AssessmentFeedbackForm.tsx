@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getCurrentUserCompanyId } from '@/integrations/supabase/client';
 import {
   Form,
   FormControl,
@@ -59,7 +59,25 @@ interface AssessmentFeedbackFormProps {
 export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: AssessmentFeedbackFormProps) {
   const { toast } = useToast();
   const [selectedAssessment, setSelectedAssessment] = useState<string>('');
+  const [companyId, setCompanyId] = useState<string | null>(null);
   
+  useEffect(() => {
+    const fetchCompanyId = async () => {
+      try {
+        const id = await getCurrentUserCompanyId();
+        setCompanyId(id);
+      } catch (error) {
+        console.error('Error fetching company ID:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch company information",
+          variant: "destructive",
+        });
+      }
+    };
+    fetchCompanyId();
+  }, [toast]);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -171,8 +189,7 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      console.log('Starting update with data:', data);
-      if (!submissionId) throw new Error('No submission ID provided');
+      if (!submissionId || !companyId) throw new Error('Missing required IDs');
       
       const user = await supabase.auth.getUser();
       if (!user.data.user) throw new Error('No authenticated user found');
@@ -180,13 +197,13 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
       const scores = Object.values(data.criteriaScores);
       const totalScore = scores.reduce((a, b) => a + b, 0) / scores.length;
 
-      console.log('Updating submission:', submissionId);
       // Update submission
       const { error: submissionError } = await supabase
         .from('assessment_submissions')
         .update({
           assessment_id: data.assessmentId,
           sales_rep_id: data.salesRepId,
+          company_id: companyId,
           total_score: totalScore,
           feedback: data.feedback,
           observed_strengths: data.observedStrengths,
@@ -196,49 +213,31 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
         })
         .eq('id', submissionId);
 
-      if (submissionError) {
-        console.error('Submission update error:', submissionError);
-        throw submissionError;
-      }
+      if (submissionError) throw submissionError;
 
-      console.log('Deleting old criteria scores');
       // Delete old criteria scores
       const { error: deleteError } = await supabase
         .from('assessment_criteria_scores')
         .delete()
         .eq('submission_id', submissionId);
 
-      if (deleteError) {
-        console.error('Delete scores error:', deleteError);
-        throw deleteError;
-      }
+      if (deleteError) throw deleteError;
 
-      console.log('Inserting new criteria scores');
       // Insert new criteria scores
       const criteriaScores = Object.entries(data.criteriaScores).map(([criteriaId, score]) => ({
         submission_id: submissionId,
         criteria_id: criteriaId,
         score,
+        company_id: companyId
       }));
 
       const { error: insertError } = await supabase
         .from('assessment_criteria_scores')
         .insert(criteriaScores);
 
-      if (insertError) {
-        console.error('Insert scores error:', insertError);
-        throw insertError;
-      }
-
-      console.log('Update completed successfully');
+      if (insertError) throw insertError;
     },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Feedback updated successfully",
-      });
-      onSuccess();
-    },
+    onSuccess,
     onError: (error) => {
       console.error('Update error:', error);
       toast({
@@ -251,78 +250,55 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
 
   const submitMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      console.log('Starting submission with data:', data);
+      if (!companyId) throw new Error('No company ID available');
       
       const user = await supabase.auth.getUser();
       if (!user.data.user) throw new Error('No authenticated user found');
 
-      // Calculate total score
       const scores = Object.values(data.criteriaScores);
       const totalScore = scores.reduce((a, b) => a + b, 0) / scores.length;
 
-      console.log('Calculated total score:', totalScore);
+      // Create assessment submission
+      const { data: submission, error: submissionError } = await supabase
+        .from('assessment_submissions')
+        .insert({
+          assessment_id: data.assessmentId,
+          sales_rep_id: data.salesRepId,
+          manager_id: user.data.user.id,
+          company_id: companyId,
+          total_score: totalScore,
+          feedback: data.feedback,
+          observed_strengths: data.observedStrengths,
+          areas_for_improvement: data.areasForImprovement,
+          recommended_actions: data.recommendedActions,
+        })
+        .select()
+        .single();
 
-      try {
-        // Create assessment submission
-        const { data: submission, error: submissionError } = await supabase
-          .from('assessment_submissions')
-          .insert({
-            assessment_id: data.assessmentId,
-            sales_rep_id: data.salesRepId,
-            manager_id: user.data.user.id,
-            total_score: totalScore,
-            feedback: data.feedback,
-            observed_strengths: data.observedStrengths,
-            areas_for_improvement: data.areasForImprovement,
-            recommended_actions: data.recommendedActions,
-          })
-          .select()
-          .single();
+      if (submissionError) throw submissionError;
 
-        if (submissionError) {
-          console.error('Submission error:', submissionError);
-          throw submissionError;
-        }
+      // Create criteria scores
+      const criteriaScores = Object.entries(data.criteriaScores).map(([criteriaId, score]) => ({
+        submission_id: submission.id,
+        criteria_id: criteriaId,
+        score,
+        company_id: companyId
+      }));
 
-        console.log('Created submission:', submission);
+      const { error: scoresError } = await supabase
+        .from('assessment_criteria_scores')
+        .insert(criteriaScores);
 
-        // Create criteria scores
-        const criteriaScores = Object.entries(data.criteriaScores).map(([criteriaId, score]) => ({
-          submission_id: submission.id,
-          criteria_id: criteriaId,
-          score,
-        }));
+      if (scoresError) throw scoresError;
 
-        console.log('Inserting criteria scores:', criteriaScores);
-
-        const { error: scoresError } = await supabase
-          .from('assessment_criteria_scores')
-          .insert(criteriaScores);
-
-        if (scoresError) {
-          console.error('Scores error:', scoresError);
-          throw scoresError;
-        }
-
-        return submission;
-      } catch (error) {
-        console.error('Error in mutation:', error);
-        throw error;
-      }
+      return submission;
     },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Assessment feedback submitted successfully",
-      });
-      form.reset();
-      setSelectedAssessment('');
-    },
+    onSuccess,
     onError: (error) => {
       console.error('Submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to submit assessment feedback. Please try again.",
+        description: "Failed to submit assessment feedback",
         variant: "destructive",
       });
     },
@@ -352,8 +328,6 @@ export function AssessmentFeedbackForm({ submissionId, onCancel, onSuccess }: As
       submitMutation.mutate(data);
     }
   };
-
-  // ... keep existing code (form JSX)
 
   return (
     <Form {...form}>
