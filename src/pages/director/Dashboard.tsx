@@ -3,9 +3,8 @@ import { CustomAppLayout } from '@/components/Layout/CustomAppLayout';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SalesRep {
   id: string;
@@ -15,13 +14,6 @@ interface SalesRep {
   month3: number[];
 }
 
-interface AssessmentScore {
-  id: string;
-  sales_rep_id: string;
-  total_score: number;
-  created_at: string;
-}
-
 const DirectorDashboard = () => {
   // Fetch sales reps
   const { data: salesReps } = useQuery({
@@ -29,7 +21,12 @@ const DirectorDashboard = () => {
     queryFn: async () => {
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, profiles(full_name)')
+        .select(`
+          user_id,
+          profiles:user_id (
+            full_name
+          )
+        `)
         .eq('role', 'sales_rep');
 
       if (rolesError) {
@@ -125,7 +122,6 @@ const DirectorDashboard = () => {
           />
         </div>
 
-        {/* Assessment Tables will be implemented in a separate component to keep this file smaller */}
         <Card>
           <CardHeader>
             <CardTitle>Recent Assessment Submissions</CardTitle>
