@@ -16,6 +16,7 @@ export default function AdminDashboard() {
   const [isAddingAssessment, setIsAddingAssessment] = useState(false);
   const [editingModule, setEditingModule] = useState(null);
   const [editingAssessment, setEditingAssessment] = useState<any>(null);
+  const [selectedAssessment, setSelectedAssessment] = useState<{ id: string; title: string } | null>(null);
 
   const handleModuleSubmit = async (data: any) => {
     try {
@@ -158,6 +159,10 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleManageCriteria = (assessment: { id: string; title: string }) => {
+    setSelectedAssessment(assessment);
+  };
+
   return (
     <CustomAppLayout>
       <div className="container mx-auto py-8 space-y-12">
@@ -237,6 +242,7 @@ export default function AdminDashboard() {
               setIsAddingAssessment(true);
             }}
             onDelete={handleDeleteAssessment}
+            onManageCriteria={handleManageCriteria}
           />
         </div>
       </div>
