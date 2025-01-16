@@ -8,7 +8,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import type { SalesRep } from '@/lib/types/analytics';
+
+interface SalesRep {
+  id: string;
+  name: string;
+  month1: number[];
+  month2: number[];
+  month3: number[];
+}
 
 const assessments = {
   month1: [
@@ -54,12 +61,11 @@ const ManagerDashboard = () => {
 
         console.log('Current user:', user.id);
 
-        // Fixed query to properly join with profiles table
         const { data: salesRepsData, error: repsError } = await supabase
           .from('user_roles')
           .select(`
             user_id,
-            profiles!user_roles_user_id_fkey_profiles (
+            profiles:user_roles_user_id_fkey_profiles (
               full_name,
               email
             )
@@ -91,7 +97,6 @@ const ManagerDashboard = () => {
         return [];
       }
     },
-    retry: 1
   });
 
   useEffect(() => {
