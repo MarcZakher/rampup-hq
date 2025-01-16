@@ -30,9 +30,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Edit, Trash } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isAddingModule, setIsAddingModule] = useState(false);
   const [isAddingAssessment, setIsAddingAssessment] = useState(false);
   const [isManagingCriteria, setIsManagingCriteria] = useState(false);

@@ -41,12 +41,10 @@ const ManagerDashboard = () => {
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
 
-  // Fetch the current manager's data and their sales reps
   const { data: managedReps, isLoading: isLoadingReps } = useQuery({
     queryKey: ['salesReps'],
     queryFn: async () => {
       try {
-        // First, get the current user's session
         const { data: { user }, error: sessionError } = await supabase.auth.getUser();
         if (sessionError) throw sessionError;
         
@@ -56,12 +54,11 @@ const ManagerDashboard = () => {
           throw new Error('No authenticated user found');
         }
 
-        // Get the sales reps that this manager manages
         const { data: salesRepsData, error: repsError } = await supabase
           .from('user_roles')
           .select(`
             user_id,
-            profiles:user_id (
+            profiles:user_roles_user_id_fkey_profiles (
               id,
               full_name,
               email
@@ -251,5 +248,3 @@ const ManagerDashboard = () => {
     </AppLayout>
   );
 };
-
-export default ManagerDashboard;
