@@ -20,7 +20,7 @@ interface FeedbackSubmission {
     title: string;
   };
   sales_rep: {
-    full_name: string;
+    full_name: string | null;
   };
   total_score: number;
   created_at: string;
@@ -50,7 +50,7 @@ export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
           areas_for_improvement,
           recommended_actions,
           assessment:assessments(title),
-          sales_rep:profiles(full_name)
+          sales_rep:profiles!assessment_submissions_sales_rep_id_fkey(full_name)
         `)
         .order("created_at", { ascending: false });
 
