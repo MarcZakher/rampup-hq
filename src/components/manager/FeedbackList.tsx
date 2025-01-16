@@ -20,7 +20,7 @@ interface FeedbackSubmission {
     title: string;
   };
   sales_rep: {
-    full_name: string | null;
+    full_name: string;
   };
   total_score: number;
   created_at: string;
@@ -38,7 +38,6 @@ export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
   const { data: submissions, isLoading } = useQuery({
     queryKey: ["feedback-submissions"],
     queryFn: async () => {
-      console.log("Fetching feedback submissions");
       const { data, error } = await supabase
         .from("assessment_submissions")
         .select(`
@@ -54,11 +53,7 @@ export function FeedbackList({ onEdit }: { onEdit: (id: string) => void }) {
         `)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching submissions:", error);
-        throw error;
-      }
-      console.log("Fetched submissions:", data);
+      if (error) throw error;
       return data as FeedbackSubmission[];
     },
   });

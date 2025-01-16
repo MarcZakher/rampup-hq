@@ -30,15 +30,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Edit, Trash } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isAddingModule, setIsAddingModule] = useState(false);
   const [isAddingAssessment, setIsAddingAssessment] = useState(false);
   const [isManagingCriteria, setIsManagingCriteria] = useState(false);
-  const [editingModule, setEditingModule] = useState<any>(null);
+  const [editingModule, setEditingModule] = useState(null);
   const [editingAssessment, setEditingAssessment] = useState<any>(null);
   const [editingCriteria, setEditingCriteria] = useState<any>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<any>(null);
@@ -54,84 +52,43 @@ export default function AdminDashboard() {
     },
   });
 
-  // Fetch training modules with proper error handling
-  const { data: modules, isLoading: isLoadingModules } = useQuery({
+  const { data: modules, refetch: refetchModules } = useQuery({
     queryKey: ["trainingModules"],
     queryFn: async () => {
-      console.log("Fetching training modules");
       const { data, error } = await supabase
         .from("training_journey_modules")
         .select("*")
         .order("sort_order", { ascending: true });
 
-      if (error) {
-        console.error("Error fetching modules:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch training modules",
-          variant: "destructive",
-        });
-        throw error;
-      }
-
-      console.log("Fetched modules:", data);
+      if (error) throw error;
       return data;
     },
   });
 
-  // Fetch assessments with proper error handling
-  const { data: assessments, isLoading: isLoadingAssessments } = useQuery({
+  const { data: assessments, refetch: refetchAssessments } = useQuery({
     queryKey: ["assessments"],
     queryFn: async () => {
-      console.log("Fetching assessments");
       const { data, error } = await supabase
         .from("assessments")
-        .select(`
-          *,
-          assessment_criteria(count),
-          assessment_submissions(count)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching assessments:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch assessments",
-          variant: "destructive",
-        });
-        throw error;
-      }
-
-      console.log("Fetched assessments:", data);
+      if (error) throw error;
       return data;
     },
   });
 
-  // Fetch criteria for selected assessment with proper error handling
-  const { data: criteria, isLoading: isLoadingCriteria } = useQuery({
+  const { data: criteria, refetch: refetchCriteria } = useQuery({
     queryKey: ["criteria", selectedAssessment?.id],
     queryFn: async () => {
       if (!selectedAssessment?.id) return [];
-      console.log("Fetching criteria for assessment:", selectedAssessment.id);
-      
       const { data, error } = await supabase
         .from("assessment_criteria")
         .select("*")
         .eq("assessment_id", selectedAssessment.id)
         .order("created_at", { ascending: true });
 
-      if (error) {
-        console.error("Error fetching criteria:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch assessment criteria",
-          variant: "destructive",
-        });
-        throw error;
-      }
-
-      console.log("Fetched criteria:", data);
+      if (error) throw error;
       return data;
     },
     enabled: !!selectedAssessment?.id,
@@ -152,7 +109,6 @@ export default function AdminDashboard() {
 
   const onSubmit = async (data: any) => {
     try {
-      console.log("Submitting module:", data);
       if (editingModule) {
         const { error } = await supabase
           .from("training_journey_modules")
@@ -193,9 +149,8 @@ export default function AdminDashboard() {
       setIsAddingModule(false);
       setEditingModule(null);
       form.reset();
-      queryClient.invalidateQueries({ queryKey: ["trainingModules"] });
+      refetchModules();
     } catch (error) {
-      console.error("Error submitting module:", error);
       toast({
         title: "Error",
         description: editingModule 
@@ -220,7 +175,7 @@ export default function AdminDashboard() {
         description: "Training module deleted successfully",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["trainingModules"] });
+      refetchModules();
     } catch (error) {
       toast({
         title: "Error",
@@ -232,7 +187,6 @@ export default function AdminDashboard() {
 
   const handleAssessmentSubmit = async (data: AssessmentFormData) => {
     try {
-      console.log("Submitting assessment:", data);
       if (editingAssessment) {
         const { error } = await supabase
           .from("assessments")
@@ -260,9 +214,8 @@ export default function AdminDashboard() {
 
       setIsAddingAssessment(false);
       setEditingAssessment(null);
-      queryClient.invalidateQueries({ queryKey: ["assessments"] });
+      refetchAssessments();
     } catch (error) {
-      console.error("Error submitting assessment:", error);
       toast({
         title: "Error",
         description: "Failed to save assessment",
@@ -285,7 +238,7 @@ export default function AdminDashboard() {
         description: "Assessment deleted successfully",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["assessments"] });
+      refetchAssessments();
     } catch (error) {
       toast({
         title: "Error",
@@ -297,7 +250,6 @@ export default function AdminDashboard() {
 
   const handleCriteriaSubmit = async (data: CriteriaFormData) => {
     try {
-      console.log("Submitting criteria:", data);
       if (editingCriteria) {
         const { error } = await supabase
           .from("assessment_criteria")
@@ -327,7 +279,7 @@ export default function AdminDashboard() {
       }
 
       setEditingCriteria(null);
-      queryClient.invalidateQueries({ queryKey: ["criteria", selectedAssessment?.id] });
+      refetchCriteria();
     } catch (error) {
       toast({
         title: "Error",
@@ -351,7 +303,7 @@ export default function AdminDashboard() {
         description: "Criteria deleted successfully",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["criteria", selectedAssessment?.id] });
+      refetchCriteria();
     } catch (error) {
       toast({
         title: "Error",
@@ -361,15 +313,13 @@ export default function AdminDashboard() {
     }
   };
 
-  if (isLoadingModules || isLoadingAssessments) {
-    return (
-      <CustomAppLayout>
-        <div className="container mx-auto py-8">
-          <div className="text-center">Loading...</div>
-        </div>
-      </CustomAppLayout>
-    );
-  }
+  const handleSheetOpenChange = (open: boolean) => {
+    setIsAddingModule(open);
+    if (!open) {
+      setEditingModule(null);
+      form.reset();
+    }
+  };
 
   return (
     <CustomAppLayout>
@@ -377,7 +327,7 @@ export default function AdminDashboard() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Training Module Management</h1>
-            <Sheet open={isAddingModule} onOpenChange={setIsAddingModule}>
+            <Sheet open={isAddingModule} onOpenChange={handleSheetOpenChange}>
               <SheetTrigger asChild>
                 <Button>
                   <Plus className="mr-2" />

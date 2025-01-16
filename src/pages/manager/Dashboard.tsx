@@ -6,9 +6,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, UserPlus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import type { SalesRep } from '@/lib/types/analytics';
+
+interface SalesRep {
+  id: number;
+  name: string;
+  month1: number[];
+  month2: number[];
+  month3: number[];
+}
 
 const assessments = {
   month1: [
@@ -36,69 +41,25 @@ const assessments = {
   ]
 };
 
+const STORAGE_KEY = 'manager_dashboard_sales_reps';
+
 const ManagerDashboard = () => {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [newRepName, setNewRepName] = useState('');
   const { toast } = useToast();
 
-  const { data: managedReps, isLoading: isLoadingReps } = useQuery({
-    queryKey: ['salesReps'],
-    queryFn: async () => {
-      try {
-        const { data: { user }, error: sessionError } = await supabase.auth.getUser();
-        if (sessionError) throw sessionError;
-
-        if (!user) {
-          throw new Error('No authenticated user found');
-        }
-
-        console.log('Current user:', user.id);
-
-        const { data: salesRepsData, error: repsError } = await supabase
-          .from('user_roles')
-          .select(`
-            user_id,
-            profiles!user_roles_user_id_fkey_profiles (
-              full_name,
-              email
-            )
-          `)
-          .eq('manager_id', user.id)
-          .eq('role', 'sales_rep')
-          .single();
-
-        if (repsError) {
-          console.error('Error fetching sales reps:', repsError);
-          throw repsError;
-        }
-
-        // Transform the data into the expected format
-        return salesRepsData ? [{
-          id: salesRepsData.user_id,
-          name: salesRepsData.profiles?.full_name || salesRepsData.profiles?.email || 'Unnamed Rep',
-          month1: new Array(assessments.month1.length).fill(0),
-          month2: new Array(assessments.month2.length).fill(0),
-          month3: new Array(assessments.month3.length).fill(0)
-        }] : [];
-
-      } catch (error) {
-        console.error('Error in fetchSalesReps:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch sales representatives",
-          variant: "destructive"
-        });
-        return [];
-      }
-    },
-    retry: 1
-  });
-
+  // Load saved data on component mount
   useEffect(() => {
-    if (managedReps) {
-      setSalesReps(managedReps);
+    const savedReps = localStorage.getItem(STORAGE_KEY);
+    if (savedReps) {
+      setSalesReps(JSON.parse(savedReps));
     }
-  }, [managedReps]);
+  }, []);
+
+  // Save data whenever salesReps changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(salesReps));
+  }, [salesReps]);
 
   const addSalesRep = () => {
     if (!newRepName.trim()) {
@@ -111,7 +72,7 @@ const ManagerDashboard = () => {
     }
 
     const newRep: SalesRep = {
-      id: crypto.randomUUID(),
+      id: Date.now(),
       name: newRepName,
       month1: new Array(assessments.month1.length).fill(0),
       month2: new Array(assessments.month2.length).fill(0),
@@ -126,7 +87,7 @@ const ManagerDashboard = () => {
     });
   };
 
-  const removeSalesRep = (id: string) => {
+  const removeSalesRep = (id: number) => {
     setSalesReps(salesReps.filter(rep => rep.id !== id));
     toast({
       title: "Success",
@@ -134,7 +95,7 @@ const ManagerDashboard = () => {
     });
   };
 
-  const updateScore = (repId: string, month: 'month1' | 'month2' | 'month3', index: number, value: string) => {
+  const updateScore = (repId: number, month: 'month1' | 'month2' | 'month3', index: number, value: string) => {
     const score = parseFloat(value);
     if (isNaN(score) || score < 0 || score > 5) {
       toast({
@@ -161,17 +122,6 @@ const ManagerDashboard = () => {
     if (score >= 3) return 'bg-[#FFEB9C]';
     return 'bg-[#FFC7CE]';
   };
-
-  if (isLoadingReps) {
-    return (
-      <AppLayout>
-        <div className="p-6">
-          <h1 className="text-3xl font-bold mb-6">Manager Dashboard</h1>
-          <div>Loading sales representatives...</div>
-        </div>
-      </AppLayout>
-    );
-  }
 
   return (
     <AppLayout>
