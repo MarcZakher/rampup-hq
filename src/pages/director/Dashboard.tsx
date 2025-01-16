@@ -4,7 +4,7 @@ import { StatCard } from '@/components/Dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getCurrentUserCompanyId } from '@/integrations/supabase/client';
 
 const assessments = {
   month1: [
@@ -46,18 +46,7 @@ const DirectorDashboard = () => {
   const { data: salesReps = [], isLoading } = useQuery({
     queryKey: ['sales-reps-scores'],
     queryFn: async () => {
-      // First get the current user's company_id
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No authenticated user');
-
-      const { data: userProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) throw profileError;
-      if (!userProfile?.company_id) throw new Error('No company_id found for user');
+      const companyId = await getCurrentUserCompanyId();
 
       const { data: salesReps, error: salesRepsError } = await supabase
         .from('user_roles')
@@ -70,7 +59,7 @@ const DirectorDashboard = () => {
           )
         `)
         .eq('role', 'sales_rep')
-        .eq('company_id', userProfile.company_id);
+        .eq('company_id', companyId);
 
       if (salesRepsError) throw salesRepsError;
 
@@ -80,7 +69,7 @@ const DirectorDashboard = () => {
             .from('assessment_submissions')
             .select('total_score, assessment:assessments(period)')
             .eq('sales_rep_id', userRole.user_id)
-            .eq('company_id', userProfile.company_id);
+            .eq('company_id', companyId);
 
           if (submissionsError) throw submissionsError;
 
