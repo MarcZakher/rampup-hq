@@ -58,12 +58,12 @@ const ManagerDashboard = () => {
 
         console.log('Current user:', user.id);
 
-        // Get all sales reps managed by this manager using a simpler query
+        // Get all sales reps managed by this manager using the correct relationship hint
         const { data: salesRepsData, error: repsError } = await supabase
           .from('user_roles')
           .select(`
             user_id,
-            profiles (
+            profiles!user_roles_user_id_fkey_profiles (
               full_name,
               email
             )
